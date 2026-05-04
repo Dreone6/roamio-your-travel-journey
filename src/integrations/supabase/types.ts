@@ -412,7 +412,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      nearby_offers: {
+        Args: { lat: number; lng: number; radius_miles?: number }
+        Returns: {
+          active: boolean
+          address: string | null
+          business_name: string
+          category: Database["public"]["Enums"]["offer_category"]
+          created_at: string
+          discount: string | null
+          id: string
+          image: string | null
+          latitude: number | null
+          longitude: number | null
+          offer_description: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "partner_offers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       challenge_status: "active" | "completed" | "expired"
