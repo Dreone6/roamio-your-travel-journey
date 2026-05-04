@@ -262,7 +262,10 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Sign Out */}
+      {/* Subscription & Sign Out */}
+      <Button variant="outline" onClick={() => navigate("/subscription")} className="w-full gap-2">
+        <Crown className="h-4 w-4" /> Subscription
+      </Button>
       <Button variant="outline" onClick={signOut} className="w-full gap-2">
         <LogOut className="h-4 w-4" /> Sign Out
       </Button>
