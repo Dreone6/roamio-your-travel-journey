@@ -34,7 +34,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (!onboardingCompleted) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;

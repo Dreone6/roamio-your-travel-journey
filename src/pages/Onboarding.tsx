@@ -53,7 +53,7 @@ export default function Onboarding() {
     if (error) {
       toast({ title: "Something went wrong", description: error.message, variant: "destructive" });
     } else {
-      navigate("/", { replace: true });
+      navigate("/home", { replace: true });
     }
     setSaving(false);
   };
