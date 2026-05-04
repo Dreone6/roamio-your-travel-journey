@@ -292,6 +292,8 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
           No itinerary items yet
         </div>
       )}
+      </>
+      )}
     </div>
   );
 }
