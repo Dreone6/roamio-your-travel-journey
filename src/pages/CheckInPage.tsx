@@ -165,6 +165,9 @@ export default function CheckInPage() {
       });
       setNearbyOffers((offers as Offer[]) || []);
 
+      // Check for new badges
+      await supabase.functions.invoke("check-badges", { body: { user_id: user.id } });
+
       toast({ title: "Checked in!", description: `${geo.location_name}, ${geo.city}` });
       setStep("done");
     } catch (err: any) {
