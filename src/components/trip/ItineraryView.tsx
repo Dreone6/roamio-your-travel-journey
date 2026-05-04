@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, RefreshCw, Pencil, Trash2, Check, X, DollarSign, MapPin, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Pencil, Trash2, Check, X, DollarSign, MapPin, Clock, Loader2, ListChecks, CalendarDays } from "lucide-react";
+import TripChecklist from "./TripChecklist";
 
 interface ItineraryItem {
   id: string;
@@ -60,6 +61,7 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ activity: "", location: "", estimated_cost: "", description: "" });
   const [regeneratingDay, setRegeneratingDay] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"itinerary" | "checklist">("itinerary");
 
   const dayNumbers = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
 
@@ -191,6 +193,33 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-lg bg-muted p-1">
+        <button
+          onClick={() => setActiveTab("itinerary")}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${activeTab === "itinerary" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+        >
+          <CalendarDays className="h-3.5 w-3.5" /> Itinerary
+        </button>
+        <button
+          onClick={() => setActiveTab("checklist")}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${activeTab === "checklist" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+        >
+          <ListChecks className="h-3.5 w-3.5" /> Checklist
+        </button>
+      </div>
+
+      {activeTab === "checklist" ? (
+        <TripChecklist
+          tripId={trip.id}
+          destination={trip.destination}
+          startDate={trip.start_date}
+          endDate={trip.end_date}
+          tripStyle={trip.trip_style}
+        />
+      ) : (
+      <>
+
       {dayNumbers.map((dayNum) => {
         const dayItems = items.filter((i) => i.day_number === dayNum).sort((a, b) => BLOCK_ORDER.indexOf(a.time_block) - BLOCK_ORDER.indexOf(b.time_block));
         return (
@@ -262,6 +291,8 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           No itinerary items yet
         </div>
+      )}
+      </>
       )}
     </div>
   );
