@@ -138,7 +138,7 @@ export default function TripChecklist({ tripId, destination, startDate, endDate,
       user_id: user.id,
       trip_id: tripId,
       item_name: newItem.trim(),
-      category: newCategory,
+      category: newCategory as any,
       completed: false,
       reminder: false,
     });
