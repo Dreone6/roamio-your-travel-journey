@@ -13,6 +13,8 @@ import PlanPage from "@/pages/PlanPage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
+import AdminPanel from "@/pages/AdminPanel";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/" element={<HomePage />} />
               <Route path="/plan" element={<PlanPage />} />

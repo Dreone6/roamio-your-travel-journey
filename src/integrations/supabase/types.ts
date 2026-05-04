@@ -213,12 +213,47 @@ export type Database = {
           },
         ]
       }
+      offer_interactions: {
+        Row: {
+          created_at: string
+          id: string
+          interaction_type: string
+          offer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          offer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          offer_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_interactions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "partner_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_offers: {
         Row: {
           active: boolean
           address: string | null
           business_name: string
           category: Database["public"]["Enums"]["offer_category"]
+          commission_rate: number | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           discount: string | null
           id: string
@@ -226,12 +261,16 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           offer_description: string
+          partner_id: string | null
         }
         Insert: {
           active?: boolean
           address?: string | null
           business_name: string
           category?: Database["public"]["Enums"]["offer_category"]
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           discount?: string | null
           id?: string
@@ -239,12 +278,16 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           offer_description: string
+          partner_id?: string | null
         }
         Update: {
           active?: boolean
           address?: string | null
           business_name?: string
           category?: Database["public"]["Enums"]["offer_category"]
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           discount?: string | null
           id?: string
@@ -252,6 +295,57 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           offer_description?: string
+          partner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_offers_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          active: boolean
+          address: string | null
+          business_name: string
+          category: Database["public"]["Enums"]["offer_category"]
+          commission_rate: number | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          business_name: string
+          category?: Database["public"]["Enums"]["offer_category"]
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          business_name?: string
+          category?: Database["public"]["Enums"]["offer_category"]
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
         }
         Relationships: []
       }
@@ -356,6 +450,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           budget: number | null
@@ -410,11 +543,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       nearby_offers: {
         Args: { lat: number; lng: number; radius_miles?: number }
         Returns: {
@@ -422,6 +580,9 @@ export type Database = {
           address: string | null
           business_name: string
           category: Database["public"]["Enums"]["offer_category"]
+          commission_rate: number | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           discount: string | null
           id: string
@@ -429,6 +590,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           offer_description: string
+          partner_id: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -439,6 +601,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       challenge_status: "active" | "completed" | "expired"
       checklist_category:
         | "packing"
@@ -455,6 +618,7 @@ export type Database = {
         | "transport"
         | "shopping"
         | "other"
+      subscription_tier: "free" | "plus" | "pro"
       trip_status: "planning" | "active" | "completed"
       trip_style: "solo" | "couple" | "family" | "friends" | "business"
     }
@@ -584,6 +748,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       challenge_status: ["active", "completed", "expired"],
       checklist_category: [
         "packing",
@@ -602,6 +767,7 @@ export const Constants = {
         "shopping",
         "other",
       ],
+      subscription_tier: ["free", "plus", "pro"],
       trip_status: ["planning", "active", "completed"],
       trip_style: ["solo", "couple", "family", "friends", "business"],
     },
