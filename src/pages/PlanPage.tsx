@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Map, Plus, ChevronRight, Loader2 } from "lucide-react";
+import { Map, Plus, ChevronRight } from "lucide-react";
 import NewTripForm from "@/components/trip/NewTripForm";
 import ItineraryView from "@/components/trip/ItineraryView";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonTripCard } from "@/components/ui/skeleton-card";
 
 type ViewState = "list" | "new" | "view";
 
@@ -64,7 +66,6 @@ export default function PlanPage() {
     if (trip) {
       openTrip(trip);
     } else {
-      // Reload and find
       const { data } = await supabase.from("trips").select("*").eq("id", tripId).single();
       if (data) openTrip(data as Trip);
     }
@@ -87,7 +88,7 @@ export default function PlanPage() {
 
   return (
     <div className="px-5 pt-12 pb-4 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-fade-in">
         <h1 className="font-heading text-2xl font-semibold text-foreground">Plan</h1>
         <Button onClick={() => setView("new")} size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" /> New Trip
@@ -95,20 +96,27 @@ export default function PlanPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : trips.length === 0 ? (
-        <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-3">
-          <Map className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h2 className="font-heading text-lg font-medium text-foreground">No trips yet</h2>
-          <p className="text-muted-foreground text-sm">Tap New Trip to plan your first AI powered adventure.</p>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonTripCard key={i} />
+          ))}
         </div>
+      ) : trips.length === 0 ? (
+        <EmptyState
+          icon={Map}
+          title="No trips yet"
+          description="Tap New Trip to plan your first AI-powered adventure."
+          actionLabel="Plan a Trip"
+          onAction={() => setView("new")}
+        />
       ) : (
         <div className="space-y-3">
-          {trips.map((trip) => (
+          {trips.map((trip, i) => (
             <button
               key={trip.id}
               onClick={() => openTrip(trip)}
-              className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-accent/50 transition-all"
+              className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-accent/50 transition-all animate-fade-in active:scale-[0.98]"
+              style={{ animationDelay: `${i * 0.05}s` }}
             >
               <div className="flex items-center justify-between">
                 <div>

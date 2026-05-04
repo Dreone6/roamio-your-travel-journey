@@ -4,15 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  User, LogOut, Pencil, X, Check, Globe, ChevronRight,
-  MapPin, Trophy, Compass, Loader2, Crown
+  User, LogOut, Pencil, X, Check, ChevronRight,
+  MapPin, Trophy, Compass, Crown, Settings, Gift
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonProfileHero, SkeletonStatGrid } from "@/components/ui/skeleton-card";
 
 const coralIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
@@ -55,7 +57,6 @@ const ALL_BADGES = [
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -71,26 +72,27 @@ export default function ProfilePage() {
   }, [user]);
 
   const loadAll = async () => {
-    const [profileRes, badgesRes, checkInsRes, tripsRes, placesRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user!.id).single(),
-      supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false }),
-      supabase.from("check_ins").select("id").eq("user_id", user!.id),
-      supabase.from("trips").select("id, title, destination, start_date, status").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(3),
-      supabase.from("places_visited").select("latitude, longitude").eq("user_id", user!.id),
-    ]);
+    try {
+      const [profileRes, badgesRes, checkInsRes, tripsRes, placesRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user!.id).single(),
+        supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false }),
+        supabase.from("check_ins").select("id").eq("user_id", user!.id),
+        supabase.from("trips").select("id, title, destination, start_date, status").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(3),
+        supabase.from("places_visited").select("latitude, longitude").eq("user_id", user!.id),
+      ]);
 
-    if (profileRes.data) setProfile(profileRes.data as Profile);
-    setBadges((badgesRes.data as Badge[]) || []);
-    setCheckInCount(checkInsRes.data?.length || 0);
-    setTrips(tripsRes.data || []);
-    setPlaces((placesRes.data as Place[]) || []);
+      if (profileRes.data) setProfile(profileRes.data as Profile);
+      setBadges((badgesRes.data as Badge[]) || []);
+      setCheckInCount(checkInsRes.data?.length || 0);
+      setTrips(tripsRes.data || []);
+      setPlaces((placesRes.data as Place[]) || []);
 
-    // Trigger badge check
-    await supabase.functions.invoke("check-badges", { body: { user_id: user!.id } });
-    // Reload badges after check
-    const { data: freshBadges } = await supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false });
-    setBadges((freshBadges as Badge[]) || []);
-
+      await supabase.functions.invoke("check-badges", { body: { user_id: user!.id } });
+      const { data: freshBadges } = await supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false });
+      setBadges((freshBadges as Badge[]) || []);
+    } catch (err: any) {
+      toast.error("Failed to load profile data");
+    }
     setLoading(false);
   };
 
@@ -110,11 +112,11 @@ export default function ProfilePage() {
       .eq("id", user!.id);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
       setProfile((p) => p ? { ...p, ...editForm } : p);
       setEditing(false);
-      toast({ title: "Profile updated" });
+      toast.success("Profile updated");
     }
   };
 
@@ -123,8 +125,10 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="px-5 pt-8 pb-4 space-y-5">
+        <SkeletonProfileHero />
+        <SkeletonStatGrid />
+        <div className="h-40 bg-muted rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -136,7 +140,7 @@ export default function ProfilePage() {
   return (
     <div className="px-5 pt-8 pb-4 space-y-5">
       {/* Hero */}
-      <div className="relative rounded-2xl bg-card border border-border p-5 text-center">
+      <div className="relative rounded-2xl bg-card border border-border p-5 text-center animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
@@ -153,7 +157,7 @@ export default function ProfilePage() {
 
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-secondary mb-3">
           {profile?.profile_photo ? (
-            <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" />
+            <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <User className="h-10 w-10 text-primary" />
           )}
@@ -176,7 +180,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-2 animate-fade-in" style={{ animationDelay: "0.1s" }}>
         {[
           { label: "Countries", value: profile?.total_countries_visited || new Set(places.map(() => "")).size, icon: "🌍" },
           { label: "Cities", value: profile?.total_cities_visited || places.length, icon: "🏙️" },
@@ -193,8 +197,8 @@ export default function ProfilePage() {
       </div>
 
       {/* Mini Globe */}
-      {mapPlaces.length > 0 && (
-        <div className="space-y-2">
+      {mapPlaces.length > 0 ? (
+        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <div className="flex items-center justify-between">
             <h3 className="font-heading text-sm font-semibold text-foreground">Your Globe</h3>
             <button onClick={() => navigate("/globe")} className="text-xs text-accent flex items-center gap-0.5">
@@ -210,11 +214,19 @@ export default function ProfilePage() {
             </MapContainer>
           </div>
         </div>
+      ) : (
+        <EmptyState
+          icon={Compass}
+          title="No places visited yet"
+          description="Check in at a destination to start building your globe."
+          actionLabel="Check In Now"
+          onAction={() => navigate("/checkin")}
+        />
       )}
 
       {/* Recent Trips */}
-      {trips.length > 0 && (
-        <div className="space-y-2">
+      {trips.length > 0 ? (
+        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <h3 className="font-heading text-sm font-semibold text-foreground">Recent Trips</h3>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5">
             {trips.map((trip) => (
@@ -233,13 +245,19 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Badges */}
-      <div className="space-y-2">
+      <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.25s" }}>
         <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-1.5">
           <Trophy className="h-4 w-4 text-accent" /> Badges
         </h3>
+        {badges.length === 0 && !ALL_BADGES.some((b) => earnedBadgeNames.has(b.name)) ? (
+          <div className="rounded-xl border border-border bg-card p-6 text-center space-y-2">
+            <Trophy className="mx-auto h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">No badges earned yet. Check in and explore to start collecting!</p>
+          </div>
+        ) : null}
         <div className="grid grid-cols-3 gap-3">
           {ALL_BADGES.map((badge) => {
             const earned = earnedBadgeNames.has(badge.name);
@@ -262,13 +280,18 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Subscription & Sign Out */}
-      <Button variant="outline" onClick={() => navigate("/subscription")} className="w-full gap-2">
-        <Crown className="h-4 w-4" /> Subscription
-      </Button>
-      <Button variant="outline" onClick={signOut} className="w-full gap-2">
-        <LogOut className="h-4 w-4" /> Sign Out
-      </Button>
+      {/* Action Buttons */}
+      <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+        <Button variant="outline" onClick={() => navigate("/referral")} className="w-full gap-2">
+          <Gift className="h-4 w-4" /> Refer Friends
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/subscription")} className="w-full gap-2">
+          <Crown className="h-4 w-4" /> Subscription
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/settings")} className="w-full gap-2">
+          <Settings className="h-4 w-4" /> Settings
+        </Button>
+      </div>
     </div>
   );
 }
