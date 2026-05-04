@@ -15,7 +15,11 @@ import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
+import SettingsPage from "@/pages/SettingsPage";
+import ReferralPage from "@/pages/ReferralPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
+import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
 
@@ -27,12 +31,15 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<AuthGate />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/plan" element={<PlanPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/checkin" element={<CheckInPage />} />
