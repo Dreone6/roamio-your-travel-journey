@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, RefreshCw, Pencil, Trash2, Check, X, DollarSign, MapPin, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Pencil, Trash2, Check, X, DollarSign, MapPin, Clock, Loader2, ListChecks, CalendarDays } from "lucide-react";
+import TripChecklist from "./TripChecklist";
 
 interface ItineraryItem {
   id: string;
