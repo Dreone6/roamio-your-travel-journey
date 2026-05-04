@@ -10,7 +10,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   User, LogOut, Pencil, X, Check, Globe, ChevronRight,
-  MapPin, Trophy, Compass, Loader2
+  MapPin, Trophy, Compass, Loader2, Crown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
