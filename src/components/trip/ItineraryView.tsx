@@ -61,6 +61,7 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ activity: "", location: "", estimated_cost: "", description: "" });
   const [regeneratingDay, setRegeneratingDay] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"itinerary" | "checklist">("itinerary");
 
   const dayNumbers = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
 
