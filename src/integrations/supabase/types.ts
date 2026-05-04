@@ -408,6 +408,7 @@ export type Database = {
           name: string | null
           onboarding_completed: boolean
           profile_photo: string | null
+          referral_code: string | null
           total_cities_visited: number
           total_countries_visited: number
           total_trips: number
@@ -425,6 +426,7 @@ export type Database = {
           name?: string | null
           onboarding_completed?: boolean
           profile_photo?: string | null
+          referral_code?: string | null
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
@@ -442,11 +444,45 @@ export type Database = {
           name?: string | null
           onboarding_completed?: boolean
           profile_photo?: string | null
+          referral_code?: string | null
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
           travel_style?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_email: string | null
+          referred_id: string | null
+          referrer_id: string
+          reward_granted: boolean
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_id?: string | null
+          referrer_id: string
+          reward_granted?: boolean
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_id?: string | null
+          referrer_id?: string
+          reward_granted?: boolean
+          status?: string
         }
         Relationships: []
       }
