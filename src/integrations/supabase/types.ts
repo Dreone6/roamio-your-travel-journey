@@ -121,6 +121,7 @@ export type Database = {
           due_date: string | null
           id: string
           item_name: string
+          reminder: boolean
           trip_id: string | null
           user_id: string
         }
@@ -131,6 +132,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           item_name: string
+          reminder?: boolean
           trip_id?: string | null
           user_id: string
         }
@@ -141,6 +143,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           item_name?: string
+          reminder?: boolean
           trip_id?: string | null
           user_id?: string
         }
@@ -437,7 +440,13 @@ export type Database = {
     }
     Enums: {
       challenge_status: "active" | "completed" | "expired"
-      checklist_category: "packing" | "booking" | "documents" | "other"
+      checklist_category:
+        | "packing"
+        | "booking"
+        | "documents"
+        | "other"
+        | "pre_trip_tasks"
+        | "day_of"
       itinerary_type: "food" | "activity" | "transport" | "lodging"
       offer_category:
         | "food"
@@ -576,7 +585,14 @@ export const Constants = {
   public: {
     Enums: {
       challenge_status: ["active", "completed", "expired"],
-      checklist_category: ["packing", "booking", "documents", "other"],
+      checklist_category: [
+        "packing",
+        "booking",
+        "documents",
+        "other",
+        "pre_trip_tasks",
+        "day_of",
+      ],
       itinerary_type: ["food", "activity", "transport", "lodging"],
       offer_category: [
         "food",
