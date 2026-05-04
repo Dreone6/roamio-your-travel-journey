@@ -159,10 +159,13 @@ export type Database = {
           activity: string
           created_at: string
           day_number: number
+          description: string | null
+          estimated_cost: number | null
           id: string
           location: string | null
           notes: string | null
           time: string | null
+          time_block: string | null
           trip_id: string
           type: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
@@ -171,10 +174,13 @@ export type Database = {
           activity: string
           created_at?: string
           day_number: number
+          description?: string | null
+          estimated_cost?: number | null
           id?: string
           location?: string | null
           notes?: string | null
           time?: string | null
+          time_block?: string | null
           trip_id: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
@@ -183,10 +189,13 @@ export type Database = {
           activity?: string
           created_at?: string
           day_number?: number
+          description?: string | null
+          estimated_cost?: number | null
           id?: string
           location?: string | null
           notes?: string | null
           time?: string | null
+          time_block?: string | null
           trip_id?: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id?: string
@@ -349,11 +358,15 @@ export type Database = {
           budget: number | null
           created_at: string
           destination: string
+          dietary: string | null
           end_date: string | null
           id: string
+          interests: string[] | null
+          pace: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
           title: string
+          travelers: number
           trip_style: Database["public"]["Enums"]["trip_style"] | null
           updated_at: string
           user_id: string
@@ -362,11 +375,15 @@ export type Database = {
           budget?: number | null
           created_at?: string
           destination: string
+          dietary?: string | null
           end_date?: string | null
           id?: string
+          interests?: string[] | null
+          pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
           title: string
+          travelers?: number
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id: string
@@ -375,11 +392,15 @@ export type Database = {
           budget?: number | null
           created_at?: string
           destination?: string
+          dietary?: string | null
           end_date?: string | null
           id?: string
+          interests?: string[] | null
+          pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
           title?: string
+          travelers?: number
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id?: string
