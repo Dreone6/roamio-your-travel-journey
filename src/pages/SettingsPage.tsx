@@ -30,7 +30,6 @@ export default function SettingsPage() {
     if (!user) return;
     setDeleting(true);
     try {
-      // Delete user data
       await Promise.all([
         supabase.from("check_ins").delete().eq("user_id", user.id),
         supabase.from("trips").delete().eq("user_id", user.id),
@@ -61,7 +60,7 @@ export default function SettingsPage() {
           icon: MapPin,
           label: "Location Permissions",
           right: (
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
               locationStatus === "granted" ? "bg-green-100 text-green-700" :
               locationStatus === "denied" ? "bg-destructive/15 text-destructive" :
               "bg-secondary text-muted-foreground"
@@ -82,7 +81,7 @@ export default function SettingsPage() {
     {
       title: "Support",
       items: [
-        { icon: Mail, label: "Contact Support", onClick: () => window.open("mailto:support@roamio.app") },
+        { icon: Mail, label: "Contact Support", onClick: () => window.open("mailto:support@roavr.app") },
       ],
     },
   ];
@@ -94,18 +93,18 @@ export default function SettingsPage() {
           <button onClick={() => navigate("/profile")} className="text-muted-foreground">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-heading text-xl font-semibold text-foreground">Settings</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground">Settings</h1>
         </div>
 
         {settingsSections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">{section.title}</p>
-            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1 mb-2">{section.title}</p>
+            <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/50 overflow-hidden shadow-soft">
               {section.items.map((item) => (
                 <button
                   key={item.label}
                   onClick={item.onClick}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-secondary/30 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors"
                   disabled={!item.onClick && !item.right}
                 >
                   <div className="flex items-center gap-3">
@@ -120,7 +119,7 @@ export default function SettingsPage() {
         ))}
 
         {/* Sign Out */}
-        <Button variant="outline" onClick={signOut} className="w-full gap-2">
+        <Button variant="outline" onClick={signOut} className="w-full h-12 rounded-xl gap-2 font-semibold">
           <LogOut className="h-4 w-4" /> Sign Out
         </Button>
 
@@ -133,17 +132,17 @@ export default function SettingsPage() {
             Delete Account
           </button>
         ) : (
-          <div className="rounded-xl border-2 border-destructive bg-destructive/5 p-4 space-y-3 animate-fade-in">
+          <div className="rounded-2xl border-2 border-destructive bg-destructive/5 p-5 space-y-3 animate-fade-in">
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              <p className="font-heading font-semibold text-sm">Are you sure?</p>
+              <p className="font-heading font-bold text-sm">Are you sure?</p>
             </div>
             <p className="text-xs text-muted-foreground">This will permanently delete all your trips, check-ins, badges, and account data.</p>
             <div className="flex gap-2">
-              <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={deleting} className="flex-1">
+              <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={deleting} className="flex-1 rounded-xl">
                 {deleting ? "Deleting..." : "Delete Everything"}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
+              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl">
                 Cancel
               </Button>
             </div>

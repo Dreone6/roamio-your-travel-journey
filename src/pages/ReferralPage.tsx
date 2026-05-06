@@ -36,7 +36,7 @@ export default function ReferralPage() {
   };
 
   const shareCode = async () => {
-    const text = `Join me on Roamio — the AI travel companion! Use my code ${referralCode} when you sign up. https://roamio.app`;
+    const text = `Join me on Roavr — the AI travel companion! Use my code ${referralCode} when you sign up. https://roavr.app`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
     } else {
@@ -62,50 +62,50 @@ export default function ReferralPage() {
       <div className="px-5 pt-6 pb-4 space-y-5">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/profile")} className="text-muted-foreground"><ArrowLeft className="h-5 w-5" /></button>
-          <h1 className="font-heading text-xl font-semibold text-foreground">Refer Friends</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground">Refer Friends</h1>
         </div>
 
         {/* Hero */}
-        <div className="rounded-2xl bg-gradient-to-br from-accent/10 to-primary/10 border border-accent/20 p-6 text-center space-y-3">
-          <div className="mx-auto h-16 w-16 rounded-full bg-accent/15 flex items-center justify-center">
-            <Gift className="h-8 w-8 text-accent" />
+        <div className="rounded-2xl gradient-navy p-7 text-center space-y-3 shadow-elevated">
+          <div className="mx-auto h-16 w-16 rounded-2xl bg-white/10 flex items-center justify-center">
+            <Gift className="h-8 w-8 text-white" />
           </div>
-          <h2 className="font-heading text-lg font-bold text-foreground">Get 1 Month Free</h2>
-          <p className="text-sm text-muted-foreground">Refer 3 friends who sign up and you'll unlock 1 month of Roamio Plus for free.</p>
+          <h2 className="font-heading text-xl font-bold text-white">Get 1 Month Free</h2>
+          <p className="text-sm text-white/70">Refer 3 friends who sign up and you'll unlock 1 month of Roavr Plus for free.</p>
         </div>
 
         {/* Referral Code */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Referral Code</p>
+        <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4 shadow-soft">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Your Referral Code</p>
           <div className="flex items-center gap-2">
-            <div className="flex-1 rounded-lg bg-secondary px-4 py-3 font-mono text-lg font-bold text-foreground text-center tracking-widest">
+            <div className="flex-1 rounded-xl bg-secondary px-4 py-3.5 font-mono text-lg font-bold text-foreground text-center tracking-[0.3em]">
               {referralCode}
             </div>
-            <Button variant="outline" size="icon" onClick={copyCode}>
+            <Button variant="outline" size="icon" onClick={copyCode} className="h-12 w-12 rounded-xl">
               {copied ? <Check className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-          <Button onClick={shareCode} className="w-full gap-2">
+          <Button onClick={shareCode} className="w-full h-11 rounded-xl gradient-accent border-0 font-semibold gap-2">
             <Share2 className="h-4 w-4" /> Share with Friends
           </Button>
         </div>
 
         {/* Progress */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-3 shadow-soft">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Users className="h-4 w-4 text-accent" /> Referral Progress
             </p>
-            <span className="text-xs font-medium text-muted-foreground">{progress}/3</span>
+            <span className="text-xs font-semibold text-muted-foreground">{progress}/3</span>
           </div>
           <div className="h-2.5 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full bg-accent transition-all duration-500"
+              className="h-full rounded-full gradient-accent transition-all duration-500"
               style={{ width: `${(progress / 3) * 100}%` }}
             />
           </div>
           {rewardUnlocked ? (
-            <p className="text-xs text-accent font-medium text-center">🎉 Reward unlocked! Your free month has been applied.</p>
+            <p className="text-xs text-accent font-semibold text-center">🎉 Reward unlocked! Your free month has been applied.</p>
           ) : (
             <p className="text-xs text-muted-foreground text-center">
               {3 - progress} more referral{3 - progress !== 1 ? "s" : ""} to unlock your reward
@@ -116,12 +116,12 @@ export default function ReferralPage() {
         {/* Referral List */}
         {referrals.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Your Referrals</p>
-            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">Your Referrals</p>
+            <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/50 overflow-hidden shadow-soft">
               {referrals.map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-4 py-3">
-                  <p className="text-sm text-foreground">{r.referred_email || "Invited"}</p>
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${
+                <div key={r.id} className="flex items-center justify-between px-4 py-3.5">
+                  <p className="text-sm text-foreground font-medium">{r.referred_email || "Invited"}</p>
+                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
                     r.status === "completed" ? "bg-green-100 text-green-700" : "bg-secondary text-muted-foreground"
                   }`}>
                     {r.status}

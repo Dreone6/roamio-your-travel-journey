@@ -20,7 +20,7 @@ const FEATURES = [
   },
 ];
 
-const STORAGE_KEY = "roamio_whats_new_seen";
+const STORAGE_KEY = "roavr_whats_new_seen";
 
 export default function WhatsNewModal() {
   const [open, setOpen] = useState(false);
@@ -41,14 +41,14 @@ export default function WhatsNewModal() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-sm bg-card border border-border rounded-2xl overflow-hidden shadow-xl animate-scale-in">
-        <div className="relative bg-gradient-to-br from-primary/20 to-accent/20 px-6 pt-8 pb-6 text-center">
-          <button onClick={dismiss} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+    <div className="fixed inset-0 z-[60] bg-foreground/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-sm bg-card border border-border rounded-2xl overflow-hidden shadow-elevated animate-scale-in">
+        <div className="relative gradient-navy px-6 pt-8 pb-6 text-center">
+          <button onClick={dismiss} className="absolute top-3 right-3 text-primary-foreground/60 hover:text-primary-foreground">
             <X className="h-5 w-5" />
           </button>
-          <h2 className="font-heading text-2xl font-bold text-foreground">What's New in Roamio</h2>
-          <p className="text-muted-foreground text-sm mt-1">Your world, one trip at a time</p>
+          <h2 className="font-heading text-2xl font-bold text-primary-foreground">What's New in Roavr</h2>
+          <p className="text-primary-foreground/70 text-sm mt-1">Your world, one trip at a time</p>
         </div>
 
         <div className="px-6 py-5 space-y-5">
@@ -66,7 +66,7 @@ export default function WhatsNewModal() {
         </div>
 
         <div className="px-6 pb-6">
-          <Button onClick={dismiss} className="w-full">Let's Explore</Button>
+          <Button onClick={dismiss} className="w-full h-11 rounded-xl gradient-accent border-0 font-semibold">Let's Explore</Button>
         </div>
       </div>
     </div>
