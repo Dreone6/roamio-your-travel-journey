@@ -195,9 +195,17 @@ export default function CheckInPage() {
               </label>
             )}
 
-            <Button onClick={handleSubmit} className="w-full h-11 rounded-xl gradient-accent border-0 font-bold text-[13px]" disabled={submitting}>
-              {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : "Confirm Check In"}
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate("/camera")}
+                className="h-11 w-11 rounded-xl border border-border/40 bg-card flex items-center justify-center shrink-0 hover:bg-secondary/30 transition-colors"
+              >
+                <Camera className="h-4.5 w-4.5 text-accent" />
+              </button>
+              <Button onClick={handleSubmit} className="flex-1 h-11 rounded-xl gradient-accent border-0 font-bold text-[13px]" disabled={submitting}>
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : "Confirm Check In"}
+              </Button>
+            </div>
           </div>
         )}
 

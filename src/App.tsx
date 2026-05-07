@@ -26,6 +26,7 @@ import StoriesPage from "@/pages/StoriesPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import SocialFeedPage from "@/pages/SocialFeedPage";
 import NotFound from "@/pages/NotFound";
+import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
+            <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
             <Route path="/messages/new" element={<ProtectedRoute><NewMessagePage /></ProtectedRoute>} />
             <Route path="/messages/:id" element={<ProtectedRoute><ConversationPage /></ProtectedRoute>} />

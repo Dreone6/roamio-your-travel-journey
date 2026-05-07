@@ -71,6 +71,12 @@ export default function SettingsPage() {
             </span>
           ),
         },
+        {
+          icon: Shield,
+          label: "Privacy & Visibility",
+          desc: "Stories, map, messaging",
+          onClick: () => navigate("/privacy"),
+        },
       ],
     },
     {
