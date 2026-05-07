@@ -7,7 +7,7 @@ import WhatsNewModal from "@/components/WhatsNewModal";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Sparkles, ArrowRight, Compass, Globe, TrendingUp,
-  Plus, Shield, Zap, Users, Trophy, Camera
+  Plus, Shield, Zap, Users, Trophy, Camera, MessageCircle, Bell
 } from "lucide-react";
 
 interface Trip {
