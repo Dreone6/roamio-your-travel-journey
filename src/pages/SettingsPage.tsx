@@ -18,13 +18,13 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (navigator.permissions) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         setLocationStatus(result.state);
       });
     }
-  });
+  }, []);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
