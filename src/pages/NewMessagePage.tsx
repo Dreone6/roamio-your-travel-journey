@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, UserPlus, MessageCircle } from "lucide-react";
+import { ArrowLeft, Search, UserPlus, MessageCircle, Lock, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserResult {
@@ -18,6 +18,7 @@ export default function NewMessagePage() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [startAsPrivate, setStartAsPrivate] = useState(false);
 
   useEffect(() => {
     if (search.length >= 2) searchUsers();
@@ -37,7 +38,6 @@ export default function NewMessagePage() {
   };
 
   const startConversation = async (otherUserId: string) => {
-    // Check if conversation already exists
     const { data: myConvs } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -52,15 +52,21 @@ export default function NewMessagePage() {
         .in("conversation_id", convIds);
 
       if (otherConvs && otherConvs.length > 0) {
+        if (startAsPrivate) {
+          await supabase.from("conversations").update({ encryption_mode: "private" }).eq("id", otherConvs[0].conversation_id);
+        }
         navigate(`/messages/${otherConvs[0].conversation_id}`);
         return;
       }
     }
 
-    // Create new conversation
     const { data: conv, error } = await supabase
       .from("conversations")
-      .insert({ type: "direct", created_by: user!.id })
+      .insert({
+        type: "direct",
+        created_by: user!.id,
+        encryption_mode: startAsPrivate ? "private" : "standard",
+      })
       .select()
       .single();
 
@@ -88,7 +94,34 @@ export default function NewMessagePage() {
           <h1 className="font-heading text-[22px] font-bold text-white tracking-tight">New Message</h1>
           <p className="text-dark-muted text-[13px] mt-1">Find a traveler to connect with</p>
 
-          <div className="relative mt-4">
+          {/* Private chat toggle */}
+          <button
+            onClick={() => setStartAsPrivate(!startAsPrivate)}
+            className={`mt-3 w-full rounded-xl p-3 flex items-center gap-3 transition-all ${
+              startAsPrivate
+                ? "bg-emerald-500/15 border border-emerald-500/30"
+                : "dark-card-elevated"
+            }`}
+          >
+            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+              startAsPrivate ? "bg-emerald-500/20" : "bg-white/5"
+            }`}>
+              {startAsPrivate ? <Lock className="h-4 w-4 text-emerald-400" /> : <Shield className="h-4 w-4 text-dark-muted" />}
+            </div>
+            <div className="text-left flex-1">
+              <p className={`text-[12px] font-semibold ${startAsPrivate ? "text-emerald-400" : "text-dark-muted"}`}>
+                {startAsPrivate ? "Private Travel Chat" : "Standard Chat"}
+              </p>
+              <p className="text-[10px] text-dark-muted">
+                {startAsPrivate ? "End-to-end encrypted · Only you and the recipient" : "Encrypted in transit and at rest"}
+              </p>
+            </div>
+            <div className={`h-5 w-9 rounded-full relative transition-colors ${startAsPrivate ? "bg-emerald-500" : "bg-white/10"}`}>
+              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${startAsPrivate ? "translate-x-4" : "translate-x-0.5"}`} />
+            </div>
+          </button>
+
+          <div className="relative mt-3">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-dark-muted" />
             <input
               type="text"
@@ -134,7 +167,11 @@ export default function NewMessagePage() {
                   <p className="text-[13px] font-semibold text-foreground truncate">{u.name || "Traveler"}</p>
                   {u.home_city && <p className="text-[11px] text-muted-foreground">{u.home_city}</p>}
                 </div>
-                <MessageCircle className="h-4 w-4 text-accent shrink-0" />
+                {startAsPrivate ? (
+                  <Lock className="h-4 w-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <MessageCircle className="h-4 w-4 text-accent shrink-0" />
+                )}
               </button>
             ))}
           </div>
