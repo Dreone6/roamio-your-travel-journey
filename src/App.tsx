@@ -18,6 +18,13 @@ import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
 import ReferralPage from "@/pages/ReferralPage";
+import InboxPage from "@/pages/InboxPage";
+import ConversationPage from "@/pages/ConversationPage";
+import NewMessagePage from "@/pages/NewMessagePage";
+import CameraPage from "@/pages/CameraPage";
+import StoriesPage from "@/pages/StoriesPage";
+import NotificationsPage from "@/pages/NotificationsPage";
+import SocialFeedPage from "@/pages/SocialFeedPage";
 import NotFound from "@/pages/NotFound";
 import AuthGate from "@/components/AuthGate";
 
@@ -39,6 +46,13 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
+            <Route path="/messages/new" element={<ProtectedRoute><NewMessagePage /></ProtectedRoute>} />
+            <Route path="/messages/:id" element={<ProtectedRoute><ConversationPage /></ProtectedRoute>} />
+            <Route path="/camera" element={<ProtectedRoute><CameraPage /></ProtectedRoute>} />
+            <Route path="/stories" element={<ProtectedRoute><StoriesPage /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
               <Route path="/trips" element={<TripsPage />} />
@@ -46,7 +60,6 @@ const App = () => (
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
-            {/* Legacy redirects */}
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<TripsPage />} />
             </Route>
