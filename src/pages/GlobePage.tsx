@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Globe as GlobeIcon, Flame, MapPin, Lock, Unlock, Eye, Trophy, Share2 } from "lucide-react";
+import { Globe as GlobeIcon, Flame, MapPin, Lock, Unlock, Eye, Trophy, Share2, Camera } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -51,6 +52,7 @@ export default function GlobePage() {
   const [streak, setStreak] = useState(0);
   const [filterContinent, setFilterContinent] = useState<string>("All");
   const [isPublic, setIsPublic] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -212,9 +214,14 @@ export default function GlobePage() {
               ))}
             </MapContainer>
             {/* Share overlay */}
-            <button className="absolute bottom-4 right-4 z-[500] h-10 w-10 rounded-full gradient-glow flex items-center justify-center glow-accent">
-              <Share2 className="h-4 w-4 text-white" />
-            </button>
+            <div className="absolute bottom-4 right-4 z-[500] flex flex-col gap-2">
+              <button onClick={() => navigate("/camera")} className="h-10 w-10 rounded-full gradient-accent flex items-center justify-center glow-coral">
+                <Camera className="h-4 w-4 text-white" />
+              </button>
+              <button className="h-10 w-10 rounded-full gradient-glow flex items-center justify-center glow-accent">
+                <Share2 className="h-4 w-4 text-white" />
+              </button>
+            </div>
           </>
         )}
       </div>

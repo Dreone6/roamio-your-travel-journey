@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Map, Plus, ChevronRight, Sparkles, Plane, Calendar, Users } from "lucide-react";
+import { Map, Plus, ChevronRight, Sparkles, Plane, Calendar, Users, Camera } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import NewTripForm from "@/components/trip/NewTripForm";
 import ItineraryView from "@/components/trip/ItineraryView";
 import EmptyState from "@/components/EmptyState";
@@ -31,6 +32,7 @@ export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const navigate = useNavigate();
   const [itineraryItems, setItineraryItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -84,9 +86,14 @@ export default function TripsPage() {
               <p className="text-dark-muted text-[10px] font-bold tracking-[0.2em] uppercase">AI-Powered</p>
               <h1 className="font-heading text-[22px] font-bold text-white tracking-tight mt-1">Trip Planner</h1>
             </div>
-            <Button onClick={() => setView("new")} size="sm" className="gradient-glow border-0 text-white gap-1.5 rounded-xl text-xs font-bold glow-accent h-9 px-4">
-              <Plus className="h-3.5 w-3.5" /> New Trip
-            </Button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => navigate("/camera")} className="h-9 w-9 rounded-xl dark-card-elevated flex items-center justify-center">
+                <Camera className="h-4 w-4 text-glow" />
+              </button>
+              <Button onClick={() => setView("new")} size="sm" className="gradient-glow border-0 text-white gap-1.5 rounded-xl text-xs font-bold glow-accent h-9 px-4">
+                <Plus className="h-3.5 w-3.5" /> New Trip
+              </Button>
+            </div>
           </div>
 
           {/* AI CTA */}
