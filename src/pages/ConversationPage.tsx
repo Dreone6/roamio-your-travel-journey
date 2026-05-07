@@ -254,6 +254,3 @@ export default function ConversationPage() {
     </div>
   );
 }
-
-// Need to import MessageCircle for empty state
-import { MessageCircle } from "lucide-react";
