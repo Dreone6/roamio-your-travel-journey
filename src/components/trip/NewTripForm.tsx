@@ -619,7 +619,7 @@ export default function NewTripForm({ onBack, onTripCreated }: NewTripFormProps)
       </div>
 
       {/* Bottom action bar */}
-      {step !== "generating" && (
+      {(step as string) !== "generating" && (
         <div className="shrink-0 px-5 pb-6 pt-3 border-t border-border/20 bg-background">
           <button
             onClick={next}
