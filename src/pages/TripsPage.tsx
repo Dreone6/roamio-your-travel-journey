@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Map, Plus, ChevronRight, Sparkles, Plane } from "lucide-react";
+import { Map, Plus, ChevronRight, Sparkles, Plane, Calendar, Users } from "lucide-react";
 import NewTripForm from "@/components/trip/NewTripForm";
 import ItineraryView from "@/components/trip/ItineraryView";
 import EmptyState from "@/components/EmptyState";
@@ -66,66 +66,72 @@ export default function TripsPage() {
   const activeTrips = trips.filter((t) => t.status === "active" || t.status === "planning");
   const pastTrips = trips.filter((t) => t.status === "completed");
 
+  const daysUntil = (date: string) => {
+    const diff = Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? `${diff}d away` : diff === 0 ? "Today" : "Past";
+  };
+
   return (
-    <div className="pb-24">
+    <div className="pb-4">
       {/* Dark header */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="absolute top-10 right-0 w-60 h-60 rounded-full bg-emerald-500/8 blur-3xl" />
-        
-        <div className="relative px-5 pt-12 pb-6 space-y-4">
+        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-emerald-500/6 blur-3xl" />
+
+        <div className="relative px-5 pt-14 pb-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-dark-muted text-xs font-semibold tracking-widest uppercase">AI-Powered</p>
-              <h1 className="font-heading text-2xl font-bold text-white tracking-tight mt-1">Trip Planner</h1>
+              <p className="text-dark-muted text-[10px] font-bold tracking-[0.2em] uppercase">AI-Powered</p>
+              <h1 className="font-heading text-[22px] font-bold text-white tracking-tight mt-1">Trip Planner</h1>
             </div>
-            <Button onClick={() => setView("new")} size="sm" className="gradient-glow border-0 text-white gap-1.5 rounded-xl glow-accent">
-              <Plus className="h-4 w-4" /> New Trip
+            <Button onClick={() => setView("new")} size="sm" className="gradient-glow border-0 text-white gap-1.5 rounded-xl text-xs font-bold glow-accent h-9 px-4">
+              <Plus className="h-3.5 w-3.5" /> New Trip
             </Button>
           </div>
 
-          {/* Quick new trip CTA */}
+          {/* AI CTA */}
           <button
             onClick={() => setView("new")}
-            className="w-full rounded-2xl p-4 flex items-center gap-4 group transition-all"
-            style={{ background: 'linear-gradient(135deg, hsl(220 25% 12%), hsl(220 25% 16%))' }}
+            className="w-full rounded-2xl p-4 flex items-center gap-3.5 group transition-all dark-card hover:bg-white/[0.03]"
           >
-            <div className="h-12 w-12 rounded-xl gradient-glow flex items-center justify-center shrink-0 glow-accent">
-              <Sparkles className="h-6 w-6 text-white" />
+            <div className="h-11 w-11 rounded-xl gradient-glow flex items-center justify-center shrink-0 glow-accent">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div className="text-left flex-1">
-              <p className="text-white font-semibold text-sm">Surprise Me ✨</p>
-              <p className="text-dark-muted text-xs">Let AI plan your next adventure</p>
+              <p className="text-white font-semibold text-[13px]">Surprise Me ✨</p>
+              <p className="text-dark-muted text-[11px]">Let AI plan your next adventure</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-dark-muted group-hover:text-glow transition-colors" />
+            <ChevronRight className="h-4 w-4 text-dark-muted group-hover:text-glow transition-colors" />
           </button>
         </div>
       </div>
 
-      {/* Light content */}
-      <div className="px-5 pt-5 space-y-5">
+      {/* Content */}
+      <div className="px-4 pt-4 space-y-5">
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => <SkeletonTripCard key={i} />)}
           </div>
         ) : trips.length === 0 ? (
-          <EmptyState
-            icon={Map}
-            title="No trips yet"
-            description="Tap New Trip to plan your first AI-powered adventure."
-            actionLabel="Plan a Trip"
-            onAction={() => setView("new")}
-          />
+          <div className="pt-4">
+            <EmptyState
+              icon={Map}
+              title="No trips yet"
+              description="Create your first AI-powered trip and watch your itinerary come to life."
+              actionLabel="Plan a Trip"
+              onAction={() => setView("new")}
+            />
+          </div>
         ) : (
           <>
             {activeTrips.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="font-heading text-base font-semibold text-foreground">Upcoming</h2>
+              <div className="space-y-2.5">
+                <h2 className="section-title px-0.5">Upcoming</h2>
                 {activeTrips.map((trip, i) => (
                   <button
                     key={trip.id}
                     onClick={() => openTrip(trip)}
-                    className="w-full rounded-2xl border border-border/50 bg-card p-4 text-left hover:shadow-elevated transition-all animate-fade-in active:scale-[0.98] shadow-soft"
+                    className="w-full rounded-2xl border border-border/40 bg-card p-4 text-left hover:shadow-card-hover transition-all animate-fade-in active:scale-[0.98] shadow-soft"
                     style={{ animationDelay: `${i * 0.05}s` }}
                   >
                     <div className="flex items-center gap-3">
@@ -133,8 +139,17 @@ export default function TripsPage() {
                         <Plane className="h-5 w-5 text-emerald-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-foreground">{trip.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{trip.destination} · {trip.start_date} → {trip.end_date}</p>
+                        <p className="font-semibold text-[13px] text-foreground truncate">{trip.title}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                          <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" /> {daysUntil(trip.start_date)}</span>
+                          <span>·</span>
+                          <span>{trip.destination}</span>
+                        </p>
+                        {trip.travelers > 1 && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                            <Users className="h-2.5 w-2.5" /> {trip.travelers} travelers
+                          </p>
+                        )}
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     </div>
@@ -144,23 +159,23 @@ export default function TripsPage() {
             )}
 
             {pastTrips.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="font-heading text-base font-semibold text-foreground">Past Trips</h2>
+              <div className="space-y-2.5">
+                <h2 className="section-title px-0.5">Past Trips</h2>
                 {pastTrips.map((trip) => (
                   <button
                     key={trip.id}
                     onClick={() => openTrip(trip)}
-                    className="w-full rounded-2xl border border-border/50 bg-card p-4 text-left hover:shadow-soft transition-all active:scale-[0.98]"
+                    className="w-full rounded-2xl border border-border/40 bg-card p-4 text-left hover:shadow-soft transition-all active:scale-[0.98]"
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                         <Plane className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-foreground">{trip.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{trip.destination}</p>
+                        <p className="font-medium text-[13px] text-foreground truncate">{trip.title}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{trip.destination}</p>
                       </div>
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Completed</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Done</span>
                     </div>
                   </button>
                 ))}

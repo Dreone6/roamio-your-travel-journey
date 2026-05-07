@@ -4,9 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Globe as GlobeIcon, Flame, MapPin } from "lucide-react";
+import { Globe as GlobeIcon, Flame, MapPin, Lock, Unlock, Eye, Trophy, Share2 } from "lucide-react";
 
-// Fix default leaflet marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -51,6 +50,7 @@ export default function GlobePage() {
   const [trips, setTrips] = useState<{ id: string; title: string }[]>([]);
   const [streak, setStreak] = useState(0);
   const [filterContinent, setFilterContinent] = useState<string>("All");
+  const [isPublic, setIsPublic] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -63,7 +63,6 @@ export default function GlobePage() {
       supabase.from("check_ins").select("id, timestamp").eq("user_id", user!.id),
       supabase.from("trips").select("id, title").eq("user_id", user!.id),
     ]);
-
     setPlaces((placesRes.data as Place[]) || []);
     setCheckIns(checkInsRes.data?.length || 0);
     setTrips(tripsRes.data || []);
@@ -107,52 +106,59 @@ export default function GlobePage() {
   const worldPercent = Math.min(100, Math.round((totalCountries / 195) * 100));
 
   return (
-    <div className="dark-immersive flex flex-col h-[calc(100vh-5rem)]">
+    <div className="dark-immersive flex flex-col h-[calc(100vh-4rem)]">
       {/* Header */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden shrink-0">
         <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-emerald-500/8 blur-3xl" />
 
-        <div className="relative px-5 pt-10 pb-4 space-y-4">
+        <div className="relative px-5 pt-12 pb-3 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-dark-muted text-xs font-semibold tracking-widest uppercase">Your Journey</p>
-              <h1 className="font-heading text-2xl font-bold text-white tracking-tight mt-1">Globe</h1>
+              <p className="text-dark-muted text-[10px] font-bold tracking-[0.2em] uppercase">Your Journey</p>
+              <h1 className="font-heading text-[22px] font-bold text-white tracking-tight mt-0.5">Globe</h1>
             </div>
-            {streak > 0 && (
-              <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium" style={{ background: 'hsl(220 25% 12%)' }}>
-                <Flame className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-amber-400">{streak} month streak</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {streak > 0 && (
+                <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold dark-card-elevated">
+                  <Flame className="h-3 w-3 text-amber-400" />
+                  <span className="text-amber-400">{streak}mo</span>
+                </div>
+              )}
+              <button
+                onClick={() => setIsPublic(!isPublic)}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold dark-card-elevated"
+              >
+                {isPublic ? <Unlock className="h-3 w-3 text-glow" /> : <Lock className="h-3 w-3 text-dark-muted" />}
+                <span className={isPublic ? "text-glow" : "text-dark-muted"}>{isPublic ? "Public" : "Private"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-1.5">
             {[
               { label: "Countries", value: totalCountries },
               { label: "Cities", value: totalCities },
               { label: "Trips", value: trips.length },
-              { label: "Check-ins", value: checkIns },
+              { label: "Pins", value: checkIns },
               { label: "World", value: `${worldPercent}%` },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl p-2.5 text-center dark-card">
-                <p className="font-heading font-bold text-base text-glow">{s.value}</p>
-                <p className="text-[9px] text-dark-muted mt-0.5">{s.label}</p>
+              <div key={s.label} className="rounded-lg p-2 text-center dark-card">
+                <p className="font-heading font-bold text-sm text-glow leading-none">{s.value}</p>
+                <p className="text-[8px] text-dark-muted mt-0.5 uppercase tracking-wider">{s.label}</p>
               </div>
             ))}
           </div>
 
           {/* Continent filters */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5">
+          <div className="flex gap-1.5 overflow-x-auto -mx-5 px-5 no-scrollbar">
             {Object.keys(CONTINENTS).map((c) => (
               <button
                 key={c}
                 onClick={() => setFilterContinent(c)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
-                  filterContinent === c ? "gradient-glow text-white" : "text-dark-muted"
+                className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                  filterContinent === c ? "gradient-glow text-white" : "text-dark-muted dark-card-elevated"
                 }`}
-                style={filterContinent !== c ? { background: 'hsl(220 25% 12%)' } : {}}
               >
                 {c}
               </button>
@@ -164,36 +170,52 @@ export default function GlobePage() {
       {/* Map */}
       <div className="flex-1 relative">
         {filteredPlaces.length === 0 && places.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-5 space-y-4">
-            <div className="h-20 w-20 rounded-full flex items-center justify-center glow-accent">
+          <div className="flex flex-col items-center justify-center h-full text-center px-8 space-y-4">
+            <div className="h-20 w-20 rounded-full flex items-center justify-center glow-accent-strong relative">
               <GlobeIcon className="h-10 w-10 text-glow" />
+              <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full gradient-accent flex items-center justify-center">
+                <MapPin className="h-3.5 w-3.5 text-white" />
+              </div>
             </div>
-            <h2 className="font-heading text-lg font-medium text-white">Your globe is empty</h2>
-            <p className="text-dark-muted text-sm max-w-xs">Check in at destinations to start filling your personal map with pins.</p>
+            <div className="space-y-1.5">
+              <h2 className="font-heading text-lg font-bold text-white">Your globe awaits</h2>
+              <p className="text-dark-muted text-[13px] max-w-[260px] leading-relaxed">
+                Every check-in adds a pin to your personal travel map. Start exploring to fill your globe.
+              </p>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <div className="rounded-full dark-card-elevated px-4 py-2 text-[11px] font-semibold text-dark-muted flex items-center gap-1.5">
+                <Eye className="h-3 w-3" /> 0 viewers
+              </div>
+              <div className="rounded-full dark-card-elevated px-4 py-2 text-[11px] font-semibold text-dark-muted flex items-center gap-1.5">
+                <Trophy className="h-3 w-3" /> 0 badges
+              </div>
+            </div>
           </div>
         ) : (
-          <MapContainer
-            center={[20, 0]}
-            zoom={2}
-            className="h-full w-full z-0"
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            />
-            {filteredPlaces.map((place) => (
-              <Marker key={place.id} position={[place.latitude!, place.longitude!]} icon={glowIcon}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-semibold">{place.city}, {place.country}</p>
-                    {place.date_visited && <p className="text-xs text-gray-500">{new Date(place.date_visited).toLocaleDateString()}</p>}
-                    <p className="text-xs text-gray-500">{place.photos_count} photos</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+          <>
+            <MapContainer center={[20, 0]} zoom={2} className="h-full w-full z-0" scrollWheelZoom={true}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              {filteredPlaces.map((place) => (
+                <Marker key={place.id} position={[place.latitude!, place.longitude!]} icon={glowIcon}>
+                  <Popup>
+                    <div className="text-sm p-0.5">
+                      <p className="font-semibold">{place.city}, {place.country}</p>
+                      {place.date_visited && <p className="text-xs text-gray-500 mt-0.5">{new Date(place.date_visited).toLocaleDateString()}</p>}
+                      <p className="text-xs text-gray-500">{place.photos_count} photos</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+            {/* Share overlay */}
+            <button className="absolute bottom-4 right-4 z-[500] h-10 w-10 rounded-full gradient-glow flex items-center justify-center glow-accent">
+              <Share2 className="h-4 w-4 text-white" />
+            </button>
+          </>
         )}
       </div>
     </div>

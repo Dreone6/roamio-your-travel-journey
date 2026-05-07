@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Sparkles, MapPin, Star, ArrowRight, Compass, TrendingUp } from "lucide-react";
+import { Search, Sparkles, MapPin, Star, ArrowRight, Compass, TrendingUp, Heart } from "lucide-react";
 
 const CATEGORIES = ["All", "Cities", "Nature", "Beaches", "Culture", "Food", "Adventure"];
 
@@ -16,9 +16,9 @@ const AI_PICKS = [
 ];
 
 const NEARBY = [
-  { name: "Local Food Tour", type: "Experience", distance: "2.3 mi", image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80" },
-  { name: "Sunset Rooftop Bar", type: "Nightlife", distance: "0.8 mi", image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&q=80" },
-  { name: "Historic Walking Tour", type: "Culture", distance: "1.5 mi", image: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400&q=80" },
+  { name: "Local Food Tour", type: "Experience", distance: "2.3 mi", price: "$45", image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80" },
+  { name: "Sunset Rooftop Bar", type: "Nightlife", distance: "0.8 mi", price: "$$", image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&q=80" },
+  { name: "Historic Walking Tour", type: "Culture", distance: "1.5 mi", price: "$25", image: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400&q=80" },
 ];
 
 export default function DiscoverPage() {
@@ -26,50 +26,43 @@ export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="dark-immersive min-h-screen pb-24">
+    <div className="dark-immersive min-h-screen pb-4">
       {/* Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="absolute top-10 right-0 w-72 h-72 rounded-full bg-gradient-to-br from-emerald-500/10 to-teal-500/5 blur-3xl" />
-        
-        <div className="relative px-5 pt-12 pb-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-muted text-xs font-semibold tracking-widest uppercase">Explore</p>
-              <h1 className="font-heading text-3xl font-bold text-white tracking-tight mt-1">
-                Discover<br /><span className="text-glow italic">New Places</span>
-              </h1>
-            </div>
-            <div className="h-10 w-10 rounded-full dark-card-elevated flex items-center justify-center">
-              <Compass className="h-5 w-5 text-glow" />
-            </div>
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-gradient-to-br from-emerald-500/8 to-teal-500/4 blur-3xl" />
+
+        <div className="relative px-5 pt-14 pb-5 space-y-4">
+          <div>
+            <p className="text-dark-muted text-[10px] font-bold tracking-[0.2em] uppercase">Explore</p>
+            <h1 className="font-heading text-[26px] font-bold text-white tracking-tight mt-1 leading-tight">
+              Discover<br /><span className="text-glow italic">New Places</span>
+            </h1>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-dark-muted" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-dark-muted" />
             <input
               type="text"
-              placeholder="Search cities, activities, or experiences..."
+              placeholder="Search cities, activities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 rounded-2xl dark-card-elevated pl-11 pr-4 text-sm text-white placeholder:text-dark-muted border-0 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
-              style={{ background: 'hsl(220 25% 12%)' }}
+              className="w-full h-11 rounded-xl pl-10 pr-4 text-[13px] text-white placeholder:text-dark-muted border-0 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 dark-card-elevated"
             />
           </div>
 
           {/* Categories */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-5 px-5 no-scrollbar">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all ${
                   activeCategory === cat
                     ? "gradient-glow text-white"
-                    : "text-dark-muted hover:text-white"
+                    : "text-dark-muted dark-card-elevated"
                 }`}
-                style={activeCategory !== cat ? { background: 'hsl(220 25% 12%)' } : {}}
               >
                 {cat}
               </button>
@@ -79,23 +72,22 @@ export default function DiscoverPage() {
       </div>
 
       {/* AI Picks */}
-      <div className="px-5 space-y-4 mt-2">
-        <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold text-white flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-glow" /> AI Picks for You
-          </h2>
+      <div className="px-5 space-y-3 mt-1">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-glow" />
+          <h2 className="font-heading text-[15px] font-semibold text-white">AI Picks for You</h2>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5">
+        <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 no-scrollbar">
           {AI_PICKS.map((dest) => (
-            <div key={dest.name} className="shrink-0 w-72 rounded-2xl overflow-hidden relative group cursor-pointer">
-              <img src={dest.image} alt={dest.name} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div key={dest.name} className="shrink-0 w-64 rounded-2xl overflow-hidden relative group cursor-pointer">
+              <img src={dest.image} alt={dest.name} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-white font-heading text-xl font-bold">{dest.name}</p>
-                <p className="text-emerald-300 text-xs font-medium mt-0.5">{dest.reason}</p>
-              </div>
-              <div className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
-                <ArrowRight className="h-4 w-4 text-white" />
+              <button className="absolute top-3 right-3 h-7 w-7 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
+                <Heart className="h-3.5 w-3.5 text-white" />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                <p className="text-white font-heading text-lg font-bold leading-tight">{dest.name}</p>
+                <p className="text-emerald-300 text-[11px] font-medium mt-0.5">{dest.reason}</p>
               </div>
             </div>
           ))}
@@ -103,33 +95,34 @@ export default function DiscoverPage() {
       </div>
 
       {/* Featured Destinations */}
-      <div className="px-5 space-y-4 mt-8">
+      <div className="px-5 space-y-3 mt-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold text-white flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-glow" /> Trending Destinations
-          </h2>
-          <button className="text-xs text-glow font-medium flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-3.5 w-3.5 text-glow" />
+            <h2 className="font-heading text-[15px] font-semibold text-white">Trending</h2>
+          </div>
+          <button className="text-[11px] text-glow font-semibold flex items-center gap-0.5">
             See All <ArrowRight className="h-3 w-3" />
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           {FEATURED_DESTINATIONS.map((dest, i) => (
             <div
               key={dest.name}
-              className={`rounded-2xl overflow-hidden relative group cursor-pointer ${i === 0 ? "col-span-2 h-52" : "h-40"}`}
+              className={`rounded-2xl overflow-hidden relative group cursor-pointer ${i === 0 ? "col-span-2 h-44" : "h-36"}`}
             >
               <img src={dest.image} alt={dest.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-              <div className="absolute top-3 left-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full gradient-glow text-white">{dest.tag}</span>
+              <div className="absolute top-2.5 left-2.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full gradient-glow text-white">{dest.tag}</span>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3.5">
-                <p className="text-white font-heading text-lg font-bold">{dest.name}</p>
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <p className="text-white font-heading text-base font-bold">{dest.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <MapPin className="h-3 w-3 text-white/60" />
-                  <span className="text-white/70 text-xs">{dest.country}</span>
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400 ml-auto" />
-                  <span className="text-white/80 text-xs font-medium">{dest.rating}</span>
+                  <MapPin className="h-2.5 w-2.5 text-white/60" />
+                  <span className="text-white/70 text-[11px]">{dest.country}</span>
+                  <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />
+                  <span className="text-white/80 text-[11px] font-medium">{dest.rating}</span>
                 </div>
               </div>
             </div>
@@ -137,21 +130,22 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Nearby Experiences */}
-      <div className="px-5 space-y-4 mt-8">
-        <h2 className="font-heading text-lg font-semibold text-white flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-glow" /> Near You
-        </h2>
-        <div className="space-y-3">
+      {/* Nearby */}
+      <div className="px-5 space-y-3 mt-6 pb-2">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-3.5 w-3.5 text-glow" />
+          <h2 className="font-heading text-[15px] font-semibold text-white">Near You</h2>
+        </div>
+        <div className="space-y-2">
           {NEARBY.map((item) => (
-            <div key={item.name} className="flex items-center gap-4 rounded-2xl p-3 cursor-pointer hover:bg-white/5 transition-colors" style={{ background: 'hsl(220 25% 10%)' }}>
-              <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover" />
+            <div key={item.name} className="flex items-center gap-3 rounded-xl p-2.5 cursor-pointer hover:bg-white/[0.03] transition-colors dark-card">
+              <img src={item.image} alt={item.name} className="h-14 w-14 rounded-lg object-cover" />
               <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm">{item.name}</p>
-                <p className="text-dark-muted text-xs mt-0.5">{item.type}</p>
+                <p className="text-white font-semibold text-[13px]">{item.name}</p>
+                <p className="text-dark-muted text-[11px] mt-0.5">{item.type} · {item.distance}</p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-glow text-xs font-medium">{item.distance}</p>
+                <p className="text-glow text-[11px] font-bold">{item.price}</p>
               </div>
             </div>
           ))}
