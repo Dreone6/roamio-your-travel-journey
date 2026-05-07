@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Send, Image, MapPin, Plane, Smile, MoreVertical,
-  Camera, Paperclip, Globe, Shield, Flag
+  Camera, Paperclip, Globe, Shield, Flag, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
