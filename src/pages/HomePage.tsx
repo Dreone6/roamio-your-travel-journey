@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EmptyState from "@/components/EmptyState";
+import SafePassCard from "@/components/safety/SafePassCard";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import { useNavigate } from "react-router-dom";
@@ -256,15 +257,9 @@ export default function HomePage() {
           <p className="text-[11px] text-muted-foreground">{stats.countries} countries · {stats.cities} cities explored</p>
         </div>
 
-        {/* Safety & Travel Tips */}
-        <div className="rounded-2xl border border-border/40 bg-card p-4 flex items-center gap-3 shadow-soft animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-            <Shield className="h-5 w-5 text-emerald-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground">Travel Safety</p>
-            <p className="text-[11px] text-muted-foreground">All systems green. Your travel profile is secure.</p>
-          </div>
+        {/* SafePass Card */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <SafePassCard variant="compact" />
         </div>
 
         {/* Suggested Section */}
