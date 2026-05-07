@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, ArrowLeft } from "lucide-react";
-import roavrIcon from "@/assets/roavr-icon.jpeg";
+import { ArrowRight, ArrowLeft, Globe, Sparkles } from "lucide-react";
 
 const TRAVEL_STYLES = ["Solo Explorer", "Couple Getaway", "Family Trip", "Friends Adventure", "Business Travel"];
 
@@ -22,7 +21,7 @@ const INTERESTS = [
 ];
 
 export default function Onboarding() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [travelStyle, setTravelStyle] = useState("");
   const [homeCity, setHomeCity] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -59,8 +58,49 @@ export default function Onboarding() {
     setSaving(false);
   };
 
+  // Step 0: Splash / welcome
+  if (step === 0) {
+    return (
+      <div className="dark-immersive min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 gradient-dark-radial" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-500/15 to-teal-400/10 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 left-1/4 w-40 h-40 rounded-full bg-emerald-500/8 blur-2xl" />
+        
+        <div className="relative z-10 flex flex-col items-center text-center px-8 space-y-8">
+          {/* Globe icon with glow */}
+          <div className="relative">
+            <div className="h-32 w-32 rounded-full flex items-center justify-center glow-accent-strong">
+              <Globe className="h-20 w-20 text-glow animate-pulse" style={{ animationDuration: '3s' }} />
+            </div>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 rounded-full gradient-glow opacity-60 blur-sm" />
+          </div>
+          
+          <div className="space-y-3">
+            <h1 className="font-heading text-4xl font-bold text-white tracking-tight leading-tight">
+              Your world,<br />
+              <span className="text-glow italic">one trip</span> at a time.
+            </h1>
+            <p className="text-dark-muted text-sm max-w-xs mx-auto leading-relaxed">
+              AI-powered travel planning, immersive discovery, and a personal globe that grows with every journey.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => setStep(1)}
+            className="gradient-glow border-0 text-white font-semibold text-base px-10 py-6 rounded-2xl gap-2 glow-accent"
+          >
+            <Sparkles className="h-5 w-5" /> Get Started
+          </Button>
+
+          <p className="text-dark-muted text-[10px] tracking-widest uppercase">Roavr</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5">
       <div className="w-full max-w-md space-y-8">
         {/* Progress */}
         <div className="flex items-center justify-center gap-2">
@@ -68,20 +108,19 @@ export default function Onboarding() {
             <div
               key={s}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                s === step ? "w-12 gradient-accent" : s < step ? "w-12 bg-primary" : "w-12 bg-muted"
+                s === step ? "w-12 gradient-glow" : s < step ? "w-12 bg-primary" : "w-12 bg-muted"
               }`}
             />
           ))}
         </div>
 
-        <div className="text-center">
-          <img src={roavrIcon} alt="Roavr" className="mx-auto h-12 w-12 rounded-2xl mb-5 shadow-soft" />
+        <div className="text-center space-y-2">
           <h2 className="font-heading text-2xl font-bold text-foreground tracking-tight">
             {step === 1 && "How do you love to travel?"}
             {step === 2 && "Where is home?"}
             {step === 3 && "What excites you?"}
           </h2>
-          <p className="text-muted-foreground text-sm mt-2">
+          <p className="text-muted-foreground text-sm">
             {step === 1 && "Pick your favorite travel style"}
             {step === 2 && "We'll personalize your recommendations"}
             {step === 3 && "Select all that spark your curiosity"}
@@ -95,10 +134,10 @@ export default function Onboarding() {
               <button
                 key={style}
                 onClick={() => setTravelStyle(style)}
-                className={`rounded-xl border-2 px-5 py-4 text-left text-sm font-semibold transition-all duration-200 ${
+                className={`rounded-2xl border-2 px-5 py-4 text-left text-sm font-semibold transition-all duration-200 ${
                   travelStyle === style
-                    ? "border-accent bg-accent/8 text-foreground shadow-soft"
-                    : "border-border/60 bg-card text-foreground hover:border-accent/40 hover:shadow-soft"
+                    ? "border-emerald-500 bg-emerald-50 text-foreground shadow-soft"
+                    : "border-border/60 bg-card text-foreground hover:border-emerald-300 hover:shadow-soft"
                 }`}
               >
                 {style}
@@ -126,10 +165,10 @@ export default function Onboarding() {
               <button
                 key={interest.id}
                 onClick={() => toggleInterest(interest.id)}
-                className={`rounded-xl border-2 px-4 py-4 text-sm font-semibold transition-all duration-200 flex items-center gap-2.5 ${
+                className={`rounded-2xl border-2 px-4 py-4 text-sm font-semibold transition-all duration-200 flex items-center gap-2.5 ${
                   selectedInterests.includes(interest.id)
-                    ? "border-accent bg-accent/8 text-foreground shadow-soft"
-                    : "border-border/60 bg-card text-foreground hover:border-accent/40"
+                    ? "border-emerald-500 bg-emerald-50 text-foreground shadow-soft"
+                    : "border-border/60 bg-card text-foreground hover:border-emerald-300"
                 }`}
               >
                 <span className="text-xl">{interest.emoji}</span>
@@ -149,15 +188,15 @@ export default function Onboarding() {
           {step < 3 ? (
             <Button
               onClick={() => setStep(step + 1)}
-              className="flex-1 h-12 rounded-xl gradient-accent border-0 font-semibold"
-              disabled={step === 1 && !travelStyle || step === 2 && !homeCity}
+              className="flex-1 h-12 rounded-xl gradient-glow border-0 font-semibold text-white"
+              disabled={(step === 1 && !travelStyle) || (step === 2 && !homeCity)}
             >
               Next <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           ) : (
             <Button
               onClick={handleFinish}
-              className="flex-1 h-12 rounded-xl gradient-accent border-0 font-semibold"
+              className="flex-1 h-12 rounded-xl gradient-glow border-0 font-semibold text-white"
               disabled={selectedInterests.length === 0 || saving}
             >
               {saving ? "Saving..." : "Start Exploring"}
