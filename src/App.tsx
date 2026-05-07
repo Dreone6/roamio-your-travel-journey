@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
+            <Route path="/safety" element={<ProtectedRoute><SafePassPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
             <Route path="/messages/new" element={<ProtectedRoute><NewMessagePage /></ProtectedRoute>} />
             <Route path="/messages/:id" element={<ProtectedRoute><ConversationPage /></ProtectedRoute>} />
