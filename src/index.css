@@ -36,6 +36,15 @@
 
     --radius: 0.875rem;
 
+    /* Dark immersive tokens */
+    --dark-bg: 220 30% 6%;
+    --dark-card: 220 25% 10%;
+    --dark-card-elevated: 220 22% 14%;
+    --dark-border: 220 20% 18%;
+    --dark-text: 0 0% 96%;
+    --dark-text-muted: 220 10% 58%;
+    --dark-glow: 160 80% 50%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 210 70% 22%;
@@ -119,5 +128,42 @@
   }
   .shadow-elevated {
     box-shadow: 0 8px 32px -8px hsl(210 70% 22% / 0.12), 0 2px 8px -2px hsl(210 70% 22% / 0.06);
+  }
+
+  /* Dark immersive utilities */
+  .dark-immersive {
+    background: hsl(var(--dark-bg));
+    color: hsl(var(--dark-text));
+  }
+  .dark-card {
+    background: hsl(var(--dark-card));
+    border: 1px solid hsl(var(--dark-border));
+  }
+  .dark-card-elevated {
+    background: hsl(var(--dark-card-elevated));
+    border: 1px solid hsl(var(--dark-border));
+  }
+  .glow-accent {
+    box-shadow: 0 0 30px hsl(var(--dark-glow) / 0.15), 0 0 60px hsl(var(--dark-glow) / 0.08);
+  }
+  .glow-accent-strong {
+    box-shadow: 0 0 40px hsl(var(--dark-glow) / 0.25), 0 0 80px hsl(var(--dark-glow) / 0.12);
+  }
+  .gradient-glow {
+    background: linear-gradient(135deg, hsl(160 80% 50%), hsl(180 70% 45%));
+  }
+  .gradient-dark-radial {
+    background: radial-gradient(ellipse at 50% 30%, hsl(220 30% 14%) 0%, hsl(220 30% 6%) 70%);
+  }
+  .text-glow {
+    color: hsl(var(--dark-glow));
+  }
+  .text-dark-muted {
+    color: hsl(var(--dark-text-muted));
+  }
+
+  /* Floating action button */
+  .fab-shadow {
+    box-shadow: 0 6px 24px hsl(12 95% 62% / 0.4), 0 2px 8px hsl(12 95% 62% / 0.2);
   }
 }
