@@ -5,22 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import {
-  User, LogOut, Pencil, X, Check, ChevronRight,
-  MapPin, Trophy, Compass, Crown, Settings, Gift
+  User, Pencil, X, Check, ChevronRight,
+  MapPin, Trophy, Compass, Crown, Settings, Gift, LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import EmptyState from "@/components/EmptyState";
 import { SkeletonProfileHero, SkeletonStatGrid } from "@/components/ui/skeleton-card";
-
-const coralIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [20, 33], iconAnchor: [10, 33], popupAnchor: [1, -28], shadowSize: [33, 33],
-});
 
 interface Profile {
   name: string | null;
@@ -42,11 +33,6 @@ interface Badge {
   category: string | null;
 }
 
-interface Place {
-  latitude: number | null;
-  longitude: number | null;
-}
-
 const ALL_BADGES = [
   { name: "First Check In", image: "📍", description: "Complete your first check in" },
   { name: "Globetrotter", image: "🌍", description: "Visit 5 countries" },
@@ -62,7 +48,6 @@ export default function ProfilePage() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
   const [trips, setTrips] = useState<any[]>([]);
-  const [places, setPlaces] = useState<Place[]>([]);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", home_city: "", bio: "" });
   const [loading, setLoading] = useState(true);
@@ -73,24 +58,22 @@ export default function ProfilePage() {
 
   const loadAll = async () => {
     try {
-      const [profileRes, badgesRes, checkInsRes, tripsRes, placesRes] = await Promise.all([
+      const [profileRes, badgesRes, checkInsRes, tripsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user!.id).single(),
         supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false }),
         supabase.from("check_ins").select("id").eq("user_id", user!.id),
         supabase.from("trips").select("id, title, destination, start_date, status").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(3),
-        supabase.from("places_visited").select("latitude, longitude").eq("user_id", user!.id),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data as Profile);
       setBadges((badgesRes.data as Badge[]) || []);
       setCheckInCount(checkInsRes.data?.length || 0);
       setTrips(tripsRes.data || []);
-      setPlaces((placesRes.data as Place[]) || []);
 
       await supabase.functions.invoke("check-badges", { body: { user_id: user!.id } });
       const { data: freshBadges } = await supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false });
       setBadges((freshBadges as Badge[]) || []);
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to load profile data");
     }
     setLoading(false);
@@ -98,30 +81,15 @@ export default function ProfilePage() {
 
   const startEdit = () => {
     setEditing(true);
-    setEditForm({
-      name: profile?.name || "",
-      home_city: profile?.home_city || "",
-      bio: profile?.bio || "",
-    });
+    setEditForm({ name: profile?.name || "", home_city: profile?.home_city || "", bio: profile?.bio || "" });
   };
 
   const saveEdit = async () => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ name: editForm.name, home_city: editForm.home_city, bio: editForm.bio })
-      .eq("id", user!.id);
-
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setProfile((p) => p ? { ...p, ...editForm } : p);
-      setEditing(false);
-      toast.success("Profile updated");
-    }
+    const { error } = await supabase.from("profiles").update({ name: editForm.name, home_city: editForm.home_city, bio: editForm.bio }).eq("id", user!.id);
+    if (error) { toast.error(error.message); } else { setProfile((p) => p ? { ...p, ...editForm } : p); setEditing(false); toast.success("Profile updated"); }
   };
 
   const earnedBadgeNames = new Set(badges.map((b) => b.badge_name));
-  const mapPlaces = places.filter((p) => p.latitude && p.longitude);
 
   if (loading) {
     return (
@@ -138,159 +106,120 @@ export default function ProfilePage() {
     : "";
 
   return (
-    <div className="px-5 pt-8 pb-4 space-y-5">
-      {/* Hero */}
-      <div className="relative rounded-2xl bg-card border border-border p-5 text-center animate-fade-in">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-3 right-3"
-          onClick={editing ? saveEdit : startEdit}
-        >
-          {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-        </Button>
-        {editing && (
-          <Button variant="ghost" size="icon" className="absolute top-3 left-3" onClick={() => setEditing(false)}>
-            <X className="h-4 w-4" />
+    <div className="pb-24">
+      {/* Profile Hero - Light clean */}
+      <div className="bg-gradient-to-b from-primary/5 to-background px-5 pt-10 pb-6">
+        <div className="relative rounded-2xl bg-card border border-border/50 p-6 text-center shadow-soft">
+          <Button variant="ghost" size="icon" className="absolute top-3 right-3" onClick={editing ? saveEdit : startEdit}>
+            {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
           </Button>
-        )}
+          {editing && (
+            <Button variant="ghost" size="icon" className="absolute top-3 left-3" onClick={() => setEditing(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
 
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-secondary mb-3">
-          {profile?.profile_photo ? (
-            <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 mb-3 border-2 border-emerald-200">
+            {profile?.profile_photo ? (
+              <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            ) : (
+              <User className="h-10 w-10 text-emerald-600" />
+            )}
+          </div>
+
+          {editing ? (
+            <div className="space-y-2 text-left">
+              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" />
+              <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" />
+              <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Bio" rows={2} />
+            </div>
           ) : (
-            <User className="h-10 w-10 text-primary" />
+            <>
+              <h2 className="font-heading text-xl font-bold text-foreground">{profile?.name || "Traveler"}</h2>
+              {profile?.home_city && <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1"><MapPin className="h-3 w-3" />{profile.home_city}</p>}
+              {profile?.bio && <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">{profile.bio}</p>}
+              <p className="text-[10px] text-muted-foreground mt-3 tracking-wide uppercase">Member since {memberDate}</p>
+            </>
           )}
         </div>
-
-        {editing ? (
-          <div className="space-y-2 text-left">
-            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" />
-            <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" />
-            <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Bio" rows={2} />
-          </div>
-        ) : (
-          <>
-            <h2 className="font-heading text-xl font-semibold text-foreground">{profile?.name || "Traveler"}</h2>
-            {profile?.home_city && <p className="text-sm text-muted-foreground flex items-center justify-center gap-1"><MapPin className="h-3 w-3" />{profile.home_city}</p>}
-            {profile?.bio && <p className="text-xs text-muted-foreground mt-1">{profile.bio}</p>}
-            <p className="text-[10px] text-muted-foreground mt-2">Member since {memberDate}</p>
-          </>
-        )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-2 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        {[
-          { label: "Countries", value: profile?.total_countries_visited || new Set(places.map(() => "")).size, icon: "🌍" },
-          { label: "Cities", value: profile?.total_cities_visited || places.length, icon: "🏙️" },
-          { label: "Trips", value: profile?.total_trips || trips.length, icon: "✈️" },
-          { label: "Check ins", value: checkInCount, icon: "📍" },
-          { label: "Badges", value: badges.length, icon: "🏅" },
-        ].map((s) => (
-          <div key={s.label} className="rounded-lg bg-card border border-border p-2 text-center">
-            <p className="text-base">{s.icon}</p>
-            <p className="font-heading font-semibold text-sm text-foreground">{s.value}</p>
-            <p className="text-[10px] text-muted-foreground">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Mini Globe */}
-      {mapPlaces.length > 0 ? (
-        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <div className="flex items-center justify-between">
-            <h3 className="font-heading text-sm font-semibold text-foreground">Your Globe</h3>
-            <button onClick={() => navigate("/globe")} className="text-xs text-accent flex items-center gap-0.5">
-              See Full Globe <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
-          <div className="rounded-xl overflow-hidden border border-border h-40">
-            <MapContainer center={[20, 0]} zoom={1} className="h-full w-full" scrollWheelZoom={false} zoomControl={false} dragging={false} attributionControl={false}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              {mapPlaces.map((p, i) => (
-                <Marker key={i} position={[p.latitude!, p.longitude!]} icon={coralIcon} />
-              ))}
-            </MapContainer>
-          </div>
+      <div className="px-5 space-y-5">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-3 animate-fade-in">
+          {[
+            { label: "Countries", value: profile?.total_countries_visited || 0, color: "text-emerald-600" },
+            { label: "Cities", value: profile?.total_cities_visited || 0, color: "text-blue-600" },
+            { label: "Trips", value: trips.length, color: "text-amber-600" },
+            { label: "Check-ins", value: checkInCount, color: "text-rose-500" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl bg-card border border-border/50 p-3.5 text-center shadow-soft">
+              <p className={`font-heading font-bold text-2xl ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
         </div>
-      ) : (
-        <EmptyState
-          icon={Compass}
-          title="No places visited yet"
-          description="Check in at a destination to start building your globe."
-          actionLabel="Check In Now"
-          onAction={() => navigate("/checkin")}
-        />
-      )}
 
-      {/* Recent Trips */}
-      {trips.length > 0 ? (
-        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <h3 className="font-heading text-sm font-semibold text-foreground">Recent Trips</h3>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5">
+        {/* Recent Trips */}
+        {trips.length > 0 && (
+          <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading text-base font-semibold text-foreground">Recent Trips</h3>
+              <button onClick={() => navigate("/trips")} className="text-xs text-accent font-medium flex items-center gap-0.5">
+                See All <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
             {trips.map((trip) => (
-              <div key={trip.id} className="shrink-0 w-48 rounded-xl border border-border bg-card overflow-hidden">
-                <div className="h-20 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Compass className="h-8 w-8 text-primary/40" />
+              <div key={trip.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border/50 p-3.5 shadow-soft">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-emerald-500/10 flex items-center justify-center shrink-0">
+                  <Compass className="h-5 w-5 text-primary/50" />
                 </div>
-                <div className="p-3">
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-foreground truncate">{trip.title}</p>
                   <p className="text-xs text-muted-foreground">{trip.destination}</p>
-                  <span className={`inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${trip.status === "completed" ? "bg-green-100 text-green-700" : trip.status === "active" ? "bg-accent/15 text-accent" : "bg-secondary text-muted-foreground"}`}>
-                    {trip.status}
-                  </span>
                 </div>
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ${
+                  trip.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-accent/15 text-accent"
+                }`}>
+                  {trip.status}
+                </span>
               </div>
             ))}
           </div>
-        </div>
-      ) : null}
+        )}
 
-      {/* Badges */}
-      <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.25s" }}>
-        <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-1.5">
-          <Trophy className="h-4 w-4 text-accent" /> Badges
-        </h3>
-        {badges.length === 0 && !ALL_BADGES.some((b) => earnedBadgeNames.has(b.name)) ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center space-y-2">
-            <Trophy className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No badges earned yet. Check in and explore to start collecting!</p>
+        {/* Badges */}
+        <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.15s" }}>
+          <h3 className="font-heading text-base font-semibold text-foreground flex items-center gap-1.5">
+            <Trophy className="h-4 w-4 text-accent" /> Badges
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            {ALL_BADGES.map((badge) => {
+              const earned = earnedBadgeNames.has(badge.name);
+              return (
+                <div key={badge.name} className={`rounded-2xl border p-3.5 text-center space-y-1 transition-all ${earned ? "border-emerald-200 bg-emerald-50" : "border-border/50 bg-card opacity-50"}`}>
+                  <p className="text-2xl">{earned ? badge.image : "🔒"}</p>
+                  <p className={`text-[11px] font-medium ${earned ? "text-foreground" : "text-muted-foreground"}`}>{badge.name}</p>
+                </div>
+              );
+            })}
           </div>
-        ) : null}
-        <div className="grid grid-cols-3 gap-3">
-          {ALL_BADGES.map((badge) => {
-            const earned = earnedBadgeNames.has(badge.name);
-            const earnedBadge = badges.find((b) => b.badge_name === badge.name);
-            return (
-              <div
-                key={badge.name}
-                className={`rounded-xl border p-3 text-center space-y-1 transition-all ${earned ? "border-accent/30 bg-accent/5" : "border-border bg-card opacity-50"}`}
-              >
-                <p className="text-2xl">{earned ? badge.image : "🔒"}</p>
-                <p className={`text-xs font-medium ${earned ? "text-foreground" : "text-muted-foreground"}`}>{badge.name}</p>
-                {earned && earnedBadge ? (
-                  <p className="text-[10px] text-muted-foreground">{new Date(earnedBadge.earned_date).toLocaleDateString()}</p>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground">{badge.description}</p>
-                )}
-              </div>
-            );
-          })}
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-        <Button variant="outline" onClick={() => navigate("/referral")} className="w-full gap-2">
-          <Gift className="h-4 w-4" /> Refer Friends
-        </Button>
-        <Button variant="outline" onClick={() => navigate("/subscription")} className="w-full gap-2">
-          <Crown className="h-4 w-4" /> Subscription
-        </Button>
-        <Button variant="outline" onClick={() => navigate("/settings")} className="w-full gap-2">
-          <Settings className="h-4 w-4" /> Settings
-        </Button>
+        {/* Actions */}
+        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          {[
+            { label: "Refer Friends", icon: Gift, route: "/referral" },
+            { label: "Subscription", icon: Crown, route: "/subscription" },
+            { label: "Settings", icon: Settings, route: "/settings" },
+          ].map((action) => (
+            <button key={action.label} onClick={() => navigate(action.route)} className="w-full flex items-center gap-3 rounded-2xl bg-card border border-border/50 p-4 hover:shadow-soft transition-all text-left">
+              <action.icon className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground flex-1">{action.label}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

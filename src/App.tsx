@@ -9,7 +9,8 @@ import AppShell from "@/components/AppShell";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
-import PlanPage from "@/pages/PlanPage";
+import TripsPage from "@/pages/TripsPage";
+import DiscoverPage from "@/pages/DiscoverPage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -17,7 +18,6 @@ import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
 import ReferralPage from "@/pages/ReferralPage";
-import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import AuthGate from "@/components/AuthGate";
 
@@ -38,12 +38,17 @@ const App = () => (
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+            <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
-              <Route path="/plan" element={<PlanPage />} />
+              <Route path="/trips" element={<TripsPage />} />
+              <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
-              <Route path="/checkin" element={<CheckInPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+            {/* Legacy redirects */}
+            <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+              <Route index element={<TripsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
