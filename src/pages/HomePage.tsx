@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EmptyState from "@/components/EmptyState";
+import SafePassCard from "@/components/safety/SafePassCard";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import { useNavigate } from "react-router-dom";
