@@ -74,9 +74,14 @@ export default function HomePage() {
               <p className="text-dark-muted text-[11px] font-medium tracking-wide">{greeting()}</p>
               <h1 className="font-heading text-[22px] font-bold text-white tracking-tight mt-0.5">{displayName}</h1>
             </div>
-            <button onClick={() => navigate("/profile")} className="h-10 w-10 rounded-full dark-card-elevated flex items-center justify-center overflow-hidden">
-              <Globe className="h-4.5 w-4.5 text-glow" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => navigate("/notifications")} className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center">
+                <Bell className="h-4 w-4 text-dark-muted" />
+              </button>
+              <button onClick={() => navigate("/messages")} className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-dark-muted" />
+              </button>
+            </div>
           </div>
 
           {/* Stats Row */}
