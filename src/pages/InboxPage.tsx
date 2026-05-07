@@ -1,18 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Search, Plus, MessageCircle, Image, MapPin, Send,
-  MoreHorizontal, Check, CheckCheck, Camera
+  ArrowLeft, Search, Plus, MessageCircle, Lock, Shield, Timer,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
 
 interface ConversationPreview {
   id: string;
   title: string | null;
   type: string;
+  encryption_mode: string;
   last_message_at: string;
   other_user_name: string;
   other_user_photo: string | null;
@@ -75,22 +74,26 @@ export default function InboxPage() {
 
       const { data: lastMsg } = await supabase
         .from("messages")
-        .select("content, message_type, sender_id, read_by")
+        .select("content, message_type, sender_id, read_by, encrypted")
         .eq("conversation_id", conv.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-      const lastContent = lastMsg?.message_type === "image" ? "📷 Photo" :
+      const lastContent = lastMsg?.encrypted ? "🔒 Encrypted message" :
+        lastMsg?.message_type === "image" ? "📷 Photo" :
         lastMsg?.message_type === "video" ? "🎥 Video" :
         lastMsg?.message_type === "trip_share" ? "✈️ Shared a trip" :
         lastMsg?.message_type === "map_pin" ? "📍 Shared a pin" :
+        lastMsg?.message_type === "memory_share" ? "🌍 Shared a memory" :
+        lastMsg?.message_type === "story_reply" ? "💬 Story reply" :
         lastMsg?.content || null;
 
       previews.push({
         id: conv.id,
         title: conv.title,
         type: conv.type,
+        encryption_mode: (conv as any).encryption_mode || "standard",
         last_message_at: conv.last_message_at,
         other_user_name: conv.title || otherName,
         other_user_photo: otherPhoto,
@@ -109,14 +112,31 @@ export default function InboxPage() {
     if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d`;
+    return `${Math.floor(hrs / 24)}d`;
   };
 
   const filtered = conversations.filter((c) =>
     c.other_user_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const unreadCount = conversations.filter((c) => c.unread).length;
+
+  const EncryptionBadge = ({ mode }: { mode: string }) => {
+    if (mode === "private") {
+      return (
+        <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+          <Lock className="h-2 w-2" /> E2E
+        </span>
+      );
+    }
+    if (mode === "vanish") {
+      return (
+        <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
+          <Timer className="h-2 w-2" /> Vanish
+        </span>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen pb-8">
@@ -129,7 +149,11 @@ export default function InboxPage() {
               <button onClick={() => navigate("/home")} className="text-dark-muted mb-1 flex items-center gap-1 text-[13px]">
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <h1 className="font-heading text-[22px] font-bold text-white tracking-tight">Messages</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading text-[22px] font-bold text-white tracking-tight">Messages</h1>
+                <Shield className="h-4 w-4 text-glow" />
+              </div>
+              <p className="text-dark-muted text-[10px] mt-0.5">Encrypted in transit · Encrypted at rest</p>
             </div>
             <button
               onClick={() => navigate("/messages/new")}
@@ -172,7 +196,15 @@ export default function InboxPage() {
 
       {/* Conversations */}
       <div className="px-4 pt-3">
-        {loading ? (
+        {activeTab === "requests" ? (
+          <div className="pt-8">
+            <EmptyState
+              icon={MessageCircle}
+              title="No message requests"
+              description="When someone you don't follow messages you, it will appear here."
+            />
+          </div>
+        ) : loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
@@ -213,13 +245,21 @@ export default function InboxPage() {
                   {conv.unread && (
                     <div className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full gradient-accent border-2 border-background" />
                   )}
+                  {conv.encryption_mode === "private" && (
+                    <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-background">
+                      <Lock className="h-2 w-2 text-white" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className={`text-[13px] truncate ${conv.unread ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
-                      {conv.other_user_name}
-                    </p>
-                    <span className={`text-[10px] shrink-0 ${conv.unread ? "text-accent font-bold" : "text-muted-foreground"}`}>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className={`text-[13px] truncate ${conv.unread ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
+                        {conv.other_user_name}
+                      </p>
+                      <EncryptionBadge mode={conv.encryption_mode} />
+                    </div>
+                    <span className={`text-[10px] shrink-0 ml-2 ${conv.unread ? "text-accent font-bold" : "text-muted-foreground"}`}>
                       {timeAgo(conv.last_message_at)}
                     </span>
                   </div>
