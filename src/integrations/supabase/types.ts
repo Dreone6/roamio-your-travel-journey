@@ -44,6 +44,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           challenge_text: string
@@ -157,6 +178,95 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          last_read_at: string | null
+          muted: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          muted?: boolean
+          role?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          muted?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          last_message_at: string | null
+          title: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          last_message_at?: string | null
+          title?: string | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_message_at?: string | null
+          title?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       itinerary_items: {
         Row: {
           activity: string
@@ -212,6 +322,169 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      memories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          media_type: string
+          media_url: string
+          pinned_to_globe: boolean
+          source: string
+          source_id: string | null
+          trip_id: string | null
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          media_type?: string
+          media_url: string
+          pinned_to_globe?: boolean
+          source?: string
+          source_id?: string | null
+          trip_id?: string | null
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          media_type?: string
+          media_url?: string
+          pinned_to_globe?: boolean
+          source?: string
+          source_id?: string | null
+          trip_id?: string | null
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          media_url: string | null
+          message_type: string
+          metadata: Json | null
+          read_by: string[] | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_type?: string
+          metadata?: Json | null
+          read_by?: string[] | null
+          sender_id: string
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_type?: string
+          metadata?: Json | null
+          read_by?: string[] | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          body: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       offer_interactions: {
         Row: {
@@ -486,6 +759,151 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          reported_id: string
+          reported_type: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_id: string
+          reported_type: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_id?: string
+          reported_type?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          auto_save_to_globe: boolean
+          caption: string | null
+          created_at: string
+          expires_at: string
+          filter_name: string | null
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          media_type: string
+          media_url: string
+          trip_id: string | null
+          user_id: string
+          view_count: number
+          visibility: string
+        }
+        Insert: {
+          auto_save_to_globe?: boolean
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          filter_name?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          media_type?: string
+          media_url: string
+          trip_id?: string | null
+          user_id: string
+          view_count?: number
+          visibility?: string
+        }
+        Update: {
+          auto_save_to_globe?: boolean
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          filter_name?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          media_type?: string
+          media_url?: string
+          trip_id?: string | null
+          user_id?: string
+          view_count?: number
+          visibility?: string
+        }
+        Relationships: []
+      }
+      story_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_reactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_views: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -574,6 +992,39 @@ export type Database = {
           title?: string
           travelers?: number
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_privacy_settings: {
+        Row: {
+          auto_save_stories: string
+          created_at: string
+          default_story_visibility: string
+          id: string
+          message_permission: string
+          public_map_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_save_stories?: string
+          created_at?: string
+          default_story_visibility?: string
+          id?: string
+          message_permission?: string
+          public_map_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_save_stories?: string
+          created_at?: string
+          default_story_visibility?: string
+          id?: string
+          message_permission?: string
+          public_map_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
