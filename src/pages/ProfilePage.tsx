@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  User, Pencil, X, Check, ChevronRight,
-  MapPin, Trophy, Compass, Crown, Settings, Gift, LogOut
+  User, Pencil, X, Check, ChevronRight, MapPin, Trophy, Compass,
+  Crown, Settings, Gift, Globe, Users, Eye, Lock, Camera
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import EmptyState from "@/components/EmptyState";
 import { SkeletonProfileHero, SkeletonStatGrid } from "@/components/ui/skeleton-card";
 
 interface Profile {
@@ -51,6 +50,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", home_city: "", bio: "" });
   const [loading, setLoading] = useState(true);
+  const [isPublicMap, setIsPublicMap] = useState(true);
 
   useEffect(() => {
     if (user) loadAll();
@@ -64,7 +64,6 @@ export default function ProfilePage() {
         supabase.from("check_ins").select("id").eq("user_id", user!.id),
         supabase.from("trips").select("id, title, destination, start_date, status").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(3),
       ]);
-
       if (profileRes.data) setProfile(profileRes.data as Profile);
       setBadges((badgesRes.data as Badge[]) || []);
       setCheckInCount(checkInsRes.data?.length || 0);
@@ -106,80 +105,138 @@ export default function ProfilePage() {
     : "";
 
   return (
-    <div className="pb-24">
-      {/* Profile Hero - Light clean */}
-      <div className="bg-gradient-to-b from-primary/5 to-background px-5 pt-10 pb-6">
-        <div className="relative rounded-2xl bg-card border border-border/50 p-6 text-center shadow-soft">
-          <Button variant="ghost" size="icon" className="absolute top-3 right-3" onClick={editing ? saveEdit : startEdit}>
-            {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-          </Button>
-          {editing && (
-            <Button variant="ghost" size="icon" className="absolute top-3 left-3" onClick={() => setEditing(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+    <div className="pb-4">
+      {/* Profile Hero */}
+      <div className="dark-immersive relative overflow-hidden">
+        <div className="absolute inset-0 gradient-dark-radial" />
+        <div className="absolute -top-20 right-0 w-48 h-48 rounded-full bg-emerald-500/6 blur-3xl" />
 
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 mb-3 border-2 border-emerald-200">
-            {profile?.profile_photo ? (
-              <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            ) : (
-              <User className="h-10 w-10 text-emerald-600" />
+        <div className="relative px-5 pt-12 pb-6">
+          {/* Edit button */}
+          <div className="absolute top-12 right-5 flex gap-2">
+            {editing && (
+              <button onClick={() => setEditing(false)} className="h-8 w-8 rounded-full dark-card-elevated flex items-center justify-center">
+                <X className="h-3.5 w-3.5 text-dark-muted" />
+              </button>
             )}
+            <button onClick={editing ? saveEdit : startEdit} className="h-8 w-8 rounded-full dark-card-elevated flex items-center justify-center">
+              {editing ? <Check className="h-3.5 w-3.5 text-glow" /> : <Pencil className="h-3.5 w-3.5 text-dark-muted" />}
+            </button>
           </div>
 
-          {editing ? (
-            <div className="space-y-2 text-left">
-              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" />
-              <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" />
-              <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Bio" rows={2} />
+          <div className="flex flex-col items-center text-center space-y-3">
+            {/* Avatar */}
+            <div className="relative">
+              <div className="h-20 w-20 rounded-full border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/10">
+                {profile?.profile_photo ? (
+                  <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" />
+                ) : (
+                  <User className="h-9 w-9 text-glow" />
+                )}
+              </div>
+              <button className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full gradient-accent flex items-center justify-center border-2 border-[hsl(225,28%,7%)]">
+                <Camera className="h-3 w-3 text-white" />
+              </button>
             </div>
-          ) : (
-            <>
-              <h2 className="font-heading text-xl font-bold text-foreground">{profile?.name || "Traveler"}</h2>
-              {profile?.home_city && <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1"><MapPin className="h-3 w-3" />{profile.home_city}</p>}
-              {profile?.bio && <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">{profile.bio}</p>}
-              <p className="text-[10px] text-muted-foreground mt-3 tracking-wide uppercase">Member since {memberDate}</p>
-            </>
-          )}
+
+            {editing ? (
+              <div className="space-y-2 w-full max-w-xs text-left">
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+                <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+                <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Tell us about your travel style..." rows={2} className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h2 className="font-heading text-xl font-bold text-white">{profile?.name || "Traveler"}</h2>
+                  {profile?.home_city && (
+                    <p className="text-[12px] text-dark-muted flex items-center justify-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3" />{profile.home_city}
+                    </p>
+                  )}
+                </div>
+                {profile?.bio && <p className="text-[12px] text-dark-muted max-w-[260px] leading-relaxed">{profile.bio}</p>}
+                <p className="text-[10px] text-dark-muted tracking-wider uppercase">Member since {memberDate}</p>
+              </>
+            )}
+
+            {/* Social stats row */}
+            <div className="flex items-center gap-4 pt-1">
+              <div className="text-center">
+                <p className="font-heading font-bold text-base text-white">0</p>
+                <p className="text-[10px] text-dark-muted">Followers</p>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div className="text-center">
+                <p className="font-heading font-bold text-base text-white">0</p>
+                <p className="text-[10px] text-dark-muted">Following</p>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <button onClick={() => setIsPublicMap(!isPublicMap)} className="flex items-center gap-1 text-[10px] font-bold text-dark-muted">
+                {isPublicMap ? <Eye className="h-3 w-3 text-glow" /> : <Lock className="h-3 w-3" />}
+                <span className={isPublicMap ? "text-glow" : ""}>{isPublicMap ? "Public Map" : "Private"}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="px-5 space-y-5">
+      {/* Light content */}
+      <div className="px-4 pt-4 space-y-4">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 animate-fade-in">
+        <div className="grid grid-cols-4 gap-2 animate-fade-in">
           {[
-            { label: "Countries", value: profile?.total_countries_visited || 0, color: "text-emerald-600" },
-            { label: "Cities", value: profile?.total_cities_visited || 0, color: "text-blue-600" },
-            { label: "Trips", value: trips.length, color: "text-amber-600" },
-            { label: "Check-ins", value: checkInCount, color: "text-rose-500" },
+            { label: "Countries", value: profile?.total_countries_visited || 0, color: "text-emerald-600", bg: "bg-emerald-50" },
+            { label: "Cities", value: profile?.total_cities_visited || 0, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "Trips", value: trips.length, color: "text-amber-600", bg: "bg-amber-50" },
+            { label: "Check-ins", value: checkInCount, color: "text-rose-500", bg: "bg-rose-50" },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl bg-card border border-border/50 p-3.5 text-center shadow-soft">
-              <p className={`font-heading font-bold text-2xl ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+            <div key={s.label} className={`rounded-xl ${s.bg} p-3 text-center`}>
+              <p className={`font-heading font-bold text-lg ${s.color} leading-none`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{s.label}</p>
             </div>
           ))}
         </div>
 
+        {/* Badges */}
+        <div className="space-y-2.5 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <div className="flex items-center gap-1.5">
+            <Trophy className="h-4 w-4 text-accent" />
+            <h3 className="section-title">Badges</h3>
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {ALL_BADGES.map((badge) => {
+              const earned = earnedBadgeNames.has(badge.name);
+              return (
+                <div key={badge.name} className={`rounded-xl p-2.5 text-center transition-all ${earned ? "bg-emerald-50 border border-emerald-200" : "bg-card border border-border/40 opacity-40"}`}>
+                  <p className="text-xl">{earned ? badge.image : "🔒"}</p>
+                  <p className={`text-[8px] font-bold mt-1 leading-tight ${earned ? "text-foreground" : "text-muted-foreground"}`}>{badge.name}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Recent Trips */}
         {trips.length > 0 && (
-          <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center justify-between">
-              <h3 className="font-heading text-base font-semibold text-foreground">Recent Trips</h3>
-              <button onClick={() => navigate("/trips")} className="text-xs text-accent font-medium flex items-center gap-0.5">
+          <div className="space-y-2.5 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            <div className="section-header">
+              <h3 className="section-title">Recent Trips</h3>
+              <button onClick={() => navigate("/trips")} className="section-link">
                 See All <ChevronRight className="h-3 w-3" />
               </button>
             </div>
             {trips.map((trip) => (
-              <div key={trip.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border/50 p-3.5 shadow-soft">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-emerald-500/10 flex items-center justify-center shrink-0">
-                  <Compass className="h-5 w-5 text-primary/50" />
+              <div key={trip.id} className="flex items-center gap-3 rounded-xl bg-card border border-border/40 p-3 shadow-soft">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/8 to-emerald-500/8 flex items-center justify-center shrink-0">
+                  <Compass className="h-4 w-4 text-primary/40" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground truncate">{trip.title}</p>
-                  <p className="text-xs text-muted-foreground">{trip.destination}</p>
+                  <p className="font-semibold text-[13px] text-foreground truncate">{trip.title}</p>
+                  <p className="text-[11px] text-muted-foreground">{trip.destination}</p>
                 </div>
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ${
-                  trip.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-accent/15 text-accent"
+                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${
+                  trip.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-accent/12 text-accent"
                 }`}>
                   {trip.status}
                 </span>
@@ -188,35 +245,23 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Badges */}
-        <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <h3 className="font-heading text-base font-semibold text-foreground flex items-center gap-1.5">
-            <Trophy className="h-4 w-4 text-accent" /> Badges
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {ALL_BADGES.map((badge) => {
-              const earned = earnedBadgeNames.has(badge.name);
-              return (
-                <div key={badge.name} className={`rounded-2xl border p-3.5 text-center space-y-1 transition-all ${earned ? "border-emerald-200 bg-emerald-50" : "border-border/50 bg-card opacity-50"}`}>
-                  <p className="text-2xl">{earned ? badge.image : "🔒"}</p>
-                  <p className={`text-[11px] font-medium ${earned ? "text-foreground" : "text-muted-foreground"}`}>{badge.name}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Actions */}
-        <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+        <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
           {[
-            { label: "Refer Friends", icon: Gift, route: "/referral" },
-            { label: "Subscription", icon: Crown, route: "/subscription" },
-            { label: "Settings", icon: Settings, route: "/settings" },
+            { label: "My Globe", icon: Globe, route: "/globe", desc: "View your travel map" },
+            { label: "Refer Friends", icon: Gift, route: "/referral", desc: "Earn free months" },
+            { label: "Subscription", icon: Crown, route: "/subscription", desc: "Manage your plan" },
+            { label: "Settings", icon: Settings, route: "/settings", desc: "App preferences" },
           ].map((action) => (
-            <button key={action.label} onClick={() => navigate(action.route)} className="w-full flex items-center gap-3 rounded-2xl bg-card border border-border/50 p-4 hover:shadow-soft transition-all text-left">
-              <action.icon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground flex-1">{action.label}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <button key={action.label} onClick={() => navigate(action.route)} className="w-full flex items-center gap-3 rounded-xl bg-card border border-border/40 p-3.5 hover:shadow-soft transition-all text-left">
+              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <action.icon className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-foreground">{action.label}</p>
+                <p className="text-[11px] text-muted-foreground">{action.desc}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </button>
           ))}
         </div>
