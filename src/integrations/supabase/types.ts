@@ -220,26 +220,32 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          encryption_mode: string
           id: string
           last_message_at: string | null
           title: string | null
           type: string
+          vanish_after_seconds: number | null
         }
         Insert: {
           created_at?: string
           created_by: string
+          encryption_mode?: string
           id?: string
           last_message_at?: string | null
           title?: string | null
           type?: string
+          vanish_after_seconds?: number | null
         }
         Update: {
           created_at?: string
           created_by?: string
+          encryption_mode?: string
           id?: string
           last_message_at?: string | null
           title?: string | null
           type?: string
+          vanish_after_seconds?: number | null
         }
         Relationships: []
       }
@@ -411,6 +417,9 @@ export type Database = {
           content: string | null
           conversation_id: string
           created_at: string
+          encrypted: boolean
+          encryption_metadata: Json | null
+          expires_at: string | null
           id: string
           media_url: string | null
           message_type: string
@@ -422,6 +431,9 @@ export type Database = {
           content?: string | null
           conversation_id: string
           created_at?: string
+          encrypted?: boolean
+          encryption_metadata?: Json | null
+          expires_at?: string | null
           id?: string
           media_url?: string | null
           message_type?: string
@@ -433,6 +445,9 @@ export type Database = {
           content?: string | null
           conversation_id?: string
           created_at?: string
+          encrypted?: boolean
+          encryption_metadata?: Json | null
+          expires_at?: string | null
           id?: string
           media_url?: string | null
           message_type?: string
