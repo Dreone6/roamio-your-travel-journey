@@ -27,6 +27,7 @@ import NotificationsPage from "@/pages/NotificationsPage";
 import SocialFeedPage from "@/pages/SocialFeedPage";
 import NotFound from "@/pages/NotFound";
 import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
+import SafePassPage from "@/pages/SafePassPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
