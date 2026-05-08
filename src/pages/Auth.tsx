@@ -37,7 +37,7 @@ export default function Auth() {
       if (error) {
         toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Check your email", description: "We sent you a confirmation link to verify your account." });
+        toast({ title: "Welcome to Roavr", description: "Account created. Let's get you started." });
       }
     } else {
       const { error } = await signIn(email, password);
@@ -47,6 +47,15 @@ export default function Auth() {
     }
 
     setSubmitting(false);
+  };
+
+  const handleGoogle = async () => {
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+    }
   };
 
   return (
