@@ -2,6 +2,7 @@ import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Globe as GlobeIcon, Map, Share2, Camera, Lock, Users, Eye,
   ChevronRight, Flame, Compass, Sparkles, Settings, MapPin as MapPinIcon,

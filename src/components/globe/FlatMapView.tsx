@@ -23,6 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   checkin: "#3b82f6",
   wishlist: "#f97316",
   tip: "#eab308",
+  sponsored: "#1e40af",
 };
 
 function MapBounds({ pins }: { pins: FlatMapPin[] }) {
