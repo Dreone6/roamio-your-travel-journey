@@ -12,8 +12,7 @@ type PermissionName = "geolocation" | "camera";
 async function queryPermission(name: PermissionName): Promise<PermissionState | "unknown"> {
   try {
     if (typeof navigator === "undefined" || !("permissions" in navigator)) return "unknown";
-    // @ts-expect-error - camera is supported on most browsers but not in lib types
-    const status = await navigator.permissions.query({ name });
+    const status = await navigator.permissions.query({ name: name as PermissionName });
     return status.state;
   } catch {
     return "unknown";
