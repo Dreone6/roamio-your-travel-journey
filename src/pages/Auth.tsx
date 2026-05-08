@@ -21,7 +21,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <img src={roavrIcon} alt="Roavr" className="h-12 w-12 rounded-2xl animate-pulse" />
+        <img src={miloMascot} alt="Roavr" className="h-12 w-12 rounded-2xl animate-pulse" />
       </div>
     );
   }
@@ -63,7 +63,7 @@ export default function Auth() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center mb-2">
-            <img src={roavrIcon} alt="Roavr" className="h-16 w-16 rounded-2xl shadow-elevated" />
+            <img src={miloMascot} alt="Roavr" className="h-16 w-16 rounded-2xl shadow-elevated" />
           </div>
           <h1 className="font-heading text-3xl font-bold text-foreground tracking-tight">Roavr</h1>
           <p className="text-muted-foreground text-sm">Your world, one trip at a time.</p>

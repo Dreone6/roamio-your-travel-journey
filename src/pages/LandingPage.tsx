@@ -471,7 +471,7 @@ export default function LandingPage() {
       <footer className="border-t border-border/30 bg-card">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <img src={roavrIcon} alt="Roavr" className="h-6 w-6 rounded-md" />
+            <img src={miloMascot} alt="Roavr" className="h-6 w-6 rounded-md" />
             <span className="font-heading font-bold text-foreground">Roavr</span>
           </div>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Roavr. Your world, one trip at a time.</p>
