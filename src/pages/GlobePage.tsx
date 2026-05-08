@@ -54,6 +54,22 @@ function buildAllPins(userId: string): MapPin[] {
     }
   });
 
+  // Add active 24h Story pins (dual-view: same content as the vertical feed,
+  // surfaced on the globe as a temporary Story Pin until expiry).
+  const now = Date.now();
+  MOCK_STORIES.filter(s =>
+    s.userId === userId &&
+    s.latitude && s.longitude &&
+    s.autoSaveToGlobe !== false &&
+    new Date(s.expiresAt).getTime() > now
+  ).forEach(s => {
+    basePins.push({
+      id: `pin-story-${s.id}`, userId, latitude: s.latitude!, longitude: s.longitude!,
+      label: s.locationName || "Story", description: s.caption,
+      category: "tip", linkedId: s.id, visibility: s.visibility, createdAt: s.createdAt,
+    });
+  });
+
   // Add trip destination pins
   MOCK_TRIPS.filter(t => t.userId === userId).forEach(t => {
     const existing = basePins.find(p => p.linkedId === t.id);
