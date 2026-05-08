@@ -7,6 +7,7 @@ import {
   Maximize2, Focus, SunMedium
 } from "lucide-react";
 import { toast } from "sonner";
+import { ensureLocationPermission, ensurePhotoPermission } from "@/lib/permissions";
 
 const FILTERS = [
   { id: "none", name: "Original", color: "" },
@@ -48,12 +49,20 @@ export default function CameraPage() {
   const [caption, setCaption] = useState("");
   const [visibility, setVisibility] = useState<"public" | "followers" | "private">("public");
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
+    // Trigger-based: only ask for camera/photo permission when the user actually captures.
+    const ok = await ensurePhotoPermission();
+    if (!ok) return;
     setCaptured(true);
     setShowPostOptions(true);
   };
 
-  const handlePost = (target: PostTarget) => {
+  const handlePost = async (target: PostTarget) => {
+    // Trigger-based: ask for location only when posting to Story or pinning to Globe.
+    if (target === "story" || target === "globe") {
+      const ok = await ensureLocationPermission();
+      if (!ok) return;
+    }
     toast.success(
       target === "story" ? "Posted to your story!" :
       target === "memory" ? "Saved as a memory!" :

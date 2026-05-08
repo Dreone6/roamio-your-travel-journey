@@ -1,6 +1,7 @@
-import { useState, useMemo, Suspense, lazy, useCallback } from "react";
+import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { ensureLocationPermission } from "@/lib/permissions";
 import {
   Globe as GlobeIcon, Map, Share2, Camera, Lock, Users, Eye,
   ChevronRight, Flame, Compass, Sparkles, Settings, MapPin as MapPinIcon,
@@ -129,6 +130,19 @@ export default function GlobePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [storyConversion, setStoryConversion] = useState<"auto" | "ask" | "never">("auto");
   const [showEmpty] = useState(false); // Toggle for demo
+
+  // Trigger-based: when the user opens the Globe, request location once (used to center the map).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await ensureLocationPermission();
+      if (cancelled) return;
+      if (!ok) {
+        // Silent fallback — the globe still works with default view.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const stats = MOCK_GLOBE_STATS;
   const checkIns = MOCK_CHECKINS;

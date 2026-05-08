@@ -142,6 +142,16 @@ export default function NewTripForm({ onBack, onTripCreated }: NewTripFormProps)
     }
   };
 
+  // Quick path: after the 3 essential inputs (vibe, destination, duration), allow AI generation immediately.
+  const quickGenerate = () => {
+    setStep("generating");
+    generateTrip();
+  };
+  const hasQuickEssentials =
+    !!plan.goal &&
+    (!!plan.destination || plan.surpriseMe) &&
+    (plan.flexibleDates || (!!plan.startDate && !!plan.endDate));
+
   const back = () => {
     if (step === "goal") { onBack(); return; }
     const idx = STEPS.indexOf(step);
@@ -620,7 +630,15 @@ export default function NewTripForm({ onBack, onTripCreated }: NewTripFormProps)
 
       {/* Bottom action bar */}
       {(step as string) !== "generating" && (
-        <div className="shrink-0 px-5 pb-6 pt-3 border-t border-border/20 bg-background">
+        <div className="shrink-0 px-5 pb-6 pt-3 border-t border-border/20 bg-background space-y-2">
+          {step === "dates" && hasQuickEssentials && (
+            <button
+              onClick={quickGenerate}
+              className="w-full h-12 rounded-2xl font-bold text-[13px] flex items-center justify-center gap-2 gradient-glow text-white glow-accent"
+            >
+              <Sparkles className="h-4 w-4" /> Generate now
+            </button>
+          )}
           <button
             onClick={next}
             disabled={!canProceed()}
@@ -628,7 +646,9 @@ export default function NewTripForm({ onBack, onTripCreated }: NewTripFormProps)
               canProceed()
                 ? step === "safety"
                   ? "gradient-glow text-white glow-accent"
-                  : "gradient-accent text-white"
+                  : step === "dates" && hasQuickEssentials
+                    ? "bg-card border border-border text-foreground"
+                    : "gradient-accent text-white"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
           >
@@ -636,10 +656,10 @@ export default function NewTripForm({ onBack, onTripCreated }: NewTripFormProps)
               <>
                 <Sparkles className="h-4 w-4" /> Generate Itinerary
               </>
+            ) : step === "dates" && hasQuickEssentials ? (
+              <>Add more details <ArrowRight className="h-4 w-4" /></>
             ) : (
-              <>
-                Continue <ArrowRight className="h-4 w-4" />
-              </>
+              <>Continue <ArrowRight className="h-4 w-4" /></>
             )}
           </button>
         </div>
