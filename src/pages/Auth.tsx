@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable";
-import roavrIcon from "@/assets/roavr-icon.jpeg";
+import miloMascot from "@/assets/milo-mascot.png";
 
 export default function Auth() {
   const { user, loading } = useAuth();
