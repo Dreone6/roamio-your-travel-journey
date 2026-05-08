@@ -351,10 +351,19 @@ export default function CameraPage() {
         ))}
       </div>
 
+      {/* Hidden file picker for upload-from-library (EXIF auto-geotag) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       {/* Capture controls */}
       <div className="relative z-10 flex items-center justify-center gap-6 pb-3">
-        <button onClick={() => setShowFilters(!showFilters)} className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center">
-          <Sparkles className="h-4 w-4 text-white" />
+        <button onClick={handlePickFile} className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center" aria-label="Upload photo">
+          <Upload className="h-4 w-4 text-white" />
         </button>
         <button onClick={handleCapture} className="h-[68px] w-[68px] rounded-full border-4 border-white/80 flex items-center justify-center">
           <div className={`h-14 w-14 rounded-full ${mode === "video" ? "bg-red-500" : "bg-white"} transition-all active:scale-90`} />
