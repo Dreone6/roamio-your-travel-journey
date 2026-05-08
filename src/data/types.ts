@@ -181,7 +181,7 @@ export interface MapPin {
   longitude: number;
   label: string;
   description: string | null;
-  category: "visited" | "wishlist" | "memory" | "checkin" | "tip";
+  category: "visited" | "wishlist" | "memory" | "checkin" | "tip" | "sponsored";
   linkedId: string | null;
   visibility: Visibility;
   createdAt: string;
