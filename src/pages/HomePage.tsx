@@ -5,6 +5,7 @@ import EmptyState from "@/components/EmptyState";
 import SafePassCard from "@/components/safety/SafePassCard";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import WhatsNewModal from "@/components/WhatsNewModal";
+import TrialBanner from "@/components/TrialBanner";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Sparkles, ArrowRight, Compass, Globe, TrendingUp,
@@ -105,6 +106,7 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="px-4 pt-5 space-y-5">
+        <TrialBanner />
         {/* Upcoming Trip Card */}
         {upcomingTrip ? (
           <button

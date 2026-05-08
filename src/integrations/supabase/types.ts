@@ -804,6 +804,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsored_pins: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          ends_at: string | null
+          id: string
+          image: string | null
+          latitude: number
+          longitude: number
+          name: string
+          sponsor_name: string
+          starts_at: string
+          tagline: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          id?: string
+          image?: string | null
+          latitude: number
+          longitude: number
+          name: string
+          sponsor_name: string
+          starts_at?: string
+          tagline: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          id?: string
+          image?: string | null
+          latitude?: number
+          longitude?: number
+          name?: string
+          sponsor_name?: string
+          starts_at?: string
+          tagline?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           auto_save_to_globe: boolean
@@ -929,6 +980,8 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
+          trial_ends_at: string | null
+          trial_started_at: string | null
           updated_at: string
           user_id: string
         }
@@ -941,6 +994,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -953,6 +1008,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id?: string
         }

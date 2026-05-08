@@ -2,6 +2,7 @@ import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Globe as GlobeIcon, Map, Share2, Camera, Lock, Users, Eye,
   ChevronRight, Flame, Compass, Sparkles, Settings, MapPin as MapPinIcon,
@@ -146,6 +147,7 @@ export default function GlobePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [storyConversion, setStoryConversion] = useState<"auto" | "ask" | "never">("auto");
   const [showEmpty] = useState(false); // Toggle for demo
+  const [sponsoredPins, setSponsoredPins] = useState<MapPin[]>([]);
 
   // Trigger-based: when the user opens the Globe, request location once (used to center the map).
   useEffect(() => {
@@ -157,6 +159,31 @@ export default function GlobePage() {
         // Silent fallback — the globe still works with default view.
       }
     })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sponsored pins (Milo proximity promotions) — visible across all tabs
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("sponsored_pins")
+      .select("id, name, tagline, latitude, longitude, sponsor_name, category")
+      .eq("active", true)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setSponsoredPins(data.map((s) => ({
+          id: `sp-${s.id}`,
+          userId: "milo",
+          latitude: s.latitude,
+          longitude: s.longitude,
+          label: `🐾 Milo: ${s.name}`,
+          description: `${s.tagline} · Sponsored by ${s.sponsor_name}`,
+          category: "sponsored" as MapPin["category"],
+          linkedId: s.id,
+          visibility: "public" as Visibility,
+          createdAt: new Date().toISOString(),
+        })));
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -172,12 +199,15 @@ export default function GlobePage() {
   const explorePins = useMemo(() => buildExplorePins(), []);
 
   const activePins = useMemo(() => {
-    switch (activeTab) {
-      case "mine": return allMyPins;
-      case "followers": return followingPins;
-      case "explore": return explorePins;
-    }
-  }, [activeTab, allMyPins, followingPins, explorePins]);
+    const base = (() => {
+      switch (activeTab) {
+        case "mine": return allMyPins;
+        case "followers": return followingPins;
+        case "explore": return explorePins;
+      }
+    })();
+    return [...base, ...sponsoredPins];
+  }, [activeTab, allMyPins, followingPins, explorePins, sponsoredPins]);
 
   const globePins = useMemo(
     () => activePins.map((p) => ({ lat: p.latitude, lng: p.longitude, label: p.label, category: p.category })),
