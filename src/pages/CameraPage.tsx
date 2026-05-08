@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   X, Zap, Camera as CameraIcon, Video, Grid3X3, Sun, Moon, Mountain,
-  MapPin, Send, Image, Sparkles, ChevronDown, RotateCcw, Circle,
-  Maximize2, Focus, SunMedium
+  MapPin, Send, Image as ImageIcon, Sparkles, ChevronDown, RotateCcw, Circle,
+  Maximize2, Focus, SunMedium, Upload, Globe as GlobeIcon, Users, Lock, Eye, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ensureLocationPermission, ensurePhotoPermission } from "@/lib/permissions";
+import { geotagPhoto, type PhotoLocation } from "@/lib/exif";
 
 const FILTERS = [
   { id: "none", name: "Original", color: "" },
@@ -39,6 +41,7 @@ type PostTarget = "story" | "memory" | "message" | "globe";
 export default function CameraPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("photo");
   const [activeFilter, setActiveFilter] = useState("none");
   const [showFilters, setShowFilters] = useState(false);
@@ -47,36 +50,131 @@ export default function CameraPage() {
   const [captured, setCaptured] = useState(false);
   const [showPostOptions, setShowPostOptions] = useState(false);
   const [caption, setCaption] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "followers" | "private">("public");
+  // Default visibility: Followers (per privacy model). Toggle to Public or Private.
+  const [visibility, setVisibility] = useState<"public" | "followers" | "private">("followers");
+  const [pickedFile, setPickedFile] = useState<File | null>(null);
+  const [pickedPreview, setPickedPreview] = useState<string | null>(null);
+  const [autoLocation, setAutoLocation] = useState<PhotoLocation | null>(null);
+  const [geotagging, setGeotagging] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   const handleCapture = async () => {
     // Trigger-based: only ask for camera/photo permission when the user actually captures.
     const ok = await ensurePhotoPermission();
     if (!ok) return;
+    setPickedFile(null);
+    setPickedPreview(null);
+    setAutoLocation(null);
     setCaptured(true);
     setShowPostOptions(true);
   };
 
-  const handlePost = async (target: PostTarget) => {
-    // Trigger-based: ask for location only when posting to Story or pinning to Globe.
-    if (target === "story" || target === "globe") {
-      const ok = await ensureLocationPermission();
-      if (!ok) return;
+  const handlePickFile = () => fileInputRef.current?.click();
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPickedFile(file);
+    setPickedPreview(URL.createObjectURL(file));
+    setCaptured(true);
+    setShowPostOptions(true);
+
+    // Auto-geotag from EXIF immediately so the user sees the detected location.
+    setGeotagging(true);
+    const loc = await geotagPhoto(file);
+    setAutoLocation(loc);
+    setGeotagging(false);
+    if (loc?.source === "exif") {
+      toast.success("Location detected from photo");
     }
-    toast.success(
-      target === "story" ? "Posted to your story!" :
-      target === "memory" ? "Saved as a memory!" :
-      target === "message" ? "Opening messages..." :
-      "Pinned to your globe!"
-    );
-    if (target === "message") navigate("/messages");
-    else navigate("/home");
+  };
+
+  async function uploadStoryMedia(file: File): Promise<string | null> {
+    if (!user) return null;
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("checkin-photos").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (error) {
+      toast.error("Upload failed", { description: error.message });
+      return null;
+    }
+    const { data } = supabase.storage.from("checkin-photos").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  const handlePost = async (target: PostTarget) => {
+    if (!user) {
+      toast.error("Please sign in first");
+      return;
+    }
+    setPosting(true);
+    try {
+      // Auto-geotag for Story / Globe targets.
+      let location = autoLocation;
+      if ((target === "story" || target === "globe") && !location) {
+        setGeotagging(true);
+        location = await geotagPhoto(pickedFile);
+        setGeotagging(false);
+        setAutoLocation(location);
+      }
+
+      // For story posting, persist to DB so it appears in feed AND on the globe.
+      if (target === "story") {
+        let mediaUrl = pickedPreview || "";
+        if (pickedFile) {
+          const uploaded = await uploadStoryMedia(pickedFile);
+          if (!uploaded) { setPosting(false); return; }
+          mediaUrl = uploaded;
+        }
+
+        const { error } = await supabase.from("stories").insert({
+          user_id: user.id,
+          media_url: mediaUrl,
+          media_type: mode === "video" ? "video" : "photo",
+          caption: caption || null,
+          location_name: null,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+          filter_name: activeFilter === "none" ? null : activeFilter,
+          visibility,
+          auto_save_to_globe: true, // dual-view: feed + Story Pin on globe
+        });
+        if (error) throw error;
+
+        toast.success("Posted to your story", {
+          description: location
+            ? `Pinned to your globe (${location.source === "exif" ? "from photo" : "live location"})`
+            : "Visible in your feed",
+        });
+        navigate("/stories");
+        return;
+      }
+
+      // Other targets keep their original mock behavior.
+      toast.success(
+        target === "memory" ? "Saved as a memory!" :
+        target === "message" ? "Opening messages..." :
+        "Pinned to your globe!"
+      );
+      if (target === "message") navigate("/messages");
+      else navigate("/home");
+    } catch (err: any) {
+      toast.error("Something went wrong", { description: err?.message });
+    } finally {
+      setPosting(false);
+    }
   };
 
   const resetCapture = () => {
     setCaptured(false);
     setShowPostOptions(false);
     setCaption("");
+    setPickedFile(null);
+    setPickedPreview(null);
+    setAutoLocation(null);
   };
 
   if (showPostOptions) {
