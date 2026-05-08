@@ -183,21 +183,44 @@ export default function CameraPage() {
         <div className="absolute inset-0 gradient-dark-radial" />
         <div className="relative flex-1 flex flex-col">
           {/* Preview */}
-          <div className="relative px-4 pt-12 pb-4">
+          <div className="relative px-4 pt-12 pb-3">
             <button onClick={resetCapture} className="absolute top-12 left-4 z-10 h-9 w-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
               <X className="h-4 w-4 text-white" />
             </button>
-            <div className={`mx-auto w-full max-w-sm aspect-[3/4] rounded-2xl bg-gradient-to-br from-emerald-900/40 to-primary/20 overflow-hidden flex items-center justify-center border border-white/10 ${FILTERS.find(f => f.id === activeFilter)?.color || ""}`}>
-              <div className="text-center space-y-2">
-                <CameraIcon className="h-12 w-12 text-white/30 mx-auto" />
-                <p className="text-white/40 text-[11px]">HD Photo Preview</p>
-                <p className="text-glow text-[10px] font-bold">4032 × 3024</p>
+            <div className={`mx-auto w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden flex items-center justify-center border border-white/10 relative ${pickedPreview ? "" : "bg-gradient-to-br from-emerald-900/40 to-primary/20"} ${FILTERS.find(f => f.id === activeFilter)?.color || ""}`}>
+              {pickedPreview ? (
+                <img src={pickedPreview} alt="Story preview" className="h-full w-full object-cover" />
+              ) : (
+                <div className="text-center space-y-2">
+                  <CameraIcon className="h-12 w-12 text-white/30 mx-auto" />
+                  <p className="text-white/40 text-[11px]">HD Photo Preview</p>
+                  <p className="text-glow text-[10px] font-bold">4032 × 3024</p>
+                </div>
+              )}
+
+              {/* Auto-geotag badge */}
+              <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md px-3 py-1.5 text-[10px] font-medium text-white/90">
+                {geotagging ? (
+                  <><Loader2 className="h-3 w-3 animate-spin text-glow" /> Detecting location…</>
+                ) : autoLocation ? (
+                  <>
+                    <MapPin className="h-3 w-3 text-glow" />
+                    <span className="truncate">
+                      {autoLocation.latitude.toFixed(3)}, {autoLocation.longitude.toFixed(3)}
+                    </span>
+                    <span className="ml-auto shrink-0 text-[9px] text-glow uppercase tracking-wider">
+                      {autoLocation.source === "exif" ? "From photo" : "Live"}
+                    </span>
+                  </>
+                ) : (
+                  <><MapPin className="h-3 w-3 text-white/40" /> No location yet — we'll add it on post</>
+                )}
               </div>
             </div>
           </div>
 
           {/* Caption */}
-          <div className="px-5 py-3">
+          <div className="px-5 pt-2">
             <input
               type="text"
               placeholder="Add a caption..."
@@ -207,16 +230,23 @@ export default function CameraPage() {
             />
           </div>
 
-          {/* Visibility */}
-          <div className="px-5 py-2">
+          {/* Visibility — Followers default, with Public/Private toggles */}
+          <div className="px-5 pt-3">
+            <p className="text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Who can see this</p>
             <div className="flex gap-2">
-              {(["public", "followers", "private"] as const).map((v) => (
+              {([
+                { id: "followers", label: "Followers", icon: Users },
+                { id: "public", label: "Public", icon: Eye },
+                { id: "private", label: "Private", icon: Lock },
+              ] as const).map(({ id, label, icon: Icon }) => (
                 <button
-                  key={v}
-                  onClick={() => setVisibility(v)}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-bold capitalize ${visibility === v ? "gradient-glow text-white" : "dark-card-elevated text-dark-muted"}`}
+                  key={id}
+                  onClick={() => setVisibility(id)}
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    visibility === id ? "gradient-glow text-white glow-accent" : "dark-card-elevated text-dark-muted"
+                  }`}
                 >
-                  {v}
+                  <Icon className="h-3 w-3" /> {label}
                 </button>
               ))}
             </div>
@@ -225,7 +255,7 @@ export default function CameraPage() {
           {/* Post targets */}
           <div className="px-5 pt-4 pb-8 space-y-2.5 mt-auto">
             {([
-              { target: "story" as PostTarget, label: "Post to Story", desc: "Visible for 24 hours", icon: "⏳", gradient: "gradient-accent" },
+              { target: "story" as PostTarget, label: "Post to 24h Story", desc: "Appears in feed and on your globe", icon: "⏳", gradient: "gradient-accent" },
               { target: "memory" as PostTarget, label: "Save as Memory", desc: "Pin to your globe forever", icon: "📌", gradient: "gradient-glow" },
               { target: "globe" as PostTarget, label: "Pin to Globe", desc: "Add directly to your map", icon: "🌍", gradient: "gradient-navy" },
               { target: "message" as PostTarget, label: "Send in Message", desc: "Share with a friend", icon: "💬", gradient: "" },
@@ -233,13 +263,15 @@ export default function CameraPage() {
               <button
                 key={opt.target}
                 onClick={() => handlePost(opt.target)}
-                className={`w-full rounded-xl p-3.5 flex items-center gap-3 text-left transition-all ${opt.gradient || "dark-card-elevated"} ${opt.gradient ? "text-white" : "text-white"}`}
+                disabled={posting}
+                className={`w-full rounded-xl p-3.5 flex items-center gap-3 text-left transition-all disabled:opacity-60 ${opt.gradient || "dark-card-elevated"} text-white`}
               >
                 <span className="text-lg">{opt.icon}</span>
                 <div className="flex-1">
                   <p className="font-semibold text-[13px]">{opt.label}</p>
                   <p className="text-[11px] opacity-70">{opt.desc}</p>
                 </div>
+                {posting && opt.target === "story" && <Loader2 className="h-4 w-4 animate-spin" />}
               </button>
             ))}
           </div>
