@@ -54,11 +54,10 @@ export default function StoriesPage() {
       .order("created_at", { ascending: false });
     setMyStories((myData as Story[]) || []);
 
-    // For now, show mock + real stories
+    // Friends feed: rely on RLS — returns public stories + followers-only stories from people I follow.
     const { data: publicData } = await supabase
       .from("stories")
       .select("*")
-      .eq("visibility", "public")
       .gt("expires_at", new Date().toISOString())
       .neq("user_id", user!.id)
       .order("created_at", { ascending: false })
