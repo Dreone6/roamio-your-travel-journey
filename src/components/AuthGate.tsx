@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import LandingPage from "@/pages/LandingPage";
-import roavrIcon from "@/assets/roavr-icon.jpeg";
+import miloMascot from "@/assets/milo-mascot.png";
 
 export default function AuthGate() {
   const { user, loading } = useAuth();
@@ -9,7 +9,7 @@ export default function AuthGate() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <img src={roavrIcon} alt="Roavr" className="h-10 w-10 rounded-xl animate-pulse" />
+        <img src={miloMascot} alt="Milo" className="h-14 w-14 animate-pulse" />
       </div>
     );
   }

@@ -24,7 +24,7 @@
     --muted: 30 12% 92%;
     --muted-foreground: 220 8% 50%;
 
-    --accent: 12 90% 58%;
+    --accent: 220 75% 35%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -72,7 +72,7 @@
     --secondary-foreground: 30 15% 95%;
     --muted: 225 25% 16%;
     --muted-foreground: 220 8% 58%;
-    --accent: 12 90% 58%;
+    --accent: 220 80% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
@@ -118,7 +118,7 @@
 
   /* Brand gradients */
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(12 90% 58%), hsl(25 85% 55%));
+    background: linear-gradient(135deg, hsl(220 80% 38%), hsl(220 75% 28%));
   }
   .gradient-navy {
     background: linear-gradient(135deg, hsl(220 55% 18%), hsl(225 50% 26%));
@@ -169,7 +169,7 @@
     box-shadow: 0 0 32px hsl(var(--dark-glow) / 0.2), 0 0 64px hsl(var(--dark-glow) / 0.1);
   }
   .glow-coral {
-    box-shadow: 0 4px 20px hsl(12 90% 58% / 0.3), 0 2px 8px hsl(12 90% 58% / 0.15);
+    box-shadow: 0 4px 20px hsl(220 75% 35% / 0.3), 0 2px 8px hsl(220 75% 35% / 0.15);
   }
 
   /* Text utilities */
@@ -182,7 +182,7 @@
 
   /* FAB */
   .fab-shadow {
-    box-shadow: 0 4px 16px hsl(12 90% 58% / 0.35), 0 2px 6px hsl(12 90% 58% / 0.2);
+    box-shadow: 0 4px 16px hsl(220 75% 35% / 0.35), 0 2px 6px hsl(220 75% 35% / 0.2);
   }
 
   /* Safe area for bottom nav */

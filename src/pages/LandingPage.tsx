@@ -6,7 +6,7 @@ import {
   ChevronRight, Play, Heart, Lock, Eye, Navigation, Trophy,
 } from "lucide-react";
 import roavrLogo from "@/assets/roavr-logo.png";
-import roavrIcon from "@/assets/roavr-icon.jpeg";
+import miloMascot from "@/assets/milo-mascot.png";
 import { PLANS } from "@/services/subscriptions";
 
 export default function LandingPage() {
@@ -20,7 +20,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-border/30 bg-card/80 backdrop-blur-2xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-2.5">
-            <img src={roavrIcon} alt="Roavr" className="h-8 w-8 rounded-lg" />
+            <img src={miloMascot} alt="Milo — Roavr mascot" className="h-9 w-9" />
             <span className="font-heading text-xl font-bold text-foreground tracking-tight">Roavr</span>
           </div>
           <div className="hidden md:flex items-center gap-6">
@@ -471,7 +471,7 @@ export default function LandingPage() {
       <footer className="border-t border-border/30 bg-card">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <img src={roavrIcon} alt="Roavr" className="h-6 w-6 rounded-md" />
+            <img src={miloMascot} alt="Roavr" className="h-6 w-6 rounded-md" />
             <span className="font-heading font-bold text-foreground">Roavr</span>
           </div>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Roavr. Your world, one trip at a time.</p>
