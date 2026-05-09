@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable";
-import miloMascot from "@/assets/milo-mascot.png";
+import miloMascot from "@/assets/roavr-pin.png";
 
 export default function Auth() {
   const { user, loading } = useAuth();
@@ -67,7 +67,7 @@ export default function Auth() {
       <div className="w-full max-w-sm space-y-7">
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center mb-2">
-            <img src={miloMascot} alt="Milo — Roavr mascot" className="h-20 w-20" />
+            <img src={miloMascot} alt="Roavr" className="h-20 w-20" />
           </div>
           <h1 className="font-heading text-3xl font-bold text-foreground tracking-tight">Roavr</h1>
           <p className="text-muted-foreground text-sm">Your world, one trip at a time.</p>

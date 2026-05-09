@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,87 +6,98 @@
 
 @layer base {
   :root {
-    --background: 30 15% 97%;
-    --foreground: 220 25% 12%;
+    --background: 30 20% 98%;
+    --foreground: 230 45% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 12%;
+    --card-foreground: 230 45% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 12%;
+    --popover-foreground: 230 45% 12%;
 
-    --primary: 220 55% 18%;
-    --primary-foreground: 30 15% 97%;
+    /* Roavr royal blue from the logo */
+    --primary: 230 78% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 94%;
-    --secondary-foreground: 220 25% 12%;
+    --secondary: 230 25% 95%;
+    --secondary-foreground: 230 45% 12%;
 
-    --muted: 30 12% 92%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 230 18% 94%;
+    --muted-foreground: 230 12% 45%;
 
-    --accent: 220 75% 35%;
+    /* Accent = same royal blue family for cohesion */
+    --accent: 230 78% 40%;
     --accent-foreground: 0 0% 100%;
+
+    /* Warm coral reserved for special CTAs and emotional highlights */
+    --coral: 12 88% 62%;
+    --coral-foreground: 0 0% 100%;
+
+    /* Electric aqua for map / AI states */
+    --electric: 195 95% 52%;
+    --electric-foreground: 230 45% 12%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 12% 90%;
-    --input: 30 12% 88%;
-    --ring: 220 55% 18%;
+    --border: 230 18% 90%;
+    --input: 230 18% 88%;
+    --ring: 230 78% 40%;
 
     --radius: 0.875rem;
 
-    /* Dark immersive tokens */
-    --dark-bg: 225 28% 7%;
-    --dark-surface: 225 24% 10%;
-    --dark-card: 225 22% 13%;
-    --dark-card-elevated: 225 20% 16%;
-    --dark-border: 225 18% 20%;
+    /* Dark immersive — midnight navy inspired by logo blue */
+    --dark-bg: 230 50% 7%;
+    --dark-surface: 230 45% 10%;
+    --dark-card: 230 40% 13%;
+    --dark-card-elevated: 230 36% 17%;
+    --dark-border: 230 30% 22%;
     --dark-text: 0 0% 96%;
-    --dark-text-muted: 225 10% 55%;
-    --dark-glow: 160 75% 48%;
+    --dark-text-muted: 230 14% 60%;
+    /* Map / AI glow = electric aqua, not teal green */
+    --dark-glow: 195 95% 55%;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 220 55% 18%;
-    --sidebar-primary-foreground: 30 15% 97%;
-    --sidebar-accent: 30 20% 94%;
-    --sidebar-accent-foreground: 220 25% 12%;
-    --sidebar-border: 30 12% 90%;
-    --sidebar-ring: 220 55% 18%;
+    --sidebar-foreground: 230 12% 28%;
+    --sidebar-primary: 230 78% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 25% 95%;
+    --sidebar-accent-foreground: 230 45% 12%;
+    --sidebar-border: 230 18% 90%;
+    --sidebar-ring: 230 78% 40%;
 
-    --font-heading: 'Playfair Display', serif;
+    --font-heading: 'Plus Jakarta Sans', 'Space Grotesk', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
   }
 
   .dark {
-    --background: 225 45% 7%;
-    --foreground: 30 15% 95%;
-    --card: 225 35% 11%;
-    --card-foreground: 30 15% 95%;
-    --popover: 225 35% 11%;
-    --popover-foreground: 30 15% 95%;
-    --primary: 30 15% 95%;
-    --primary-foreground: 220 55% 18%;
-    --secondary: 225 25% 16%;
-    --secondary-foreground: 30 15% 95%;
-    --muted: 225 25% 16%;
-    --muted-foreground: 220 8% 58%;
-    --accent: 220 80% 55%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 230 50% 7%;
+    --foreground: 0 0% 96%;
+    --card: 230 40% 11%;
+    --card-foreground: 0 0% 96%;
+    --popover: 230 40% 11%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 195 95% 55%;
+    --primary-foreground: 230 50% 7%;
+    --secondary: 230 30% 16%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 230 30% 16%;
+    --muted-foreground: 230 14% 60%;
+    --accent: 195 95% 55%;
+    --accent-foreground: 230 50% 7%;
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
-    --border: 225 20% 18%;
-    --input: 225 20% 18%;
-    --ring: 30 15% 95%;
-    --sidebar-background: 225 35% 9%;
-    --sidebar-foreground: 30 15% 90%;
-    --sidebar-primary: 30 15% 95%;
-    --sidebar-primary-foreground: 220 55% 18%;
-    --sidebar-accent: 225 25% 16%;
-    --sidebar-accent-foreground: 30 15% 95%;
-    --sidebar-border: 225 20% 18%;
-    --sidebar-ring: 30 15% 95%;
+    --border: 230 24% 20%;
+    --input: 230 24% 20%;
+    --ring: 195 95% 55%;
+    --sidebar-background: 230 45% 9%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 195 95% 55%;
+    --sidebar-primary-foreground: 230 50% 7%;
+    --sidebar-accent: 230 30% 16%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 230 24% 20%;
+    --sidebar-ring: 195 95% 55%;
   }
 }
 
@@ -118,27 +129,36 @@
 
   /* Brand gradients */
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(220 80% 38%), hsl(220 75% 28%));
+    background: linear-gradient(135deg, hsl(230 78% 42%), hsl(230 82% 30%));
   }
   .gradient-navy {
-    background: linear-gradient(135deg, hsl(220 55% 18%), hsl(225 50% 26%));
+    background: linear-gradient(135deg, hsl(230 60% 14%), hsl(230 55% 22%));
   }
+  /* Electric aqua glow for AI / map / active states */
   .gradient-glow {
-    background: linear-gradient(135deg, hsl(160 75% 48%), hsl(175 65% 42%));
+    background: linear-gradient(135deg, hsl(195 95% 55%), hsl(210 90% 50%));
+  }
+  /* Warm coral CTA for emotional highlights */
+  .gradient-coral {
+    background: linear-gradient(135deg, hsl(12 92% 64%), hsl(8 88% 56%));
   }
   .gradient-premium {
-    background: linear-gradient(135deg, hsl(225 28% 10%), hsl(225 24% 16%));
+    background: linear-gradient(135deg, hsl(230 50% 10%), hsl(230 45% 16%));
+  }
+  /* Subtle Roavr smile curve as background flourish */
+  .smile-curve {
+    background-image: radial-gradient(120% 60% at 50% -10%, transparent 49%, hsl(var(--primary) / 0.10) 50%, transparent 51%);
   }
 
   /* Shadows */
   .shadow-soft {
-    box-shadow: 0 1px 8px -2px hsl(220 55% 18% / 0.06), 0 1px 3px -1px hsl(220 55% 18% / 0.04);
+    box-shadow: 0 1px 8px -2px hsl(230 78% 30% / 0.06), 0 1px 3px -1px hsl(230 78% 30% / 0.04);
   }
   .shadow-elevated {
-    box-shadow: 0 4px 20px -4px hsl(220 55% 18% / 0.1), 0 2px 6px -2px hsl(220 55% 18% / 0.05);
+    box-shadow: 0 4px 20px -4px hsl(230 78% 30% / 0.12), 0 2px 6px -2px hsl(230 78% 30% / 0.06);
   }
   .shadow-card-hover {
-    box-shadow: 0 8px 30px -6px hsl(220 55% 18% / 0.12), 0 4px 10px -4px hsl(220 55% 18% / 0.06);
+    box-shadow: 0 8px 30px -6px hsl(230 78% 30% / 0.16), 0 4px 10px -4px hsl(230 78% 30% / 0.08);
   }
 
   /* Dark immersive */
@@ -158,31 +178,28 @@
     border: 1px solid hsl(var(--dark-border) / 0.6);
   }
   .gradient-dark-radial {
-    background: radial-gradient(ellipse at 50% 20%, hsl(225 24% 14%) 0%, hsl(225 28% 7%) 70%);
+    background: radial-gradient(ellipse at 50% 20%, hsl(230 50% 14%) 0%, hsl(230 55% 6%) 70%);
   }
 
-  /* Glow effects */
+  /* Glow effects (electric aqua) */
   .glow-accent {
-    box-shadow: 0 0 24px hsl(var(--dark-glow) / 0.12), 0 0 48px hsl(var(--dark-glow) / 0.06);
+    box-shadow: 0 0 24px hsl(var(--dark-glow) / 0.18), 0 0 48px hsl(var(--dark-glow) / 0.10);
   }
   .glow-accent-strong {
-    box-shadow: 0 0 32px hsl(var(--dark-glow) / 0.2), 0 0 64px hsl(var(--dark-glow) / 0.1);
+    box-shadow: 0 0 32px hsl(var(--dark-glow) / 0.28), 0 0 64px hsl(var(--dark-glow) / 0.14);
   }
+  /* Coral CTA glow */
   .glow-coral {
-    box-shadow: 0 4px 20px hsl(220 75% 35% / 0.3), 0 2px 8px hsl(220 75% 35% / 0.15);
+    box-shadow: 0 6px 22px hsl(12 88% 56% / 0.36), 0 2px 8px hsl(12 88% 50% / 0.20);
   }
-
-  /* Text utilities */
-  .text-glow {
-    color: hsl(var(--dark-glow));
-  }
-  .text-dark-muted {
-    color: hsl(var(--dark-text-muted));
+  /* Royal blue brand glow */
+  .glow-brand {
+    box-shadow: 0 6px 22px hsl(230 78% 38% / 0.30), 0 2px 8px hsl(230 78% 30% / 0.18);
   }
 
   /* FAB */
   .fab-shadow {
-    box-shadow: 0 4px 16px hsl(220 75% 35% / 0.35), 0 2px 6px hsl(220 75% 35% / 0.2);
+    box-shadow: 0 6px 18px hsl(230 78% 32% / 0.40), 0 2px 6px hsl(230 78% 28% / 0.24);
   }
 
   /* Safe area for bottom nav */
