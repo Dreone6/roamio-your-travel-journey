@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Map, Plus, ChevronRight, Sparkles, Plane, Calendar, Users, Camera } from "lucide-react";
+import { Map, Plus, ChevronRight, Sparkles, Plane, Calendar, Users, Camera, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import NewTripForm from "@/components/trip/NewTripForm";
 import ItineraryView from "@/components/trip/ItineraryView";
 import EmptyState from "@/components/EmptyState";
+import BookingImportSheet from "@/components/bookings/BookingImportSheet";
 import { SkeletonTripCard } from "@/components/ui/skeleton-card";
 
 type ViewState = "list" | "new" | "view";
@@ -34,6 +35,7 @@ export default function TripsPage() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const navigate = useNavigate();
   const [itineraryItems, setItineraryItems] = useState<any[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (user) loadTrips();
@@ -98,7 +100,7 @@ export default function TripsPage() {
 
           {/* AI CTA */}
           <button
-            onClick={() => setView("new")}
+            onClick={() => navigate("/surprise")}
             className="w-full rounded-2xl p-4 flex items-center gap-3.5 group transition-all dark-card hover:bg-white/[0.03]"
           >
             <div className="h-11 w-11 rounded-xl gradient-glow flex items-center justify-center shrink-0 glow-accent">
@@ -110,8 +112,24 @@ export default function TripsPage() {
             </div>
             <ChevronRight className="h-4 w-4 text-dark-muted group-hover:text-glow transition-colors" />
           </button>
+
+          <button
+            onClick={() => setImportOpen(true)}
+            className="w-full rounded-2xl p-3.5 flex items-center gap-3 group transition-all dark-card hover:bg-white/[0.03]"
+          >
+            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Mail className="h-4 w-4 text-glow" />
+            </div>
+            <div className="text-left flex-1">
+              <p className="text-white font-semibold text-[12px]">Import bookings</p>
+              <p className="text-dark-muted text-[10px]">Forward email or add manually</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-dark-muted" />
+          </button>
         </div>
       </div>
+
+      <BookingImportSheet open={importOpen} onOpenChange={setImportOpen} />
 
       {/* Content */}
       <div className="px-4 pt-4 space-y-5">

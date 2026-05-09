@@ -11,6 +11,11 @@ import {
   Utensils, Shield, Navigation, Bookmark, Send, ChevronDown, ChevronUp,
 } from "lucide-react";
 import TripChecklist from "./TripChecklist";
+import ShareItinerarySheet from "./ShareItinerarySheet";
+import GetAroundSheet from "./GetAroundSheet";
+import OfflineTripToggle from "./OfflineTripToggle";
+import BookingsList from "@/components/bookings/BookingsList";
+import BookingImportSheet from "@/components/bookings/BookingImportSheet";
 
 interface ItineraryItem {
   id: string;
@@ -71,6 +76,9 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
   const [activeTab, setActiveTab] = useState<"itinerary" | "checklist">("itinerary");
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareSheet, setShareSheet] = useState(false);
+  const [getAround, setGetAround] = useState<string | undefined>(undefined);
+  const [importBookings, setImportBookings] = useState(false);
 
   const dayNumbers = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
   const totalCost = items.reduce((sum, i) => sum + (i.estimated_cost || 0), 0);
@@ -211,7 +219,7 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowShareMenu(!showShareMenu)}
+                onClick={() => setShareSheet(true)}
                 className="h-9 w-9 rounded-xl dark-card-elevated flex items-center justify-center"
               >
                 <Share2 className="h-4 w-4 text-glow" />
