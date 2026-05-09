@@ -60,7 +60,6 @@ export default function HomePage() {
   const worldPercent = Math.min(100, Math.round((stats.countries / 195) * 100));
 
   // Swipe gestures: right -> Camera, left -> Messages
-  const touchStart = useState<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     (window as any).__roavrSwipe = { x: t.clientX, y: t.clientY };
