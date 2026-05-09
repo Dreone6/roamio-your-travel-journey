@@ -13,8 +13,9 @@ import {
 import type { SafetyChecklistItem } from "@/data/mock/safety";
 import TrustedContactsList from "@/components/safety/TrustedContactsList";
 import LiveLocationToggle from "@/components/safety/LiveLocationToggle";
+import CrisisReadyPanel from "@/components/safety/CrisisReadyPanel";
 
-type SafetyView = "overview" | "checklist" | "destination" | "contacts" | "emergency" | "sharing" | "settings";
+type SafetyView = "overview" | "checklist" | "destination" | "contacts" | "emergency" | "sharing" | "settings" | "crisis";
 
 const CATEGORY_ICONS: Record<string, typeof FileText> = {
   documents: FileText,
