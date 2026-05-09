@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import EmptyState from "@/components/EmptyState";
 import SafePassCard from "@/components/safety/SafePassCard";
-import { SkeletonCard } from "@/components/ui/skeleton-card";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import TrialBanner from "@/components/TrialBanner";
 import { useNavigate } from "react-router-dom";
 import {
-  MapPin, Sparkles, ArrowRight, Compass, Globe, TrendingUp,
-  Plus, Shield, Zap, Users, Trophy, Camera, MessageCircle, Bell
+  MapPin, Sparkles, ArrowRight, Compass, Globe, Plus, Shield,
+  MessageCircle, Bell, Plane, Sun, Briefcase, Search,
+  Heart, Trophy, Users, Flame, ChevronRight, Mic
 } from "lucide-react";
+import roavrLogo from "@/assets/roavr-logo.png";
+import { MOCK_USERS } from "@/data/mock/users";
+import { MOCK_OFFERS } from "@/data/mock/offers";
+import { MOCK_STORIES } from "@/data/mock/social";
 
 interface Trip {
   id: string;
@@ -20,13 +23,32 @@ interface Trip {
   status: string;
 }
 
+const HERO_IMG =
+  "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1200&q=80&auto=format&fit=crop";
+
+const NEARBY = [
+  { tag: "Offer", title: "Coastal Kitchen", sub: "20% off brunch · 0.4 mi", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600", route: "/discover" },
+  { tag: "Tour", title: "Sunset Sailing", sub: "From $48 · Tonight", img: "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=600", route: "/discover" },
+  { tag: "Food", title: "Sakura Ramen", sub: "4.8 ★ · 8 min walk", img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600", route: "/discover" },
+  { tag: "Nightlife", title: "Rooftop 360", sub: "Live DJ tonight", img: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600", route: "/discover" },
+  { tag: "Event", title: "Street Food Fest", sub: "Sat · Old Town", img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600", route: "/discover" },
+  { tag: "Expert", title: "Yuki — Tokyo guide", sub: "4.9 ★ · 127 trips", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600", route: "/discover" },
+];
+
+const FEED = [
+  { type: "checkin", user: MOCK_USERS[1], text: "checked in at Positano", meta: "2h · Italy", img: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=600" },
+  { type: "badge", user: MOCK_USERS[3], text: "unlocked Globetrotter Lv.3", meta: "5h · 25 countries", img: null },
+  { type: "trip", user: MOCK_USERS[2], text: "wrapped a trip to Iceland", meta: "1d · 14 memories", img: "https://images.unsplash.com/photo-1531168556467-80aace0d0144?w=600" },
+  { type: "story", user: MOCK_USERS[4], text: "shared a story from Tokyo", meta: "3h · 89 views", img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600" },
+];
+
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Traveler";
   const [trips, setTrips] = useState<Trip[]>([]);
   const [stats, setStats] = useState({ countries: 0, cities: 0, trips: 0, checkIns: 0 });
-  const [loading, setLoading] = useState(true);
+  const [aiInput, setAiInput] = useState("");
 
   useEffect(() => {
     if (user) loadData();
@@ -46,7 +68,6 @@ export default function HomePage() {
       trips: tripsRes.data?.length || 0,
       checkIns: checkInsRes.data?.length || 0,
     });
-    setLoading(false);
   };
 
   const greeting = () => {
@@ -57,9 +78,23 @@ export default function HomePage() {
   };
 
   const upcomingTrip = trips.find((t) => t.status === "active" || t.status === "planning");
-  const worldPercent = Math.min(100, Math.round((stats.countries / 195) * 100));
 
-  // Swipe gestures: right -> Camera, left -> Messages
+  const countdown = useMemo(() => {
+    if (!upcomingTrip) return null;
+    const ms = new Date(upcomingTrip.start_date).getTime() - Date.now();
+    const d = Math.ceil(ms / 86400000);
+    return d > 0 ? `${d}d to go` : d === 0 ? "Today" : "In progress";
+  }, [upcomingTrip]);
+
+  const worldPercent = Math.min(100, Math.round((stats.countries / 195) * 100));
+  const unread = 3;
+
+  // Stories: Your Story + friends from mock
+  const stories = [
+    { id: "you", name: "Your story", avatar: user?.user_metadata?.avatar_url || MOCK_USERS[0].avatarUrl, isYou: true, viewed: false },
+    ...MOCK_STORIES.slice(0, 6).map((s) => ({ id: s.id, name: s.userName.split(" ")[0], avatar: s.userAvatar || s.mediaUrl, isYou: false, viewed: false })),
+  ];
+
   const onTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     (window as any).__roavrSwipe = { x: t.clientX, y: t.clientY };
@@ -77,226 +112,318 @@ export default function HomePage() {
     (window as any).__roavrSwipe = null;
   };
 
+  const handleAsk = () => {
+    if (!aiInput.trim()) return;
+    navigate(`/trips?ask=${encodeURIComponent(aiInput)}`);
+  };
+
   return (
-    <div className="pb-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="pb-6 bg-background min-h-screen" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <WhatsNewModal />
 
-      {/* Dark Hero Header */}
+      {/* === HEADER (dark immersive) === */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-emerald-500/6 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-accent/5 blur-3xl" />
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[hsl(var(--dark-glow))]/10 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-56 h-56 rounded-full bg-primary/15 blur-3xl" />
 
-        <div className="relative px-5 pt-14 pb-6 space-y-4">
-          {/* Greeting + Avatar */}
+        <div className="relative px-4 pt-12 pb-5">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-muted text-[11px] font-medium tracking-wide">{greeting()}</p>
-              <h1 className="font-heading text-[22px] font-bold text-white tracking-tight mt-0.5">{displayName}</h1>
+            <div className="flex items-center gap-3">
+              <img src={roavrLogo} alt="Roavr" className="h-7 w-auto brightness-0 invert" />
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => navigate("/notifications")} className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center">
-                <Bell className="h-4 w-4 text-dark-muted" />
+              <button
+                onClick={() => navigate("/notifications")}
+                className="relative h-10 w-10 rounded-full dark-card-elevated flex items-center justify-center active:scale-95 transition-transform"
+                aria-label="Notifications"
+              >
+                <Bell className="h-[18px] w-[18px] text-white/85" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-coral ring-2 ring-[hsl(var(--dark-card-elevated))]" />
               </button>
-              <button onClick={() => navigate("/messages")} className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center">
-                <MessageCircle className="h-4 w-4 text-dark-muted" />
+              <button
+                onClick={() => navigate("/messages")}
+                className="relative h-10 w-10 rounded-full dark-card-elevated flex items-center justify-center active:scale-95 transition-transform"
+                aria-label="Messages"
+              >
+                <MessageCircle className="h-[18px] w-[18px] text-white/85" />
+                {unread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-coral text-[10px] font-bold text-white flex items-center justify-center ring-2 ring-[hsl(var(--dark-bg))]">
+                    {unread}
+                  </span>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: "Countries", value: stats.countries, emoji: "🌍" },
-              { label: "Cities", value: stats.cities, emoji: "🏙" },
-              { label: "Trips", value: stats.trips, emoji: "✈️" },
-              { label: "Check-ins", value: stats.checkIns, emoji: "📍" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl p-2.5 text-center dark-card">
-                <p className="text-sm mb-0.5">{s.emoji}</p>
-                <p className="font-heading font-bold text-base text-white leading-none">{s.value}</p>
-                <p className="text-[9px] text-dark-muted mt-1">{s.label}</p>
-              </div>
+          <div className="mt-4">
+            <p className="text-white/55 text-[12px] font-medium tracking-wide">{greeting()}</p>
+            <h1 className="font-heading text-[26px] font-extrabold text-white tracking-tight leading-tight mt-0.5">
+              {displayName} <span className="inline-block">👋</span>
+            </h1>
+          </div>
+
+          {/* === STORIES ROW === */}
+          <div className="mt-5 -mx-4 px-4 flex gap-3.5 overflow-x-auto no-scrollbar">
+            {stories.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => navigate("/stories")}
+                className="shrink-0 flex flex-col items-center gap-1.5 w-[64px] active:scale-95 transition-transform"
+              >
+                <div className={`relative h-[62px] w-[62px] rounded-full p-[2.5px] ${s.viewed ? "bg-white/15" : "bg-gradient-to-tr from-primary via-electric to-primary"}`}>
+                  <div className="h-full w-full rounded-full p-[2px] bg-[hsl(var(--dark-bg))]">
+                    <img src={s.avatar} alt={s.name} className="h-full w-full rounded-full object-cover" />
+                  </div>
+                  {s.isYou && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-electric border-2 border-[hsl(var(--dark-bg))] flex items-center justify-center">
+                      <Plus className="h-3 w-3 text-[hsl(var(--dark-bg))] stroke-[3]" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10.5px] text-white/80 font-medium truncate max-w-full">{s.name}</p>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pt-5 space-y-5">
+      {/* === BODY === */}
+      <div className="px-4 pt-4 space-y-5">
         <TrialBanner />
-        {/* Upcoming Trip Card */}
-        {upcomingTrip ? (
-          <button
-            onClick={() => navigate("/trips")}
-            className="w-full rounded-2xl overflow-hidden border border-border/50 bg-card shadow-soft hover:shadow-elevated transition-all text-left group animate-fade-in"
-          >
-            <div className="h-20 bg-gradient-to-br from-primary/10 via-emerald-500/8 to-accent/5 flex items-center justify-center relative">
-              <Compass className="h-8 w-8 text-primary/20" />
-              <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full gradient-glow text-white">
-                {upcomingTrip.status === "active" ? "Active" : "Planning"}
-              </span>
-            </div>
-            <div className="p-4 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="font-heading font-bold text-sm text-foreground truncate">{upcomingTrip.title}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <MapPin className="h-3 w-3" /> {upcomingTrip.destination}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {new Date(upcomingTrip.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={() => navigate("/trips")}
-            className="w-full rounded-2xl gradient-premium p-4 flex items-center gap-3.5 group transition-all hover:shadow-elevated animate-fade-in"
-          >
-            <div className="h-11 w-11 rounded-xl gradient-glow flex items-center justify-center shrink-0 glow-accent">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div className="text-left flex-1">
-              <p className="text-white font-semibold text-sm">Plan your first trip</p>
-              <p className="text-dark-muted text-xs">Let AI create your perfect itinerary</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-dark-muted group-hover:text-glow transition-colors" />
-          </button>
-        )}
 
-        {/* Quick Actions */}
+        {/* === UPCOMING TRIP HERO === */}
+        <button
+          onClick={() => upcomingTrip ? navigate("/trips") : navigate("/trips")}
+          className="w-full rounded-2xl overflow-hidden relative shadow-elevated active:scale-[0.99] transition-transform text-left animate-fade-in"
+        >
+          <div className="relative h-44">
+            <img
+              src={HERO_IMG}
+              alt={upcomingTrip?.destination || "Next adventure"}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--dark-bg))] via-[hsl(var(--dark-bg))]/40 to-transparent" />
+            <div className="absolute top-3 left-3 flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <Plane className="h-3 w-3" /> {upcomingTrip ? "Upcoming trip" : "Plan next trip"}
+              </span>
+              {countdown && (
+                <span className="px-2.5 py-1 rounded-full gradient-glow text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider">
+                  {countdown}
+                </span>
+              )}
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <p className="text-white/70 text-[11px] font-semibold uppercase tracking-wider">
+                {upcomingTrip
+                  ? new Date(upcomingTrip.start_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+                  : "Tap to start planning"}
+              </p>
+              <h2 className="font-heading text-[22px] font-extrabold text-white tracking-tight leading-tight mt-0.5">
+                {upcomingTrip?.title || "Where to next?"}
+              </h2>
+              <p className="text-white/80 text-[12px] flex items-center gap-1 mt-0.5">
+                <MapPin className="h-3 w-3" /> {upcomingTrip?.destination || "Discover your next destination"}
+              </p>
+            </div>
+          </div>
+          <div className="bg-white grid grid-cols-4 divide-x divide-border/50">
+            {[
+              { icon: Sun, label: "Weather", val: "27°" },
+              { icon: Shield, label: "SafePass", val: "Active" },
+              { icon: Briefcase, label: "Bookings", val: "4" },
+              { icon: ArrowRight, label: "View", val: "Trip" },
+            ].map((m) => (
+              <div key={m.label} className="px-2 py-2.5 flex flex-col items-center gap-0.5">
+                <m.icon className="h-3.5 w-3.5 text-primary" />
+                <p className="text-[13px] font-bold text-foreground leading-none">{m.val}</p>
+                <p className="text-[9.5px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
+              </div>
+            ))}
+          </div>
+        </button>
+
+        {/* === ASK ROAVR AI === */}
+        <div className="rounded-2xl overflow-hidden border border-primary/15 bg-card shadow-soft">
+          <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg gradient-glow flex items-center justify-center">
+              <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--dark-bg))]" />
+            </div>
+            <div className="flex-1">
+              <p className="font-heading text-[14px] font-bold text-foreground leading-tight">Ask Roavr</p>
+              <p className="text-[11px] text-muted-foreground">Plan, find, translate, compare or solve any travel issue</p>
+            </div>
+            <span className="text-[9px] font-extrabold uppercase tracking-wider text-electric bg-electric/10 px-1.5 py-0.5 rounded">AI</span>
+          </div>
+          <div className="px-3 pb-3">
+            <div className="flex items-center gap-2 rounded-xl bg-secondary/70 border border-border/60 px-3 py-2.5 focus-within:border-primary/50 transition-colors">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <input
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+                placeholder="‘Plan 5 days in Lisbon under $1500’"
+                className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/70 outline-none"
+              />
+              <button onClick={handleAsk} className="h-7 w-7 rounded-lg gradient-accent flex items-center justify-center active:scale-95 transition-transform">
+                {aiInput.trim() ? <ArrowRight className="h-3.5 w-3.5 text-white" /> : <Mic className="h-3.5 w-3.5 text-white" />}
+              </button>
+            </div>
+            <div className="flex gap-1.5 mt-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+              {["Best ramen near me", "5 days in Lisbon", "Translate menu", "Cheapest flights to Bali"].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setAiInput(q); }}
+                  className="shrink-0 text-[11px] font-medium text-muted-foreground bg-secondary/70 hover:bg-primary/10 hover:text-primary px-2.5 py-1 rounded-full border border-border/50 transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* === QUICK ACTIONS === */}
         <div className="grid grid-cols-4 gap-2.5">
           {[
-            { label: "Plan Trip", icon: Sparkles, route: "/trips", bg: "from-emerald-500/12 to-teal-500/8" },
-            { label: "Discover", icon: Compass, route: "/discover", bg: "from-blue-500/12 to-indigo-500/8" },
-            { label: "My Globe", icon: Globe, route: "/globe", bg: "from-violet-500/12 to-purple-500/8" },
-            { label: "Offers", icon: Zap, route: "/discover", bg: "from-amber-500/12 to-orange-500/8" },
+            { label: "Plan", icon: Sparkles, route: "/trips", tone: "primary" },
+            { label: "Discover", icon: Compass, route: "/discover", tone: "electric" },
+            { label: "I'm Safe", icon: Shield, route: "/safepass", tone: "coral" },
+            { label: "Import", icon: Briefcase, route: "/trips?import=1", tone: "navy" },
           ].map((a) => (
             <button
               key={a.label}
               onClick={() => navigate(a.route)}
-              className="rounded-2xl border border-border/40 bg-card p-3 text-center hover:shadow-elevated transition-all group"
+              className="rounded-2xl bg-card border border-border/50 p-3 text-center hover:shadow-elevated active:scale-95 transition-all"
             >
-              <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${a.bg} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform`}>
-                <a.icon className="h-4 w-4 text-foreground/60" />
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-1.5 ${
+                a.tone === "primary" ? "gradient-accent text-white" :
+                a.tone === "electric" ? "gradient-glow text-[hsl(var(--dark-bg))]" :
+                a.tone === "coral" ? "gradient-coral text-white" :
+                "gradient-navy text-white"
+              }`}>
+                <a.icon className="h-[18px] w-[18px]" />
               </div>
-              <p className="text-[11px] font-semibold text-foreground leading-tight">{a.label}</p>
+              <p className="text-[11.5px] font-bold text-foreground leading-tight">{a.label}</p>
             </button>
           ))}
         </div>
 
-        {/* AI Challenge Card */}
-        <div className="rounded-2xl overflow-hidden border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/2 p-4 space-y-2.5 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-accent" />
-            <p className="text-xs font-bold text-accent uppercase tracking-wider">Daily Challenge</p>
-          </div>
-          <p className="text-sm font-semibold text-foreground">Check in at a new location today</p>
-          <p className="text-xs text-muted-foreground">Earn the Explorer badge by visiting 3 new places this week.</p>
-          <button onClick={() => navigate("/checkin")} className="text-xs font-semibold text-accent flex items-center gap-1 mt-1">
-            Start Challenge <ArrowRight className="h-3 w-3" />
-          </button>
-        </div>
-
-        {/* Recent Trips */}
+        {/* === NEARBY & TRENDING === */}
         <div>
-          <div className="section-header">
-            <h2 className="section-title">Recent Trips</h2>
-            <button onClick={() => navigate("/trips")} className="section-link">
-              View All <ArrowRight className="h-3 w-3" />
+          <div className="flex items-center justify-between mb-2.5 px-0.5">
+            <div>
+              <h2 className="font-heading text-[17px] font-extrabold text-foreground tracking-tight flex items-center gap-1.5">
+                <Flame className="h-4 w-4 text-coral" /> Nearby & Trending
+              </h2>
+              <p className="text-[11px] text-muted-foreground">Handpicked for tonight</p>
+            </div>
+            <button onClick={() => navigate("/discover")} className="text-[12px] font-bold text-primary flex items-center gap-0.5">
+              See all <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
-
-          {loading ? (
-            <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonCard key={i} className="shrink-0 w-48" />
-              ))}
-            </div>
-          ) : trips.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
-              {trips.slice(0, 4).map((trip) => (
-                <div
-                  key={trip.id}
-                  className="shrink-0 w-48 rounded-2xl border border-border/40 bg-card overflow-hidden shadow-soft hover:shadow-elevated transition-all cursor-pointer"
-                  onClick={() => navigate("/trips")}
-                >
-                  <div className="h-20 bg-gradient-to-br from-primary/10 to-emerald-500/8 flex items-center justify-center">
-                    <Compass className="h-6 w-6 text-primary/20" />
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <p className="font-semibold text-[13px] text-foreground truncate">{trip.title}</p>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-2.5 w-2.5" /> {trip.destination}
-                    </p>
-                    <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                      trip.status === "completed" ? "bg-emerald-100 text-emerald-700" : trip.status === "active" ? "bg-accent/12 text-accent" : "bg-secondary text-muted-foreground"
-                    }`}>
-                      {trip.status}
-                    </span>
-                  </div>
+          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+            {NEARBY.map((n) => (
+              <button
+                key={n.title}
+                onClick={() => navigate(n.route)}
+                className="shrink-0 w-[180px] rounded-2xl overflow-hidden bg-card border border-border/50 shadow-soft active:scale-[0.98] transition-transform text-left"
+              >
+                <div className="relative h-[112px]">
+                  <img src={n.img} alt={n.title} className="absolute inset-0 h-full w-full object-cover" />
+                  <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-white/95 text-[9.5px] font-extrabold uppercase tracking-wider text-primary">
+                    {n.tag}
+                  </span>
+                  <button className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center">
+                    <Heart className="h-3.5 w-3.5 text-foreground" />
+                  </button>
                 </div>
-              ))}
-              <button onClick={() => navigate("/trips")} className="shrink-0 w-32 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-1.5 hover:border-accent/30 transition-colors">
-                <Plus className="h-5 w-5 text-muted-foreground" />
-                <span className="text-[11px] text-muted-foreground font-medium">New Trip</span>
+                <div className="p-2.5">
+                  <p className="font-bold text-[13px] text-foreground truncate leading-tight">{n.title}</p>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{n.sub}</p>
+                </div>
               </button>
-            </div>
-          ) : (
-            <EmptyState
-              icon={Compass}
-              title="Plan your first trip"
-              description="Let AI create a personalized itinerary for your next adventure."
-              actionLabel="Plan a Trip"
-              onAction={() => navigate("/trips")}
-            />
-          )}
+            ))}
+          </div>
         </div>
 
-        {/* Globe Progress */}
-        <div className="rounded-2xl border border-border/40 bg-card p-4 space-y-3 shadow-soft animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <div className="flex items-center justify-between">
+        {/* === GLOBE PROGRESS === */}
+        <button
+          onClick={() => navigate("/globe")}
+          className="w-full rounded-2xl dark-immersive relative overflow-hidden p-4 text-left active:scale-[0.99] transition-transform shadow-elevated"
+        >
+          <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-electric/15 blur-3xl" />
+          <div className="absolute -left-12 -bottom-12 w-44 h-44 rounded-full bg-primary/25 blur-3xl" />
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-emerald-600" />
-              <p className="font-heading text-sm font-semibold text-foreground">Globe Progress</p>
-            </div>
-            <button onClick={() => navigate("/globe")} className="text-[11px] text-accent font-semibold flex items-center gap-0.5">
-              View <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full gradient-glow transition-all duration-700" style={{ width: `${worldPercent}%` }} />
+              <div className="h-9 w-9 rounded-xl gradient-glow flex items-center justify-center">
+                <Globe className="h-[18px] w-[18px] text-[hsl(var(--dark-bg))]" />
+              </div>
+              <div>
+                <p className="font-heading font-extrabold text-white text-[15px] leading-tight">Your Globe</p>
+                <p className="text-white/55 text-[11px]">{worldPercent}% of the world explored</p>
               </div>
             </div>
-            <p className="text-xs font-bold text-foreground">{worldPercent}%</p>
+            <ChevronRight className="h-4 w-4 text-white/60" />
           </div>
-          <p className="text-[11px] text-muted-foreground">{stats.countries} countries · {stats.cities} cities explored</p>
-        </div>
-
-        {/* SafePass Card */}
-        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <SafePassCard variant="compact" />
-        </div>
-
-        {/* Suggested Section */}
-        <div className="rounded-2xl gradient-premium p-4 space-y-3 animate-fade-in" style={{ animationDelay: "0.25s" }}>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-dark-muted" />
-            <p className="text-xs font-bold text-dark-muted uppercase tracking-wider">Suggested for You</p>
+          <div className="relative mt-3.5 h-2 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full gradient-glow" style={{ width: `${Math.max(worldPercent, 6)}%` }} />
           </div>
-          <div className="flex gap-3 overflow-x-auto -mx-1 px-1">
-            {["Tokyo", "Lisbon", "Cape Town"].map((city) => (
+          <div className="relative mt-3 grid grid-cols-4 gap-2">
+            {[
+              { v: stats.countries, l: "Countries" },
+              { v: stats.cities, l: "Cities" },
+              { v: stats.checkIns, l: "Check-ins" },
+              { v: stats.trips, l: "Trips" },
+            ].map((s) => (
+              <div key={s.l} className="rounded-lg bg-white/5 px-2 py-2 text-center">
+                <p className="text-white font-extrabold text-[15px] leading-none">{s.v}</p>
+                <p className="text-white/55 text-[9.5px] uppercase tracking-wider mt-1">{s.l}</p>
+              </div>
+            ))}
+          </div>
+        </button>
+
+        {/* === SAFEPASS === */}
+        <SafePassCard variant="compact" />
+
+        {/* === TRAVEL FEED === */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5 px-0.5">
+            <h2 className="font-heading text-[17px] font-extrabold text-foreground tracking-tight flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-primary" /> Travel feed
+            </h2>
+            <button onClick={() => navigate("/social")} className="text-[12px] font-bold text-primary flex items-center gap-0.5">
+              Open <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="space-y-2.5">
+            {FEED.map((f, i) => (
               <button
-                key={city}
-                onClick={() => navigate("/discover")}
-                className="shrink-0 rounded-xl dark-card-elevated px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                key={i}
+                onClick={() => navigate("/social")}
+                className="w-full rounded-2xl bg-card border border-border/50 p-3 flex items-center gap-3 hover:shadow-elevated active:scale-[0.99] transition-all text-left"
               >
-                <p className="text-white text-[13px] font-semibold">{city}</p>
-                <p className="text-dark-muted text-[10px] mt-0.5">Trending now</p>
+                <div className="relative shrink-0">
+                  <img src={f.user.avatarUrl} alt={f.user.name} className="h-11 w-11 rounded-full object-cover" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center ring-2 ring-card">
+                    {f.type === "checkin" && <MapPin className="h-3 w-3 text-white" />}
+                    {f.type === "badge" && <Trophy className="h-3 w-3 text-white" />}
+                    {f.type === "trip" && <Plane className="h-3 w-3 text-white" />}
+                    {f.type === "story" && <Sparkles className="h-3 w-3 text-white" />}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] text-foreground leading-tight">
+                    <span className="font-bold">{f.user.name}</span>{" "}
+                    <span className="text-muted-foreground">{f.text}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{f.meta}</p>
+                </div>
+                {f.img && (
+                  <img src={f.img} alt="" className="h-11 w-11 rounded-lg object-cover shrink-0" />
+                )}
               </button>
             ))}
           </div>
