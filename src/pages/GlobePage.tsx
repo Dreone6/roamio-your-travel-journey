@@ -8,6 +8,7 @@ import {
   ChevronRight, Flame, Compass, Sparkles, Settings, MapPin as MapPinIcon,
 } from "lucide-react";
 import GlobeStatsBar from "@/components/globe/GlobeStatsBar";
+import TravelStatsDashboard from "@/components/globe/TravelStatsDashboard";
 import FlatMapView from "@/components/globe/FlatMapView";
 import TravelTimeline from "@/components/globe/TravelTimeline";
 import TravelerCard from "@/components/globe/TravelerCard";
@@ -427,6 +428,7 @@ export default function GlobePage() {
           {activeTab === "mine" && (
             <div className="px-5 pt-5 space-y-6">
               <GlobeStatsBar stats={stats} />
+              <TravelStatsDashboard />
 
               {/* Recent Check-ins */}
               <div className="space-y-2.5">

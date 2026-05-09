@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { Search, Sparkles, MapPin, Star, ArrowRight, Compass, TrendingUp, Heart } from "lucide-react";
+import ExperienceCard, { type Experience } from "@/components/discover/ExperienceCard";
 
-const CATEGORIES = ["All", "Cities", "Nature", "Beaches", "Culture", "Food", "Adventure"];
+const MARKETPLACE: Experience[] = [
+  { id: "m1", name: "Sunset Sailing Tour", category: "Tours", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&q=80", price: "$65", rating: 4.8, distance: "1.2 mi", cta: "Book" },
+  { id: "m2", name: "Hidden Speakeasy", category: "Nightlife", image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&q=80", price: "$$", rating: 4.7, distance: "0.5 mi", cta: "Reserve" },
+  { id: "m3", name: "Local Cooking Class", category: "Activities", image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80", price: "$45", rating: 4.9, distance: "2.1 mi", cta: "Book" },
+  { id: "m4", name: "Boutique Riad Stay", category: "Hotels", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80", price: "$120/n", rating: 4.8, distance: "City center", cta: "Book" },
+  { id: "m5", name: "Airport Lux Transfer", category: "Transfers", image: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80", price: "$35", rating: 4.9, distance: "On-demand", cta: "Reserve" },
+  { id: "m6", name: "Secret Beach Hike", category: "Hidden Gems", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80", price: "Free", rating: 4.9, distance: "4.0 mi", cta: "Save" },
+];
+
+const CATEGORIES = ["All", "Tours", "Activities", "Restaurants", "Nightlife", "Local Guides", "Hotels", "Transfers", "Events", "Hidden Gems", "Creator Picks"];
 
 const FEATURED_DESTINATIONS = [
   { name: "Bali", country: "Indonesia", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", rating: 4.9, tag: "Trending" },
@@ -126,6 +136,19 @@ export default function DiscoverPage() {
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Experiences marketplace */}
+      <div className="px-5 space-y-3 mt-6">
+        <div className="flex items-center gap-2">
+          <Compass className="h-3.5 w-3.5 text-glow" />
+          <h2 className="font-heading text-[15px] font-semibold text-white">Experiences & Activities</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {MARKETPLACE.filter((m) => activeCategory === "All" || m.category === activeCategory).map((m) => (
+            <ExperienceCard key={m.id} item={m} />
           ))}
         </div>
       </div>

@@ -11,6 +11,11 @@ import {
   Utensils, Shield, Navigation, Bookmark, Send, ChevronDown, ChevronUp,
 } from "lucide-react";
 import TripChecklist from "./TripChecklist";
+import ShareItinerarySheet from "./ShareItinerarySheet";
+import GetAroundSheet from "./GetAroundSheet";
+import OfflineTripToggle from "./OfflineTripToggle";
+import BookingsList from "@/components/bookings/BookingsList";
+import BookingImportSheet from "@/components/bookings/BookingImportSheet";
 
 interface ItineraryItem {
   id: string;
@@ -71,6 +76,9 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
   const [activeTab, setActiveTab] = useState<"itinerary" | "checklist">("itinerary");
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareSheet, setShareSheet] = useState(false);
+  const [getAround, setGetAround] = useState<string | undefined>(undefined);
+  const [importBookings, setImportBookings] = useState(false);
 
   const dayNumbers = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
   const totalCost = items.reduce((sum, i) => sum + (i.estimated_cost || 0), 0);
@@ -211,7 +219,7 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowShareMenu(!showShareMenu)}
+                onClick={() => setShareSheet(true)}
                 className="h-9 w-9 rounded-xl dark-card-elevated flex items-center justify-center"
               >
                 <Share2 className="h-4 w-4 text-glow" />
@@ -417,9 +425,39 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
                 <p className="text-muted-foreground text-[13px]">No itinerary items yet</p>
               </div>
             )}
+
+            {/* Bookings */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[12px] font-bold text-foreground">Bookings</h3>
+                <button onClick={() => setImportBookings(true)} className="text-[11px] text-accent font-bold">+ Import</button>
+              </div>
+              <BookingsList tripId={trip.id} />
+            </div>
+
+            {/* Offline + Get around */}
+            <div className="space-y-2 pt-2">
+              <OfflineTripToggle tripId={trip.id} tripData={{ trip, items }} />
+              <button
+                onClick={() => setGetAround(trip.destination)}
+                className="w-full dark-card rounded-xl p-3 flex items-center gap-3 hover:bg-white/[0.04] transition-colors text-left"
+              >
+                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Navigation className="h-4 w-4 text-glow" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-white">How do I get there?</p>
+                  <p className="text-[10px] text-dark-muted">Walking, rideshare, transit, ferry, flight</p>
+                </div>
+              </button>
+            </div>
           </>
         )}
       </div>
+
+      <ShareItinerarySheet open={shareSheet} onOpenChange={setShareSheet} tripId={trip.id} tripTitle={trip.title} />
+      <GetAroundSheet open={!!getAround} onOpenChange={(v) => !v && setGetAround(undefined)} destination={getAround} />
+      <BookingImportSheet open={importBookings} onOpenChange={setImportBookings} tripId={trip.id} />
     </div>
   );
 }

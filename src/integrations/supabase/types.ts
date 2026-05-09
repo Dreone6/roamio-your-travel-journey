@@ -65,6 +65,54 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          confirmation_code: string | null
+          created_at: string
+          details: Json
+          end_at: string | null
+          id: string
+          location: string | null
+          provider: string | null
+          source: string
+          start_at: string | null
+          title: string
+          trip_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          confirmation_code?: string | null
+          created_at?: string
+          details?: Json
+          end_at?: string | null
+          id?: string
+          location?: string | null
+          provider?: string | null
+          source?: string
+          start_at?: string | null
+          title: string
+          trip_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          confirmation_code?: string | null
+          created_at?: string
+          details?: Json
+          end_at?: string | null
+          id?: string
+          location?: string | null
+          provider?: string | null
+          source?: string
+          start_at?: string | null
+          title?: string
+          trip_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           challenge_text: string
@@ -328,6 +376,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      live_locations: {
+        Row: {
+          active: boolean
+          latitude: number | null
+          longitude: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       memories: {
         Row: {
@@ -1015,6 +1087,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_shares: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          token: string
+          trip_id: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+          trip_id: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+          trip_id?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           budget: number | null
@@ -1065,6 +1167,39 @@ export type Database = {
           travelers?: number
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trusted_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          relationship: string | null
+          share_live_location: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          relationship?: string | null
+          share_live_location?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          relationship?: string | null
+          share_live_location?: boolean
           user_id?: string
         }
         Relationships: []

@@ -11,6 +11,8 @@ import {
   MOCK_TRIP_SHARING, MOCK_TRUSTED_CONTACTS, MOCK_SAFETY_NOTES,
 } from "@/data";
 import type { SafetyChecklistItem } from "@/data/mock/safety";
+import TrustedContactsList from "@/components/safety/TrustedContactsList";
+import LiveLocationToggle from "@/components/safety/LiveLocationToggle";
 
 type SafetyView = "overview" | "checklist" | "destination" | "contacts" | "emergency" | "sharing" | "settings";
 
@@ -199,6 +201,10 @@ export default function SafePassPage() {
               })}
             </div>
           </div>
+
+          {/* Trusted contacts + live location */}
+          <LiveLocationToggle />
+          <TrustedContactsList />
         </div>
       </div>
     );
