@@ -13,8 +13,9 @@ import {
 import type { SafetyChecklistItem } from "@/data/mock/safety";
 import TrustedContactsList from "@/components/safety/TrustedContactsList";
 import LiveLocationToggle from "@/components/safety/LiveLocationToggle";
+import CrisisReadyPanel from "@/components/safety/CrisisReadyPanel";
 
-type SafetyView = "overview" | "checklist" | "destination" | "contacts" | "emergency" | "sharing" | "settings";
+type SafetyView = "overview" | "checklist" | "destination" | "contacts" | "emergency" | "sharing" | "settings" | "crisis";
 
 const CATEGORY_ICONS: Record<string, typeof FileText> = {
   documents: FileText,
@@ -202,12 +203,34 @@ export default function SafePassPage() {
             </div>
           </div>
 
+          {/* Crisis Ready entry */}
+          <button
+            onClick={() => setView("crisis")}
+            className="w-full dark-card rounded-2xl p-4 flex items-center gap-4 hover:bg-white/[0.04] transition-all text-left group border border-emerald-500/15"
+          >
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/10 flex items-center justify-center shrink-0">
+              <Shield className="h-5 w-5 text-glow" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-[14px] font-semibold text-white">Crisis Ready</p>
+                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300">NEW</span>
+              </div>
+              <p className="text-[11px] text-dark-muted mt-0.5">Offline essentials, “I’m Safe” check-ins, and future crisis tools.</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-dark-muted group-hover:text-glow transition-colors" />
+          </button>
+
           {/* Trusted contacts + live location */}
           <LiveLocationToggle />
           <TrustedContactsList />
         </div>
       </div>
     );
+  }
+
+  if (view === "crisis") {
+    return <CrisisReadyPanel onBack={() => setView("overview")} />;
   }
 
   // ── Checklist ─────────────────────────────────────
