@@ -425,9 +425,39 @@ export default function ItineraryView({ trip, items, onBack, onItemsChange }: It
                 <p className="text-muted-foreground text-[13px]">No itinerary items yet</p>
               </div>
             )}
+
+            {/* Bookings */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[12px] font-bold text-foreground">Bookings</h3>
+                <button onClick={() => setImportBookings(true)} className="text-[11px] text-accent font-bold">+ Import</button>
+              </div>
+              <BookingsList tripId={trip.id} />
+            </div>
+
+            {/* Offline + Get around */}
+            <div className="space-y-2 pt-2">
+              <OfflineTripToggle tripId={trip.id} tripData={{ trip, items }} />
+              <button
+                onClick={() => setGetAround(trip.destination)}
+                className="w-full dark-card rounded-xl p-3 flex items-center gap-3 hover:bg-white/[0.04] transition-colors text-left"
+              >
+                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Navigation className="h-4 w-4 text-glow" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-white">How do I get there?</p>
+                  <p className="text-[10px] text-dark-muted">Walking, rideshare, transit, ferry, flight</p>
+                </div>
+              </button>
+            </div>
           </>
         )}
       </div>
+
+      <ShareItinerarySheet open={shareSheet} onOpenChange={setShareSheet} tripId={trip.id} tripTitle={trip.title} />
+      <GetAroundSheet open={!!getAround} onOpenChange={(v) => !v && setGetAround(undefined)} destination={getAround} />
+      <BookingImportSheet open={importBookings} onOpenChange={setImportBookings} tripId={trip.id} />
     </div>
   );
 }
