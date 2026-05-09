@@ -59,8 +59,27 @@ export default function HomePage() {
   const upcomingTrip = trips.find((t) => t.status === "active" || t.status === "planning");
   const worldPercent = Math.min(100, Math.round((stats.countries / 195) * 100));
 
+  // Swipe gestures: right -> Camera, left -> Messages
+  const touchStart = useState<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    (window as any).__roavrSwipe = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = (window as any).__roavrSwipe;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50) {
+      if (dx > 0) navigate("/camera");
+      else navigate("/messages");
+    }
+    (window as any).__roavrSwipe = null;
+  };
+
   return (
-    <div className="pb-4">
+    <div className="pb-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <WhatsNewModal />
 
       {/* Dark Hero Header */}
