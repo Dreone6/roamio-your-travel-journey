@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, Sparkles, MapPin, Star, ArrowRight, Compass, TrendingUp, Heart } from "lucide-react";
 
-const CATEGORIES = ["All", "Cities", "Nature", "Beaches", "Culture", "Food", "Adventure"];
+const CATEGORIES = ["All", "Tours", "Activities", "Restaurants", "Nightlife", "Local Guides", "Hotels", "Transfers", "Events", "Hidden Gems", "Creator Picks"];
 
 const FEATURED_DESTINATIONS = [
   { name: "Bali", country: "Indonesia", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", rating: 4.9, tag: "Trending" },
