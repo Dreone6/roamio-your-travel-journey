@@ -6,56 +6,67 @@
 
 @layer base {
   :root {
-    --background: 30 15% 97%;
-    --foreground: 220 25% 12%;
+    --background: 30 20% 98%;
+    --foreground: 230 45% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 12%;
+    --card-foreground: 230 45% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 12%;
+    --popover-foreground: 230 45% 12%;
 
-    --primary: 220 55% 18%;
-    --primary-foreground: 30 15% 97%;
+    /* Roavr royal blue from the logo */
+    --primary: 230 78% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 94%;
-    --secondary-foreground: 220 25% 12%;
+    --secondary: 230 25% 95%;
+    --secondary-foreground: 230 45% 12%;
 
-    --muted: 30 12% 92%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 230 18% 94%;
+    --muted-foreground: 230 12% 45%;
 
-    --accent: 220 75% 35%;
+    /* Accent = same royal blue family for cohesion */
+    --accent: 230 78% 40%;
     --accent-foreground: 0 0% 100%;
+
+    /* Warm coral reserved for special CTAs and emotional highlights */
+    --coral: 12 88% 62%;
+    --coral-foreground: 0 0% 100%;
+
+    /* Electric aqua for map / AI states */
+    --electric: 195 95% 52%;
+    --electric-foreground: 230 45% 12%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 12% 90%;
-    --input: 30 12% 88%;
-    --ring: 220 55% 18%;
+    --border: 230 18% 90%;
+    --input: 230 18% 88%;
+    --ring: 230 78% 40%;
 
     --radius: 0.875rem;
 
-    /* Dark immersive tokens */
-    --dark-bg: 225 28% 7%;
-    --dark-surface: 225 24% 10%;
-    --dark-card: 225 22% 13%;
-    --dark-card-elevated: 225 20% 16%;
-    --dark-border: 225 18% 20%;
+    /* Dark immersive — midnight navy inspired by logo blue */
+    --dark-bg: 230 50% 7%;
+    --dark-surface: 230 45% 10%;
+    --dark-card: 230 40% 13%;
+    --dark-card-elevated: 230 36% 17%;
+    --dark-border: 230 30% 22%;
     --dark-text: 0 0% 96%;
-    --dark-text-muted: 225 10% 55%;
-    --dark-glow: 160 75% 48%;
+    --dark-text-muted: 230 14% 60%;
+    /* Map / AI glow = electric aqua, not teal green */
+    --dark-glow: 195 95% 55%;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 220 55% 18%;
-    --sidebar-primary-foreground: 30 15% 97%;
-    --sidebar-accent: 30 20% 94%;
-    --sidebar-accent-foreground: 220 25% 12%;
-    --sidebar-border: 30 12% 90%;
-    --sidebar-ring: 220 55% 18%;
+    --sidebar-foreground: 230 12% 28%;
+    --sidebar-primary: 230 78% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 25% 95%;
+    --sidebar-accent-foreground: 230 45% 12%;
+    --sidebar-border: 230 18% 90%;
+    --sidebar-ring: 230 78% 40%;
 
-    --font-heading: 'Playfair Display', serif;
+    --font-heading: 'Plus Jakarta Sans', 'Space Grotesk', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
   }
 
