@@ -173,8 +173,25 @@ export default function HomePage() {
             </h1>
           </div>
 
+          {/* === STORY CATEGORY CHIPS === */}
+          <div className="mt-5 -mx-4 px-4 flex gap-1.5 overflow-x-auto no-scrollbar">
+            {STORY_CATS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setStoryCat(c)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  storyCat === c
+                    ? "bg-white text-[hsl(var(--dark-bg))]"
+                    : "bg-white/10 text-white/70 hover:bg-white/15"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
           {/* === STORIES ROW === */}
-          <div className="mt-5 -mx-4 px-4 flex gap-3.5 overflow-x-auto no-scrollbar">
+          <div className="mt-3 -mx-4 px-4 flex gap-3.5 overflow-x-auto no-scrollbar">
             {stories.map((s) => (
               <button
                 key={s.id}
