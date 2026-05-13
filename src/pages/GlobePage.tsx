@@ -11,6 +11,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
 import ShareMapSheet from "@/components/globe/ShareMapSheet";
@@ -166,10 +167,40 @@ export default function GlobePage() {
     return true;
   }), [tabPins, layers]);
 
+  const memoryByLinked = useMemo(() => {
+    const map: Record<string, string> = {};
+    MOCK_MEMORIES.forEach(m => { if (m.mediaUrl) map[m.id] = m.mediaUrl; });
+    MOCK_STORIES.forEach(s => { const mu = (s as any).mediaUrl; if (mu) map[s.id] = mu; });
+    return map;
+  }, []);
+
   const globePins = useMemo(
-    () => activePins.map((p) => ({ lat: p.latitude, lng: p.longitude, label: p.label, category: p.category })),
-    [activePins]
+    () => activePins.map((p) => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      label: p.label,
+      category: p.category,
+      thumbnail: p.linkedId ? memoryByLinked[p.linkedId] ?? null : null,
+      description: p.description,
+    })),
+    [activePins, memoryByLinked]
   );
+
+  const globeArcs = useMemo(() => {
+    const memPins = activePins
+      .filter(p => p.category === "memory" || p.category === "checkin")
+      .slice(0, 8);
+    const arcs: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; color?: string }[] = [];
+    for (let i = 0; i < memPins.length - 1; i++) {
+      arcs.push({
+        from: { lat: memPins[i].latitude, lng: memPins[i].longitude },
+        to: { lat: memPins[i + 1].latitude, lng: memPins[i + 1].longitude },
+        color: "#22d3ee",
+      });
+    }
+    return arcs;
+  }, [activePins]);
+
   const flatPins = useMemo(
     () => activePins.map((p) => ({ id: p.id, lat: p.latitude, lng: p.longitude, label: p.label, description: p.description, category: p.category })),
     [activePins]
@@ -247,9 +278,12 @@ export default function GlobePage() {
         <div className="absolute inset-0 gradient-dark-radial pointer-events-none" />
         <div className="relative px-5 pt-12 pb-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="font-heading text-[28px] font-bold text-white tracking-tight leading-none">Globe</h1>
-              <p className="text-[12px] text-dark-muted mt-1.5">Your world, mapped by memories</p>
+            <div className="min-w-0 flex items-center gap-2.5">
+              <img src={roavrPin} alt="" className="h-9 w-9 drop-shadow-[0_0_12px_rgba(59,130,246,0.55)]" />
+              <div>
+                <h1 className="font-heading text-[26px] font-bold text-white tracking-tight leading-none">Globe</h1>
+                <p className="text-[11px] text-dark-muted mt-1">Your world, mapped by memories</p>
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -351,6 +385,7 @@ export default function GlobePage() {
                 <InteractiveGlobe
                   key={recenterKey}
                   pins={globePins}
+                  arcs={globeArcs}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
               </Suspense>
