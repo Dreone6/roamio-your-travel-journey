@@ -168,9 +168,9 @@ export default function GlobePage() {
   }), [tabPins, layers]);
 
   const memoryByLinked = useMemo(() => {
-    const map = new Map<string, string>();
-    MOCK_MEMORIES.forEach(m => { if (m.mediaUrl) map.set(m.id, m.mediaUrl); });
-    MOCK_STORIES.forEach(s => { if ((s as any).mediaUrl) map.set(s.id, (s as any).mediaUrl); });
+    const map: Record<string, string> = {};
+    MOCK_MEMORIES.forEach(m => { if (m.mediaUrl) map[m.id] = m.mediaUrl; });
+    MOCK_STORIES.forEach(s => { const mu = (s as any).mediaUrl; if (mu) map[s.id] = mu; });
     return map;
   }, []);
 
