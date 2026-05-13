@@ -58,6 +58,7 @@ export default function HomePage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [stats, setStats] = useState({ countries: 0, cities: 0, trips: 0, checkIns: 0 });
   const [aiInput, setAiInput] = useState("");
+  const [storyCat, setStoryCat] = useState<typeof STORY_CATS[number]>("Friends");
 
   useEffect(() => {
     if (user) loadData();
