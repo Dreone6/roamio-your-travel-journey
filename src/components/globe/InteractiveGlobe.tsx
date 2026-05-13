@@ -36,9 +36,21 @@ interface InteractiveGlobeProps {
   autoRotate?: boolean;
 }
 
-// Royal Blue brand
+// Brand palette
 const ROYAL_BLUE = "#1e3a8a";
 const ROYAL_BLUE_GLOW = "#3b82f6";
+const ELECTRIC_AQUA = "#22d3ee";
+const CORAL = "#f97362";
+
+const CATEGORY_COLOR: Record<string, string> = {
+  memory: ROYAL_BLUE_GLOW,
+  checkin: ELECTRIC_AQUA,
+  tip: "#a78bfa",       // story
+  visited: ROYAL_BLUE_GLOW,
+  wishlist: "#fbbf24",
+  sponsored: CORAL,
+  friend: "#34d399",
+};
 
 const RADIUS = 2;
 const LAND_RADIUS = 2.035; // sits slightly above glass
