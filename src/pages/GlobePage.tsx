@@ -139,8 +139,8 @@ export default function GlobePage() {
         const u = MOCK_USERS.find(u => u.id === m.userId);
         return {
           id: m.id,
-          name: u?.displayName || u?.username || "Traveler",
-          avatar: u?.avatarUrl,
+          name: (u as any)?.name || "Traveler",
+          avatar: (u as any)?.avatarUrl,
           city: m.locationName!,
           photo: m.mediaUrl,
           when: timeAgo(m.createdAt),
