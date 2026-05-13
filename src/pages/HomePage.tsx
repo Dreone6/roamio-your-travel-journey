@@ -216,27 +216,28 @@ export default function HomePage() {
       </div>
 
       {/* === BODY === */}
-      <div className="px-4 pt-4 space-y-5">
+      <div className="px-4 pt-4 space-y-4">
         <TrialBanner />
 
-        {/* === UPCOMING TRIP HERO === */}
+        {/* === UPCOMING TRIP HERO (cinematic) === */}
         <button
-          onClick={() => upcomingTrip ? navigate("/trips") : navigate("/trips")}
+          onClick={() => navigate("/trips")}
           className="w-full rounded-2xl overflow-hidden relative shadow-elevated active:scale-[0.99] transition-transform text-left animate-fade-in"
         >
-          <div className="relative h-44">
+          <div className="relative h-56">
             <img
               src={HERO_IMG}
               alt={upcomingTrip?.destination || "Next adventure"}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--dark-bg))] via-[hsl(var(--dark-bg))]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--dark-bg))] via-[hsl(var(--dark-bg))]/55 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-transparent to-electric/15 mix-blend-overlay" />
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                 <Plane className="h-3 w-3" /> {upcomingTrip ? "Upcoming trip" : "Plan next trip"}
               </span>
               {countdown && (
-                <span className="px-2.5 py-1 rounded-full gradient-glow text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-full gradient-glow text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
                   {countdown}
                 </span>
               )}
