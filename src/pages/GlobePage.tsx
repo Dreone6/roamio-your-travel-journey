@@ -278,9 +278,12 @@ export default function GlobePage() {
         <div className="absolute inset-0 gradient-dark-radial pointer-events-none" />
         <div className="relative px-5 pt-12 pb-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="font-heading text-[28px] font-bold text-white tracking-tight leading-none">Globe</h1>
-              <p className="text-[12px] text-dark-muted mt-1.5">Your world, mapped by memories</p>
+            <div className="min-w-0 flex items-center gap-2.5">
+              <img src={roavrPin} alt="" className="h-9 w-9 drop-shadow-[0_0_12px_rgba(59,130,246,0.55)]" />
+              <div>
+                <h1 className="font-heading text-[26px] font-bold text-white tracking-tight leading-none">Globe</h1>
+                <p className="text-[11px] text-dark-muted mt-1">Your world, mapped by memories</p>
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
