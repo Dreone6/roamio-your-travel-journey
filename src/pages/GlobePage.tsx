@@ -167,10 +167,40 @@ export default function GlobePage() {
     return true;
   }), [tabPins, layers]);
 
+  const memoryByLinked = useMemo(() => {
+    const map = new Map<string, string>();
+    MOCK_MEMORIES.forEach(m => { if (m.mediaUrl) map.set(m.id, m.mediaUrl); });
+    MOCK_STORIES.forEach(s => { if ((s as any).mediaUrl) map.set(s.id, (s as any).mediaUrl); });
+    return map;
+  }, []);
+
   const globePins = useMemo(
-    () => activePins.map((p) => ({ lat: p.latitude, lng: p.longitude, label: p.label, category: p.category })),
-    [activePins]
+    () => activePins.map((p) => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      label: p.label,
+      category: p.category,
+      thumbnail: p.linkedId ? memoryByLinked.get(p.linkedId) ?? null : null,
+      description: p.description,
+    })),
+    [activePins, memoryByLinked]
   );
+
+  const globeArcs = useMemo(() => {
+    const memPins = activePins
+      .filter(p => p.category === "memory" || p.category === "checkin")
+      .slice(0, 8);
+    const arcs: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; color?: string }[] = [];
+    for (let i = 0; i < memPins.length - 1; i++) {
+      arcs.push({
+        from: { lat: memPins[i].latitude, lng: memPins[i].longitude },
+        to: { lat: memPins[i + 1].latitude, lng: memPins[i + 1].longitude },
+        color: "#22d3ee",
+      });
+    }
+    return arcs;
+  }, [activePins]);
+
   const flatPins = useMemo(
     () => activePins.map((p) => ({ id: p.id, lat: p.latitude, lng: p.longitude, label: p.label, description: p.description, category: p.category })),
     [activePins]
