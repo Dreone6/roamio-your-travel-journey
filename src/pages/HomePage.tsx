@@ -35,6 +35,15 @@ const NEARBY = [
   { tag: "Expert", title: "Yuki — Tokyo guide", sub: "4.9 ★ · 127 trips", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600", route: "/discover" },
 ];
 
+const STORY_CATS = ["You", "Friends", "Travelers", "Nearby", "Creators"] as const;
+
+const MEMORIES = [
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300",
+  "https://images.unsplash.com/photo-1493558103817-58b2924bce98?w=300",
+  "https://images.unsplash.com/photo-1528127269322-539801943592?w=300",
+  "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=300",
+];
+
 const FEED = [
   { type: "checkin", user: MOCK_USERS[1], text: "checked in at Positano", meta: "2h · Italy", img: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=600" },
   { type: "badge", user: MOCK_USERS[3], text: "unlocked Globetrotter Lv.3", meta: "5h · 25 countries", img: null },
@@ -49,6 +58,7 @@ export default function HomePage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [stats, setStats] = useState({ countries: 0, cities: 0, trips: 0, checkIns: 0 });
   const [aiInput, setAiInput] = useState("");
+  const [storyCat, setStoryCat] = useState<typeof STORY_CATS[number]>("Friends");
 
   useEffect(() => {
     if (user) loadData();
@@ -163,8 +173,25 @@ export default function HomePage() {
             </h1>
           </div>
 
+          {/* === STORY CATEGORY CHIPS === */}
+          <div className="mt-5 -mx-4 px-4 flex gap-1.5 overflow-x-auto no-scrollbar">
+            {STORY_CATS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setStoryCat(c)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  storyCat === c
+                    ? "bg-white text-[hsl(var(--dark-bg))]"
+                    : "bg-white/10 text-white/70 hover:bg-white/15"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
           {/* === STORIES ROW === */}
-          <div className="mt-5 -mx-4 px-4 flex gap-3.5 overflow-x-auto no-scrollbar">
+          <div className="mt-3 -mx-4 px-4 flex gap-3.5 overflow-x-auto no-scrollbar">
             {stories.map((s) => (
               <button
                 key={s.id}
@@ -189,27 +216,28 @@ export default function HomePage() {
       </div>
 
       {/* === BODY === */}
-      <div className="px-4 pt-4 space-y-5">
+      <div className="px-4 pt-4 space-y-4">
         <TrialBanner />
 
-        {/* === UPCOMING TRIP HERO === */}
+        {/* === UPCOMING TRIP HERO (cinematic) === */}
         <button
-          onClick={() => upcomingTrip ? navigate("/trips") : navigate("/trips")}
+          onClick={() => navigate("/trips")}
           className="w-full rounded-2xl overflow-hidden relative shadow-elevated active:scale-[0.99] transition-transform text-left animate-fade-in"
         >
-          <div className="relative h-44">
+          <div className="relative h-56">
             <img
               src={HERO_IMG}
               alt={upcomingTrip?.destination || "Next adventure"}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--dark-bg))] via-[hsl(var(--dark-bg))]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--dark-bg))] via-[hsl(var(--dark-bg))]/55 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-transparent to-electric/15 mix-blend-overlay" />
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                 <Plane className="h-3 w-3" /> {upcomingTrip ? "Upcoming trip" : "Plan next trip"}
               </span>
               {countdown && (
-                <span className="px-2.5 py-1 rounded-full gradient-glow text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-full gradient-glow text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
                   {countdown}
                 </span>
               )}
@@ -375,13 +403,34 @@ export default function HomePage() {
               { v: stats.countries, l: "Countries" },
               { v: stats.cities, l: "Cities" },
               { v: stats.checkIns, l: "Check-ins" },
-              { v: stats.trips, l: "Trips" },
+              { v: MEMORIES.length * 7, l: "Memories" },
             ].map((s) => (
               <div key={s.l} className="rounded-lg bg-white/5 px-2 py-2 text-center">
                 <p className="text-white font-extrabold text-[15px] leading-none">{s.v}</p>
                 <p className="text-white/55 text-[9.5px] uppercase tracking-wider mt-1">{s.l}</p>
               </div>
             ))}
+          </div>
+
+          {/* Latest memories strip */}
+          <div className="relative mt-3 flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {MEMORIES.map((m, i) => (
+                <img
+                  key={i}
+                  src={m}
+                  alt=""
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-[hsl(var(--dark-bg))]"
+                />
+              ))}
+            </div>
+            <div className="ml-1 flex-1 min-w-0">
+              <p className="text-white/55 text-[9.5px] uppercase tracking-wider leading-none">Latest pin</p>
+              <p className="text-white text-[12px] font-bold flex items-center gap-1 mt-1 truncate">
+                <MapPin className="h-3 w-3 text-electric shrink-0" />
+                Positano, Italy · 2h ago
+              </p>
+            </div>
           </div>
         </button>
 
