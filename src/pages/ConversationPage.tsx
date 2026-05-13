@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
   MessageCircle, Lock, Timer, Eye, EyeOff, AlertTriangle, Smartphone, Image,
-  ChevronRight, X, Check, CheckCheck,
+  ChevronRight, X, Check, CheckCheck, Tag, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -269,10 +269,37 @@ export default function ConversationPage() {
             )}
             {msg.message_type === "story_reply" && (
               <div className={`rounded-lg p-2 mb-1.5 ${isMine ? "bg-white/10" : "bg-secondary"} flex items-center gap-2`}>
-                <div className="h-8 w-8 rounded bg-accent/20 flex items-center justify-center">
-                  <Image className="h-3.5 w-3.5 text-accent" />
+                <div className="h-8 w-8 rounded bg-electric/20 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-electric" />
                 </div>
                 <span className="text-[11px] opacity-70">Replied to story</span>
+              </div>
+            )}
+            {msg.message_type === "public_globe" && (
+              <div className={`rounded-lg p-2.5 mb-1.5 ${isMine ? "bg-white/15" : "bg-secondary"}`}>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span className="text-[12px] font-semibold">Shared their public globe</span>
+                </div>
+                <p className="text-[11px] opacity-70 mt-0.5">Tap to explore their travel map</p>
+              </div>
+            )}
+            {msg.message_type === "offer_share" && (
+              <div className={`rounded-lg p-2.5 mb-1.5 ${isMine ? "bg-white/15" : "bg-secondary"}`}>
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <span className="text-[12px] font-semibold">{msg.metadata?.title || "Local Offer"}</span>
+                </div>
+                <p className="text-[11px] opacity-70 mt-0.5">{msg.metadata?.discount || "Exclusive Roavr deal"}</p>
+              </div>
+            )}
+            {msg.message_type === "expert_share" && (
+              <div className={`rounded-lg p-2.5 mb-1.5 ${isMine ? "bg-white/15" : "bg-secondary"}`}>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-[12px] font-semibold">{msg.metadata?.name || "Local Expert"}</span>
+                </div>
+                <p className="text-[11px] opacity-70 mt-0.5">{msg.metadata?.bio || "Verified guide · Tap to view profile"}</p>
               </div>
             )}
             {msg.content && <p className="text-[13px] leading-relaxed">{msg.content}</p>}
@@ -472,11 +499,14 @@ export default function ConversationPage() {
           <div className="bg-card rounded-t-3xl w-full max-w-md p-5 space-y-1 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 pb-2">Share in Chat</p>
             {[
-              { icon: Plane, label: "Share a Trip", type: "trip_share", color: "text-accent" },
-              { icon: MapPin, label: "Send Map Pin", type: "map_pin", color: "text-emerald-500" },
-              { icon: Globe, label: "Share Memory", type: "memory_share", color: "text-blue-500" },
-              { icon: Image, label: "Photo or Video", type: "image", color: "text-purple-500" },
-              { icon: Camera, label: "Open Camera", type: "camera", color: "text-amber-500" },
+              { icon: Plane, label: "Share a Trip", type: "trip_share", color: "text-primary" },
+              { icon: MapPin, label: "Send Map Pin", type: "map_pin", color: "text-electric" },
+              { icon: Globe, label: "Share Memory", type: "memory_share", color: "text-primary" },
+              { icon: Globe, label: "Share Public Globe", type: "public_globe", color: "text-electric" },
+              { icon: Image, label: "Photo or Video", type: "image", color: "text-primary" },
+              { icon: Camera, label: "Open Camera", type: "camera", color: "text-coral" },
+              { icon: Tag, label: "Share Local Offer", type: "offer_share", color: "text-coral" },
+              { icon: Shield, label: "Recommend Local Expert", type: "expert_share", color: "text-primary" },
             ].map((item) => (
               <button
                 key={item.type}
