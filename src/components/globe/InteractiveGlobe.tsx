@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, Suspense } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, MeshTransmissionMaterial } from "@react-three/drei";
+import { OrbitControls, Html, MeshTransmissionMaterial, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { TextureLoader } from "three";
 
