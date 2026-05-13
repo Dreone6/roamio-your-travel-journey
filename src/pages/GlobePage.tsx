@@ -382,6 +382,7 @@ export default function GlobePage() {
                 <InteractiveGlobe
                   key={recenterKey}
                   pins={globePins}
+                  arcs={globeArcs}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
               </Suspense>
