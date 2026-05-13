@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
   MessageCircle, Lock, Timer, Eye, EyeOff, AlertTriangle, Smartphone, Image,
-  ChevronRight, X, Check, CheckCheck,
+  ChevronRight, X, Check, CheckCheck, Tag, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
