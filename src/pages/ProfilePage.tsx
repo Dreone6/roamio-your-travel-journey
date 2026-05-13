@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  User, Pencil, X, Check, ChevronRight, MapPin, Trophy, Compass,
-  Crown, Settings, Gift, Globe, Users, Eye, Lock, Camera
+  Pencil, X, Check, MapPin, Globe as GlobeIcon, Share2, MessageCircle,
+  Settings, Eye, Lock, Users, Camera, BadgeCheck, Compass, ChevronRight,
+  Map as MapIcon, Plane, Sparkles, Bookmark, Trophy, Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SkeletonProfileHero, SkeletonStatGrid } from "@/components/ui/skeleton-card";
+import roavrPin from "@/assets/roavr-pin.png";
+import {
+  CURRENT_USER, MOCK_TRIPS, MOCK_BADGES, MOCK_MEMORIES, MOCK_STORIES,
+} from "@/data";
 
-interface Profile {
+interface DbProfile {
   name: string | null;
   email: string | null;
   profile_photo: string | null;
@@ -24,71 +28,100 @@ interface Profile {
   total_trips: number;
 }
 
-interface Badge {
-  id: string;
-  badge_name: string;
-  badge_image: string | null;
-  earned_date: string;
-  category: string | null;
-}
+type Privacy = "public" | "followers" | "private";
+type Tab = "map" | "trips" | "stories" | "badges" | "saved" | "settings";
 
-const ALL_BADGES = [
-  { name: "First Check In", image: "📍", description: "Complete your first check in" },
-  { name: "Globetrotter", image: "🌍", description: "Visit 5 countries" },
-  { name: "Wanderer", image: "🧭", description: "Visit 10 cities" },
-  { name: "Foodie Explorer", image: "🍜", description: "Complete 3 food challenges" },
-  { name: "Streak Keeper", image: "🔥", description: "30 day check in streak" },
+const BADGE_LIBRARY = [
+  { name: "First Steps", emoji: "📍", tier: "bronze", from: "from-amber-400", to: "to-orange-500" },
+  { name: "Globe Trotter", emoji: "🌍", tier: "gold", from: "from-yellow-300", to: "to-amber-500" },
+  { name: "Memory Maker", emoji: "✨", tier: "silver", from: "from-slate-200", to: "to-slate-400" },
+  { name: "Social Butterfly", emoji: "🦋", tier: "platinum", from: "from-cyan-300", to: "to-sky-500" },
+  { name: "Night Owl", emoji: "🌙", tier: "silver", from: "from-indigo-300", to: "to-violet-500" },
+  { name: "Foodie Explorer", emoji: "🍜", tier: "bronze", from: "from-rose-300", to: "to-orange-400" },
+  { name: "Wanderer", emoji: "🧭", tier: "silver", from: "from-emerald-300", to: "to-teal-500" },
+  { name: "Streak Keeper", emoji: "🔥", tier: "gold", from: "from-orange-400", to: "to-rose-500" },
 ];
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [badges, setBadges] = useState<Badge[]>([]);
+  const [profile, setProfile] = useState<DbProfile | null>(null);
   const [checkInCount, setCheckInCount] = useState(0);
-  const [trips, setTrips] = useState<any[]>([]);
+  const [tripsDb, setTripsDb] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", home_city: "", bio: "" });
   const [loading, setLoading] = useState(true);
-  const [isPublicMap, setIsPublicMap] = useState(true);
+  const [privacy, setPrivacy] = useState<Privacy>("public");
+  const [tab, setTab] = useState<Tab>("map");
 
-  useEffect(() => {
-    if (user) loadAll();
-  }, [user]);
+  useEffect(() => { if (user) loadAll(); }, [user]);
 
   const loadAll = async () => {
     try {
-      const [profileRes, badgesRes, checkInsRes, tripsRes] = await Promise.all([
+      const [profileRes, checkInsRes, tripsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user!.id).single(),
-        supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false }),
         supabase.from("check_ins").select("id").eq("user_id", user!.id),
-        supabase.from("trips").select("id, title, destination, start_date, status").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(3),
+        supabase.from("trips").select("id, title, destination, start_date, status, created_at").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(6),
       ]);
-      if (profileRes.data) setProfile(profileRes.data as Profile);
-      setBadges((badgesRes.data as Badge[]) || []);
+      if (profileRes.data) setProfile(profileRes.data as DbProfile);
       setCheckInCount(checkInsRes.data?.length || 0);
-      setTrips(tripsRes.data || []);
-
-      await supabase.functions.invoke("check-badges", { body: { user_id: user!.id } });
-      const { data: freshBadges } = await supabase.from("badges").select("*").eq("user_id", user!.id).order("earned_date", { ascending: false });
-      setBadges((freshBadges as Badge[]) || []);
-    } catch {
-      toast.error("Failed to load profile data");
-    }
+      setTripsDb(tripsRes.data || []);
+    } catch { toast.error("Failed to load profile data"); }
     setLoading(false);
   };
 
   const startEdit = () => {
     setEditing(true);
-    setEditForm({ name: profile?.name || "", home_city: profile?.home_city || "", bio: profile?.bio || "" });
+    setEditForm({
+      name: profile?.name || CURRENT_USER.name || "",
+      home_city: profile?.home_city || CURRENT_USER.homeCity || "",
+      bio: profile?.bio || CURRENT_USER.bio || "",
+    });
   };
-
   const saveEdit = async () => {
     const { error } = await supabase.from("profiles").update({ name: editForm.name, home_city: editForm.home_city, bio: editForm.bio }).eq("id", user!.id);
-    if (error) { toast.error(error.message); } else { setProfile((p) => p ? { ...p, ...editForm } : p); setEditing(false); toast.success("Profile updated"); }
+    if (error) { toast.error(error.message); }
+    else { setProfile((p) => p ? { ...p, ...editForm } : p); setEditing(false); toast.success("Profile updated"); }
   };
 
-  const earnedBadgeNames = new Set(badges.map((b) => b.badge_name));
+  // Merged identity: prefer real DB, fall back to mock for richness
+  const identity = {
+    name: profile?.name || CURRENT_USER.name || "Traveler",
+    avatar: profile?.profile_photo || CURRENT_USER.avatarUrl,
+    homeCity: profile?.home_city || CURRENT_USER.homeCity,
+    bio: profile?.bio || CURRENT_USER.bio,
+    persona: CURRENT_USER.travelStyle, // adventure/cultural/etc
+    verified: CURRENT_USER.verified,
+  };
+
+  const stats = {
+    countries: profile?.total_countries_visited || CURRENT_USER.totalCountries,
+    cities: profile?.total_cities_visited || CURRENT_USER.totalCities,
+    trips: tripsDb.length || CURRENT_USER.totalTrips,
+    checkIns: checkInCount || CURRENT_USER.totalCheckIns,
+    followers: CURRENT_USER.totalFollowers,
+    following: CURRENT_USER.totalFollowing,
+  };
+
+  const trips = tripsDb.length > 0 ? tripsDb.map((t) => ({
+    id: t.id, title: t.title, destination: t.destination, status: t.status,
+    coverImage: MOCK_TRIPS.find(m => m.title === t.title)?.coverImage || MOCK_TRIPS[0].coverImage,
+  })) : MOCK_TRIPS.map(t => ({ id: t.id, title: t.title, destination: t.destination, status: t.status, coverImage: t.coverImage }));
+
+  const memories = useMemo(
+    () => MOCK_MEMORIES.filter(m => m.userId === "u-001" && m.mediaUrl).slice(0, 12),
+    []
+  );
+  const stories = useMemo(() => MOCK_STORIES.filter(s => s.userId === "u-001"), []);
+
+  const badges = MOCK_BADGES;
+  const earnedNames = new Set(badges.map(b => b.badgeName));
+
+  const PrivIcon = privacy === "public" ? Eye : privacy === "followers" ? Users : Lock;
+  const cyclePrivacy = () => {
+    const order: Privacy[] = ["public", "followers", "private"];
+    setPrivacy(order[(order.indexOf(privacy) + 1) % 3]);
+  };
 
   if (loading) {
     return (
@@ -100,171 +133,301 @@ export default function ProfilePage() {
     );
   }
 
-  const memberDate = profile?.member_since
-    ? new Date(profile.member_since).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : "";
+  // Cover image: most recent trip cover, fallback
+  const coverImage = trips[0]?.coverImage || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200";
+
+  const TABS: { key: Tab; label: string; icon: typeof MapIcon }[] = [
+    { key: "map", label: "Map", icon: MapIcon },
+    { key: "trips", label: "Trips", icon: Plane },
+    { key: "stories", label: "Stories", icon: Sparkles },
+    { key: "badges", label: "Badges", icon: Trophy },
+    { key: "saved", label: "Saved", icon: Bookmark },
+    { key: "settings", label: "Settings", icon: Settings },
+  ];
 
   return (
-    <div className="pb-4">
-      {/* Profile Hero */}
-      <div className="dark-immersive relative overflow-hidden">
-        <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="absolute -top-20 right-0 w-48 h-48 rounded-full bg-emerald-500/6 blur-3xl" />
+    <div className="dark-immersive min-h-screen pb-28">
+      {/* ── HERO with cover image ───────────────────────── */}
+      <div className="relative">
+        <div className="relative h-56 overflow-hidden">
+          <img src={coverImage} alt="" className="absolute inset-0 h-full w-full object-cover scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-[hsl(230_50%_7%)]" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 via-transparent to-transparent" />
 
-        <div className="relative px-5 pt-12 pb-6">
-          {/* Edit button */}
-          <div className="absolute top-12 right-5 flex gap-2">
-            {editing && (
-              <button onClick={() => setEditing(false)} className="h-8 w-8 rounded-full dark-card-elevated flex items-center justify-center">
-                <X className="h-3.5 w-3.5 text-dark-muted" />
+          {/* Top bar */}
+          <div className="absolute top-0 inset-x-0 px-5 pt-12 flex items-center justify-between z-10">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-full backdrop-blur-xl bg-white/10 border border-white/15">
+              <img src={roavrPin} alt="" className="h-4 w-4" />
+              <span className="text-[10px] font-bold text-white tracking-wider uppercase">Roavr Passport</span>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={cyclePrivacy} className="flex items-center gap-1.5 h-9 px-3 rounded-full backdrop-blur-xl bg-white/10 border border-white/15">
+                <PrivIcon className="h-3.5 w-3.5 text-white" />
+                <span className="text-[10px] font-bold text-white capitalize">{privacy}</span>
               </button>
-            )}
-            <button onClick={editing ? saveEdit : startEdit} className="h-8 w-8 rounded-full dark-card-elevated flex items-center justify-center">
-              {editing ? <Check className="h-3.5 w-3.5 text-glow" /> : <Pencil className="h-3.5 w-3.5 text-dark-muted" />}
-            </button>
+              {editing && (
+                <button onClick={() => setEditing(false)} className="h-9 w-9 rounded-full backdrop-blur-xl bg-white/10 border border-white/15 flex items-center justify-center">
+                  <X className="h-4 w-4 text-white" />
+                </button>
+              )}
+              <button onClick={editing ? saveEdit : startEdit} className="h-9 w-9 rounded-full backdrop-blur-xl bg-white/10 border border-white/15 flex items-center justify-center">
+                {editing ? <Check className="h-4 w-4 text-white" /> : <Pencil className="h-4 w-4 text-white" />}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col items-center text-center space-y-3">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="h-20 w-20 rounded-full border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-500/20 to-teal-500/10">
-                {profile?.profile_photo ? (
-                  <img src={profile.profile_photo} alt="Profile" className="h-20 w-20 rounded-full object-cover" />
-                ) : (
-                  <User className="h-9 w-9 text-glow" />
-                )}
+          {/* Floating quick stats — top right of cover */}
+          <div className="absolute bottom-3 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-xl bg-black/30 border border-white/10 z-10">
+            <GlobeIcon className="h-3 w-3 text-electric" />
+            <span className="text-[10px] font-bold text-white">{stats.countries} countries · {stats.cities} cities</span>
+          </div>
+        </div>
+
+        {/* Avatar + identity card overlapping */}
+        <div className="px-5 -mt-12 relative z-10">
+          <div className="flex items-end gap-3">
+            <div className="relative shrink-0">
+              <div className="h-24 w-24 rounded-full p-[3px] bg-gradient-to-br from-primary via-electric to-coral shadow-[0_8px_30px_-6px_rgba(59,130,246,0.6)]">
+                <div className="h-full w-full rounded-full overflow-hidden bg-[hsl(230_50%_7%)] border-2 border-[hsl(230_50%_7%)]">
+                  <img src={identity.avatar} alt={identity.name} className="h-full w-full object-cover" />
+                </div>
               </div>
-              <button className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full gradient-accent flex items-center justify-center border-2 border-[hsl(225,28%,7%)]">
+              <button className="absolute -bottom-0.5 -right-0.5 h-7 w-7 rounded-full gradient-glow flex items-center justify-center border-2 border-[hsl(230_50%_7%)]">
                 <Camera className="h-3 w-3 text-white" />
               </button>
             </div>
 
-            {editing ? (
-              <div className="space-y-2 w-full max-w-xs text-left">
-                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
-                <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
-                <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Tell us about your travel style..." rows={2} className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+            <div className="flex-1 min-w-0 pb-1">
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-heading text-[20px] font-bold text-white truncate">{identity.name}</h2>
+                {identity.verified && <BadgeCheck className="h-4 w-4 text-electric shrink-0" />}
               </div>
-            ) : (
-              <>
-                <div>
-                  <h2 className="font-heading text-xl font-bold text-white">{profile?.name || "Traveler"}</h2>
-                  {profile?.home_city && (
-                    <p className="text-[12px] text-dark-muted flex items-center justify-center gap-1 mt-1">
-                      <MapPin className="h-3 w-3" />{profile.home_city}
-                    </p>
-                  )}
-                </div>
-                {profile?.bio && <p className="text-[12px] text-dark-muted max-w-[260px] leading-relaxed">{profile.bio}</p>}
-                <p className="text-[10px] text-dark-muted tracking-wider uppercase">Member since {memberDate}</p>
-              </>
-            )}
-
-            {/* Social stats row */}
-            <div className="flex items-center gap-4 pt-1">
-              <div className="text-center">
-                <p className="font-heading font-bold text-base text-white">0</p>
-                <p className="text-[10px] text-dark-muted">Followers</p>
-              </div>
-              <div className="w-px h-6 bg-white/10" />
-              <div className="text-center">
-                <p className="font-heading font-bold text-base text-white">0</p>
-                <p className="text-[10px] text-dark-muted">Following</p>
-              </div>
-              <div className="w-px h-6 bg-white/10" />
-              <button onClick={() => setIsPublicMap(!isPublicMap)} className="flex items-center gap-1 text-[10px] font-bold text-dark-muted">
-                {isPublicMap ? <Eye className="h-3 w-3 text-glow" /> : <Lock className="h-3 w-3" />}
-                <span className={isPublicMap ? "text-glow" : ""}>{isPublicMap ? "Public Map" : "Private"}</span>
-              </button>
+              <p className="text-[11px] text-white/60 flex items-center gap-1 mt-0.5">
+                <MapPin className="h-3 w-3" /> {identity.homeCity || "—"}
+              </p>
+              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30">
+                <Compass className="h-2.5 w-2.5 text-electric" />
+                <span className="text-[9px] font-bold text-electric uppercase tracking-wider">{identity.persona} traveler</span>
+              </span>
             </div>
           </div>
+
+          {editing ? (
+            <div className="mt-3 space-y-2">
+              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+              <Input value={editForm.home_city} onChange={(e) => setEditForm({ ...editForm, home_city: e.target.value })} placeholder="Home city" className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+              <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} placeholder="Travel bio…" rows={2} className="bg-white/5 border-white/10 text-white placeholder:text-dark-muted" />
+            </div>
+          ) : (
+            identity.bio && <p className="mt-3 text-[12.5px] text-white/75 leading-relaxed">{identity.bio}</p>
+          )}
         </div>
       </div>
 
-      {/* Light content */}
-      <div className="px-4 pt-4 space-y-4">
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 animate-fade-in">
+      {/* ── Social stats ────────────────────────────────── */}
+      <div className="px-5 mt-4">
+        <div className="dark-card rounded-2xl p-3 grid grid-cols-6 gap-1">
           {[
-            { label: "Countries", value: profile?.total_countries_visited || 0, color: "text-emerald-600", bg: "bg-emerald-50" },
-            { label: "Cities", value: profile?.total_cities_visited || 0, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Trips", value: trips.length, color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Check-ins", value: checkInCount, color: "text-rose-500", bg: "bg-rose-50" },
+            { v: stats.followers, l: "Followers" },
+            { v: stats.following, l: "Following" },
+            { v: stats.countries, l: "Countries" },
+            { v: stats.cities, l: "Cities" },
+            { v: stats.trips, l: "Trips" },
+            { v: stats.checkIns, l: "Check-Ins" },
           ].map((s) => (
-            <div key={s.label} className={`rounded-xl ${s.bg} p-3 text-center`}>
-              <p className={`font-heading font-bold text-lg ${s.color} leading-none`}>{s.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{s.label}</p>
+            <div key={s.l} className="text-center px-1">
+              <p className="font-heading font-bold text-[15px] text-white leading-none">{s.v >= 1000 ? `${(s.v / 1000).toFixed(1)}k` : s.v}</p>
+              <p className="text-[8px] text-dark-muted uppercase tracking-wider mt-1 truncate">{s.l}</p>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Badges */}
-        <div className="space-y-2.5 animate-fade-in" style={{ animationDelay: "0.05s" }}>
-          <div className="flex items-center gap-1.5">
-            <Trophy className="h-4 w-4 text-accent" />
-            <h3 className="section-title">Badges</h3>
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            {ALL_BADGES.map((badge) => {
-              const earned = earnedBadgeNames.has(badge.name);
-              return (
-                <div key={badge.name} className={`rounded-xl p-2.5 text-center transition-all ${earned ? "bg-emerald-50 border border-emerald-200" : "bg-card border border-border/40 opacity-40"}`}>
-                  <p className="text-xl">{earned ? badge.image : "🔒"}</p>
-                  <p className={`text-[8px] font-bold mt-1 leading-tight ${earned ? "text-foreground" : "text-muted-foreground"}`}>{badge.name}</p>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── Primary actions ────────────────────────────── */}
+      <div className="px-5 mt-3 grid grid-cols-4 gap-2">
+        <button onClick={startEdit} className="rounded-xl gradient-glow text-white py-2.5 text-[11px] font-bold col-span-2 flex items-center justify-center gap-1.5 glow-accent">
+          <Pencil className="h-3.5 w-3.5" /> Edit Profile
+        </button>
+        <button onClick={() => navigate("/inbox")} className="rounded-xl dark-card-elevated text-white py-2.5 text-[11px] font-bold flex items-center justify-center gap-1">
+          <MessageCircle className="h-3.5 w-3.5 text-electric" /> Message
+        </button>
+        <button onClick={() => navigate("/globe")} className="rounded-xl dark-card-elevated text-white py-2.5 text-[11px] font-bold flex items-center justify-center gap-1">
+          <Share2 className="h-3.5 w-3.5 text-electric" /> Share
+        </button>
+      </div>
+
+      {/* ── Stories row ─────────────────────────────────── */}
+      <div className="mt-5">
+        <div className="px-5 flex items-center justify-between mb-2">
+          <h3 className="text-[13px] font-bold text-white">Highlights</h3>
+          <button onClick={() => navigate("/camera")} className="text-[10px] font-bold text-electric flex items-center gap-0.5">
+            New <Plus className="h-3 w-3" />
+          </button>
         </div>
+        <div className="px-5 flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+          {/* Add story */}
+          <button onClick={() => navigate("/camera")} className="shrink-0 flex flex-col items-center gap-1.5 w-16">
+            <div className="h-16 w-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+              <Plus className="h-5 w-5 text-white/60" />
+            </div>
+            <span className="text-[9px] text-dark-muted">Add</span>
+          </button>
+          {[...stories, ...memories.slice(0, 8).map((m) => ({ id: m.id, locationName: m.locationName, mediaUrl: m.mediaUrl }))].slice(0, 10).map((s: any, i) => (
+            <div key={s.id || i} className="shrink-0 flex flex-col items-center gap-1.5 w-16">
+              <div className="h-16 w-16 rounded-full p-[2px] bg-gradient-to-br from-primary via-electric to-coral">
+                <div className="h-full w-full rounded-full overflow-hidden bg-[hsl(230_50%_7%)] border-2 border-[hsl(230_50%_7%)]">
+                  {s.mediaUrl && <img src={s.mediaUrl} alt="" className="h-full w-full object-cover" />}
+                </div>
+              </div>
+              <span className="text-[9px] text-white/70 truncate max-w-full">{s.locationName?.split(",")[0] || "Trip"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        {/* Recent Trips */}
-        {trips.length > 0 && (
-          <div className="space-y-2.5 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <div className="section-header">
-              <h3 className="section-title">Recent Trips</h3>
-              <button onClick={() => navigate("/trips")} className="section-link">
-                See All <ChevronRight className="h-3 w-3" />
+      {/* ── Tabs ────────────────────────────────────────── */}
+      <div className="mt-5 px-5">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide rounded-full dark-card p-1">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[11px] font-bold transition-all ${
+                tab === key ? "gradient-glow text-white glow-accent" : "text-dark-muted"
+              }`}
+            >
+              <Icon className="h-3 w-3" /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tab content ─────────────────────────────────── */}
+      <div className="px-5 mt-4">
+        {tab === "map" && (
+          <div
+            onClick={() => navigate("/globe")}
+            className="dark-card rounded-2xl overflow-hidden relative h-56 cursor-pointer group"
+          >
+            <img
+              src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+22d3ee(139.6917,35.6895),pin-s+22d3ee(14.4378,40.6340),pin-s+f97362(-21.9426,64.1466),pin-s+22d3ee(-7.9811,31.6295),pin-s+3b82f6(-97.7431,30.2672)/0,20,1.2/600x300@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw"
+              alt="Map preview"
+              className="absolute inset-0 h-full w-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+              onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800"; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230_50%_7%)] via-transparent to-transparent" />
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-xl bg-black/40 border border-white/10">
+              <GlobeIcon className="h-3 w-3 text-electric" />
+              <span className="text-[10px] font-bold text-white">Public Globe</span>
+            </div>
+            <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+              <div>
+                <p className="font-heading text-white font-bold text-[16px] leading-tight">{stats.countries} countries pinned</p>
+                <p className="text-white/70 text-[11px]">{stats.cities} cities · {stats.checkIns} check-ins</p>
+              </div>
+              <button className="px-3 py-1.5 rounded-full gradient-glow text-white text-[10px] font-bold flex items-center gap-1">
+                Open <ChevronRight className="h-3 w-3" />
               </button>
             </div>
-            {trips.map((trip) => (
-              <div key={trip.id} className="flex items-center gap-3 rounded-xl bg-card border border-border/40 p-3 shadow-soft">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/8 to-emerald-500/8 flex items-center justify-center shrink-0">
-                  <Compass className="h-4 w-4 text-primary/40" />
+          </div>
+        )}
+
+        {tab === "trips" && (
+          <div className="grid grid-cols-2 gap-2.5">
+            {trips.slice(0, 6).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => navigate("/trips")}
+                className="rounded-2xl overflow-hidden relative h-36 group text-left"
+              >
+                <img src={t.coverImage} alt={t.title} className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <span className={`absolute top-2 right-2 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                  t.status === "completed" ? "bg-electric/20 text-electric border border-electric/30" : "bg-coral/20 text-coral border border-coral/30"
+                }`}>{t.status}</span>
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-white font-heading font-bold text-[12px] leading-tight truncate">{t.title}</p>
+                  <p className="text-white/70 text-[10px] truncate">{t.destination}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[13px] text-foreground truncate">{trip.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{trip.destination}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab === "stories" && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {memories.map((m) => (
+              <div key={m.id} className="aspect-square rounded-lg overflow-hidden relative">
+                <img src={m.mediaUrl!} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
+                  <p className="text-white text-[8px] font-semibold truncate">{m.locationName}</p>
                 </div>
-                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${
-                  trip.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-accent/12 text-accent"
-                }`}>
-                  {trip.status}
-                </span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Actions */}
-        <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          {[
-            { label: "My Globe", icon: Globe, route: "/globe", desc: "View your travel map" },
-            { label: "Refer Friends", icon: Gift, route: "/referral", desc: "Earn free months" },
-            { label: "Subscription", icon: Crown, route: "/subscription", desc: "Manage your plan" },
-            { label: "Settings", icon: Settings, route: "/settings", desc: "App preferences" },
-          ].map((action) => (
-            <button key={action.label} onClick={() => navigate(action.route)} className="w-full flex items-center gap-3 rounded-xl bg-card border border-border/40 p-3.5 hover:shadow-soft transition-all text-left">
-              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                <action.icon className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-foreground">{action.label}</p>
-                <p className="text-[11px] text-muted-foreground">{action.desc}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        {tab === "badges" && (
+          <div className="grid grid-cols-3 gap-2.5">
+            {BADGE_LIBRARY.map((b) => {
+              const earned = earnedNames.has(b.name);
+              return (
+                <div
+                  key={b.name}
+                  className={`relative rounded-2xl p-3 text-center border transition-all overflow-hidden ${
+                    earned ? "border-white/15 bg-white/[0.04]" : "border-white/5 bg-white/[0.02] opacity-50"
+                  }`}
+                >
+                  {earned && <div className={`absolute -inset-8 bg-gradient-to-br ${b.from} ${b.to} opacity-20 blur-2xl`} />}
+                  <div className={`relative mx-auto h-14 w-14 rounded-full flex items-center justify-center text-2xl ${
+                    earned ? `bg-gradient-to-br ${b.from} ${b.to} shadow-[0_4px_20px_-4px_rgba(59,130,246,0.5)]` : "bg-white/5"
+                  }`}>
+                    <span className="drop-shadow">{earned ? b.emoji : "🔒"}</span>
+                  </div>
+                  <p className="relative text-[10px] font-bold text-white mt-2 truncate">{b.name}</p>
+                  <p className="relative text-[8px] uppercase tracking-wider text-dark-muted mt-0.5">{b.tier}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {tab === "saved" && (
+          <div className="dark-card rounded-2xl p-8 text-center">
+            <Bookmark className="h-8 w-8 text-electric mx-auto mb-2" />
+            <p className="text-white text-[13px] font-bold">No saved places yet</p>
+            <p className="text-dark-muted text-[11px] mt-1">Bookmark spots from Discover or friends' globes.</p>
+            <button onClick={() => navigate("/discover")} className="mt-4 px-4 py-2 rounded-full gradient-glow text-white text-[11px] font-bold">
+              Explore Discover
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {tab === "settings" && (
+          <div className="space-y-1.5">
+            {[
+              { label: "Account", icon: BadgeCheck, route: "/settings", desc: "Profile, email & login" },
+              { label: "Privacy & Visibility", icon: Lock, route: "/settings", desc: "Who can see your map" },
+              { label: "Subscription", icon: Sparkles, route: "/subscription", desc: "Manage your plan" },
+              { label: "Refer Friends", icon: Users, route: "/referral", desc: "Earn free months" },
+              { label: "All Settings", icon: Settings, route: "/settings", desc: "App preferences" },
+            ].map((a) => (
+              <button key={a.label} onClick={() => navigate(a.route)} className="w-full flex items-center gap-3 rounded-xl dark-card p-3.5 text-left">
+                <div className="h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <a.icon className="h-4 w-4 text-electric" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-white">{a.label}</p>
+                  <p className="text-[11px] text-dark-muted">{a.desc}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-dark-muted shrink-0" />
+              </button>
+            ))}
+            <button onClick={signOut} className="w-full mt-2 rounded-xl border border-coral/30 bg-coral/10 text-coral py-3 text-[12px] font-bold">
+              Sign Out
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
