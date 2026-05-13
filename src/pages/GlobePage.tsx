@@ -180,7 +180,7 @@ export default function GlobePage() {
       lng: p.longitude,
       label: p.label,
       category: p.category,
-      thumbnail: p.linkedId ? memoryByLinked.get(p.linkedId) ?? null : null,
+      thumbnail: p.linkedId ? memoryByLinked[p.linkedId] ?? null : null,
       description: p.description,
     })),
     [activePins, memoryByLinked]
