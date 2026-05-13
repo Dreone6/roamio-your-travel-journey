@@ -3,598 +3,1042 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  X, Zap, ZapOff, Camera as CameraIcon, Video, Grid3X3, MapPin, Sparkles,
-  RotateCcw, Maximize2, Upload, Globe as GlobeIcon, Users, Lock, Eye, Loader2,
-  Timer, ScanLine, Plane, Briefcase, Send, Heart, Smile, Image as ImageIcon,
-  ChevronDown, Cloud, Mountain, Compass, Award, Flag, Clock, Ruler, Tag,
-  CheckCircle2,
+  X, Zap, ZapOff, ChevronDown, Sparkles, Smile, Type as TypeIcon, Info,
+  SlidersHorizontal, MapPin, Calendar, Tag as TagIcon, Users, Lock, Globe as GlobeIcon,
+  Eye, Loader2, CheckCircle2, Plus, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ensurePhotoPermission } from "@/lib/permissions";
 import { geotagPhoto, type PhotoLocation } from "@/lib/exif";
-import roavrPin from "@/assets/roavr-pin.png";
 
-const FILTERS = [
-  { id: "none", name: "Original", color: "" },
-  { id: "cinematic", name: "Cinematic", color: "contrast-110 saturate-90 brightness-95" },
-  { id: "sunset", name: "Sunset", color: "saturate-125 hue-rotate-[-10deg] brightness-105" },
-  { id: "nightlife", name: "Nightlife", color: "saturate-150 contrast-115 hue-rotate-[20deg]" },
-  { id: "beach", name: "Beach", color: "brightness-110 saturate-110 contrast-95" },
-  { id: "foodie", name: "Foodie", color: "saturate-130 brightness-105" },
-  { id: "vintage", name: "Vintage Film", color: "sepia-[0.35] contrast-105" },
-  { id: "luxury", name: "Luxury", color: "brightness-105 contrast-110 saturate-80" },
-  { id: "adventure", name: "Adventure", color: "contrast-115 saturate-105" },
-  { id: "city_glow", name: "City Glow", color: "brightness-110 saturate-120 contrast-105" },
-  { id: "passport", name: "Passport Stamp", color: "sepia-[0.5] contrast-115 saturate-75" },
+// ─────────────────────────── DATA ───────────────────────────
+
+const MODES = ["Photo", "Check In", "Scan"] as const;
+type ModeId = typeof MODES[number];
+
+const STYLE_FILTERS = [
+  { id: "none", name: "None", css: "" },
+  { id: "cinematic", name: "Cinematic", css: "contrast-110 saturate-75 brightness-95" },
+  { id: "postcard", name: "Postcard", css: "saturate-110 brightness-105" },
+  { id: "passport", name: "Passport", css: "grayscale contrast-125" },
+  { id: "golden", name: "Golden Hour", css: "sepia-[0.25] saturate-125 brightness-105" },
+  { id: "nightlife", name: "Nightlife", css: "contrast-125 saturate-90 brightness-90" },
+  { id: "foodie", name: "Foodie", css: "saturate-150 brightness-105" },
+  { id: "beach", name: "Beach", css: "brightness-110 saturate-110 contrast-95" },
 ];
 
-const OVERLAYS = [
-  { id: "city", label: "City", icon: MapPin },
-  { id: "flag", label: "Flag", icon: Flag },
-  { id: "date", label: "Date", icon: Clock },
-  { id: "weather", label: "Weather", icon: Cloud },
-  { id: "trip", label: "Trip", icon: Plane },
-  { id: "pin", label: "Roavr Pin", icon: Compass },
-  { id: "altitude", label: "Altitude", icon: Mountain },
-  { id: "distance", label: "Distance", icon: Ruler },
-  { id: "localtime", label: "Local Time", icon: Clock },
-  { id: "badge", label: "Badge", icon: Award },
+const STAMPS = [
+  { id: "passport", label: "Passport Stamp" },
+  { id: "city", label: "City Name" },
+  { id: "flag", label: "Country Flag" },
+  { id: "trip", label: "Trip Name" },
+  { id: "time", label: "Local Time" },
+  { id: "weather", label: "Weather" },
+  { id: "pin", label: "Map Pin" },
+  { id: "coords", label: "Coordinates" },
 ] as const;
+type StampId = typeof STAMPS[number]["id"];
 
-type OverlayId = typeof OVERLAYS[number]["id"];
-
-const MODES = [
-  { id: "photo", label: "Photo", icon: CameraIcon },
-  { id: "video", label: "Video", icon: Video },
-  { id: "story", label: "Story", icon: Sparkles },
-  { id: "checkin", label: "Check In", icon: MapPin },
-  { id: "memory", label: "Memory", icon: Heart },
-  { id: "scan", label: "Scan Booking", icon: ScanLine },
-  { id: "share", label: "Share Location", icon: Send },
+const TABS = [
+  { id: "frames", label: "Frames", icon: Sparkles },
+  { id: "stickers", label: "Stickers", icon: Smile },
+  { id: "text", label: "Text", icon: TypeIcon },
+  { id: "details", label: "Details", icon: Info },
+  { id: "adjust", label: "Adjust", icon: SlidersHorizontal },
 ] as const;
+type TabId = typeof TABS[number]["id"];
 
-type ModeId = typeof MODES[number]["id"];
-type PostTarget = "story" | "memory" | "message" | "globe" | "checkin";
-type Visibility = "public" | "followers" | "close" | "private";
+type Visibility = "private" | "followers" | "public";
 
 interface Trip { id: string; title: string; destination: string }
+interface PlacedStamp { id: StampId; x: number; y: number }
+
+// ─────────────────────────── PAGE ───────────────────────────
 
 export default function CameraPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mode, setMode] = useState<ModeId>("photo");
-  const [activeFilter, setActiveFilter] = useState("none");
-  const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set(["city", "date", "pin"]));
-  const [showFilters, setShowFilters] = useState(false);
-  const [showOverlays, setShowOverlays] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const [flash, setFlash] = useState<"off" | "on" | "auto">("off");
-  const [timer, setTimer] = useState<0 | 3 | 10>(0);
-  const [facing, setFacing] = useState<"back" | "front">("back");
-  const [locationOn, setLocationOn] = useState(true);
-  const [watermark, setWatermark] = useState(true);
+  const [mode, setMode] = useState<ModeId>("Photo");
+  const [flash, setFlash] = useState(false);
 
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [tripId, setTripId] = useState<string | "">("");
-  const [showTripPicker, setShowTripPicker] = useState(false);
-
-  const [captured, setCaptured] = useState(false);
-  const [showPostOptions, setShowPostOptions] = useState(false);
-  const [caption, setCaption] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("followers");
   const [pickedFile, setPickedFile] = useState<File | null>(null);
   const [pickedPreview, setPickedPreview] = useState<string | null>(null);
   const [autoLocation, setAutoLocation] = useState<PhotoLocation | null>(null);
-  const [geotagging, setGeotagging] = useState(false);
-  const [posting, setPosting] = useState(false);
-  const [autoSavePref, setAutoSavePref] = useState<"auto" | "ask" | "never">("auto");
 
-  // Load trips + privacy preferences
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const [tRes, pRes] = await Promise.all([
-        supabase.from("trips").select("id, title, destination").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase.from("user_privacy_settings").select("auto_save_stories").eq("user_id", user.id).maybeSingle(),
-      ]);
-      setTrips((tRes.data as Trip[]) || []);
-      const pref = (pRes.data as any)?.auto_save_stories;
-      if (pref === "auto" || pref === "ask" || pref === "never") setAutoSavePref(pref);
-    })();
-  }, [user]);
+  const [editing, setEditing] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [scanReview, setScanReview] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
-  // Reroute special modes
-  useEffect(() => {
-    if (mode === "checkin") navigate("/checkin");
-    if (mode === "scan") navigate("/trips?import=1");
-    if (mode === "share") navigate("/safepass");
-  }, [mode, navigate]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCapture = async () => {
-    const ok = await ensurePhotoPermission();
-    if (!ok) return;
-    const fire = () => { setCaptured(true); setShowPostOptions(true); };
-    if (timer === 0) fire();
-    else {
-      toast.info(`Capturing in ${timer}s…`);
-      setTimeout(fire, timer * 1000);
-    }
+  const reset = () => {
+    setEditing(false);
+    setCheckInOpen(false);
+    setScanReview(false);
+    setPublishOpen(false);
+    setPickedFile(null);
+    setPickedPreview(null);
+    setAutoLocation(null);
   };
 
-  const handlePickFile = () => fileInputRef.current?.click();
+  // Capture flow → opens correct post-capture screen
+  const handleShutter = async () => {
+    const ok = await ensurePhotoPermission();
+    if (!ok) return;
+    fileInputRef.current?.click();
+  };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPickedFile(file);
     setPickedPreview(URL.createObjectURL(file));
-    setCaptured(true);
-    setShowPostOptions(true);
-    setGeotagging(true);
+    if (mode === "Check In") {
+      setCheckInOpen(true);
+    } else if (mode === "Scan") {
+      setScanReview(true);
+    } else {
+      setEditing(true);
+    }
     const loc = await geotagPhoto(file);
     setAutoLocation(loc);
-    setGeotagging(false);
-    if (loc?.source === "exif") toast.success("Location detected from photo");
   };
 
-  async function uploadStoryMedia(file: File): Promise<string | null> {
-    if (!user) return null;
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("checkin-photos").upload(path, file, { cacheControl: "3600", upsert: false });
-    if (error) { toast.error("Upload failed", { description: error.message }); return null; }
-    return supabase.storage.from("checkin-photos").getPublicUrl(path).data.publicUrl;
-  }
-
-  const visMap: Record<Visibility, string> = {
-    public: "public", followers: "followers", close: "close_friends", private: "private",
-  };
-
-  const handlePost = async (target: PostTarget) => {
-    if (!user) { toast.error("Please sign in first"); return; }
-    if (target === "checkin") { navigate("/checkin"); return; }
-    setPosting(true);
-    try {
-      let location = autoLocation;
-      if ((target === "story" || target === "globe") && !location && locationOn) {
-        setGeotagging(true);
-        location = await geotagPhoto(pickedFile);
-        setGeotagging(false);
-        setAutoLocation(location);
-      }
-
-      if (target === "story") {
-        let mediaUrl = pickedPreview || "";
-        if (pickedFile) {
-          const uploaded = await uploadStoryMedia(pickedFile);
-          if (!uploaded) { setPosting(false); return; }
-          mediaUrl = uploaded;
-        }
-        const { error } = await supabase.from("stories").insert({
-          user_id: user.id,
-          media_url: mediaUrl,
-          media_type: mode === "video" ? "video" : "photo",
-          caption: caption || null,
-          location_name: null,
-          latitude: location?.latitude ?? null,
-          longitude: location?.longitude ?? null,
-          trip_id: tripId || null,
-          filter_name: activeFilter === "none" ? null : activeFilter,
-          visibility: visMap[visibility],
-          auto_save_to_globe: autoSavePref !== "never",
-        });
-        if (error) throw error;
-        toast.success("Posted to your story", { description: "Live for 24 hours · pinned to your globe" });
-        navigate("/stories");
-        return;
-      }
-
-      toast.success(
-        target === "memory" ? "Saved as a memory!" :
-        target === "message" ? "Opening messages..." :
-        "Pinned to your globe!"
-      );
-      if (target === "message") navigate("/messages");
-      else navigate("/home");
-    } catch (err: any) {
-      toast.error("Something went wrong", { description: err?.message });
-    } finally { setPosting(false); }
-  };
-
-  const resetCapture = () => {
-    setCaptured(false); setShowPostOptions(false); setCaption("");
-    setPickedFile(null); setPickedPreview(null); setAutoLocation(null);
-  };
-
-  const updateAutoSavePref = async (pref: "auto" | "ask" | "never") => {
-    setAutoSavePref(pref);
-    if (!user) return;
-    await supabase.from("user_privacy_settings").upsert({ user_id: user.id, auto_save_stories: pref }, { onConflict: "user_id" });
-    toast.success("Story auto-save updated");
-  };
-
-  const toggleOverlay = (id: OverlayId) => {
-    setActiveOverlays((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const selectedTrip = trips.find((t) => t.id === tripId);
-
-  // ============================================================
-  // PREVIEW / POST OPTIONS SCREEN
-  // ============================================================
-  if (showPostOptions) {
+  // ─────────────── ROUTES ───────────────
+  if (publishOpen && pickedPreview) {
     return (
-      <div className="min-h-screen dark-immersive flex flex-col relative">
-        <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="relative flex-1 flex flex-col">
-          <div className="relative px-4 pt-12 pb-3">
-            <button onClick={resetCapture} className="absolute top-12 left-4 z-10 h-9 w-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
-              <X className="h-4 w-4 text-white" />
-            </button>
-            <p className="text-center text-white/80 text-[12px] font-bold uppercase tracking-[0.2em]">Preview</p>
-
-            <div className={`mt-3 mx-auto w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 relative ${pickedPreview ? "" : "bg-gradient-to-br from-primary/30 via-[hsl(var(--dark-bg))] to-electric/20"} ${FILTERS.find(f => f.id === activeFilter)?.color || ""}`}>
-              {pickedPreview ? (
-                <img src={pickedPreview} alt="Preview" className="h-full w-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <CameraIcon className="h-12 w-12 text-white/30" />
-                  <p className="text-white/40 text-[11px]">HD Capture · 4032 × 3024</p>
-                </div>
-              )}
-
-              {/* Live overlays render on preview */}
-              <PreviewOverlays
-                overlays={activeOverlays}
-                trip={selectedTrip}
-                location={autoLocation}
-                watermark={watermark}
-              />
-
-              <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-3 py-1.5 text-[10px] font-medium text-white/90">
-                {geotagging ? (<><Loader2 className="h-3 w-3 animate-spin text-electric" /> Detecting location…</>)
-                  : autoLocation ? (<><MapPin className="h-3 w-3 text-electric" />
-                      <span className="truncate">{autoLocation.latitude.toFixed(3)}, {autoLocation.longitude.toFixed(3)}</span>
-                      <span className="ml-auto shrink-0 text-[9px] text-electric uppercase tracking-wider">{autoLocation.source === "exif" ? "From photo" : "Live"}</span></>)
-                  : (<><MapPin className="h-3 w-3 text-white/40" /> {locationOn ? "We'll attach location on post" : "Location off"}</>)}
-              </div>
-            </div>
-          </div>
-
-          {/* Caption */}
-          <div className="px-5 pt-2">
-            <input
-              type="text" placeholder="Add a caption…" value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="w-full h-11 rounded-xl px-4 text-[13px] text-white placeholder:text-white/40 border-0 focus:outline-none dark-card-elevated"
-            />
-          </div>
-
-          {/* Trip tag */}
-          {trips.length > 0 && (
-            <div className="px-5 pt-2.5">
-              <button
-                onClick={() => setShowTripPicker((v) => !v)}
-                className="w-full flex items-center gap-2 dark-card-elevated rounded-xl px-3.5 h-11 text-[12px] text-white"
-              >
-                <Tag className="h-3.5 w-3.5 text-electric" />
-                <span className="font-bold uppercase text-[10px] tracking-wider text-white/60">Trip</span>
-                <span className="ml-1 truncate">{selectedTrip ? selectedTrip.title : "No trip"}</span>
-                <ChevronDown className="ml-auto h-3.5 w-3.5 text-white/50" />
-              </button>
-              {showTripPicker && (
-                <div className="mt-1.5 dark-card-elevated rounded-xl p-1 max-h-44 overflow-y-auto">
-                  <button onClick={() => { setTripId(""); setShowTripPicker(false); }} className="w-full text-left px-3 py-2 text-[12px] text-white/70 hover:bg-white/5 rounded-lg">No trip</button>
-                  {trips.map((t) => (
-                    <button key={t.id} onClick={() => { setTripId(t.id); setShowTripPicker(false); }} className={`w-full text-left px-3 py-2 text-[12px] rounded-lg ${tripId === t.id ? "bg-primary/30 text-white" : "text-white/80 hover:bg-white/5"}`}>
-                      <p className="font-bold truncate">{t.title}</p>
-                      <p className="text-[10px] text-white/50 truncate">{t.destination}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Visibility */}
-          <div className="px-5 pt-3">
-            <p className="text-[10px] font-bold text-white/55 uppercase tracking-wider mb-1.5">Who can see this</p>
-            <div className="grid grid-cols-4 gap-1.5">
-              {([
-                { id: "public", label: "Public", icon: Eye },
-                { id: "followers", label: "Followers", icon: Users },
-                { id: "close", label: "Close", icon: Heart },
-                { id: "private", label: "Only me", icon: Lock },
-              ] as const).map(({ id, label, icon: Icon }) => (
-                <button key={id} onClick={() => setVisibility(id)}
-                  className={`py-2 rounded-lg text-[10.5px] font-bold flex flex-col items-center gap-0.5 transition-all ${visibility === id ? "gradient-accent text-white" : "dark-card-elevated text-white/60"}`}>
-                  <Icon className="h-3.5 w-3.5" /> {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Auto-save expired stories */}
-          <div className="px-5 pt-3">
-            <p className="text-[10px] font-bold text-white/55 uppercase tracking-wider mb-1.5">After 24h, save story to globe</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {(["auto", "ask", "never"] as const).map((p) => (
-                <button key={p} onClick={() => updateAutoSavePref(p)}
-                  className={`py-2 rounded-lg text-[10.5px] font-bold transition-all ${autoSavePref === p ? "bg-electric text-[hsl(var(--dark-bg))]" : "dark-card-elevated text-white/60"}`}>
-                  {p === "auto" ? "Always" : p === "ask" ? "Ask first" : "Never"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Post targets */}
-          <div className="px-5 pt-4 pb-8 space-y-2 mt-auto">
-            {([
-              { target: "story" as PostTarget, label: "Post to 24h Story", desc: "Feed + globe pin", icon: Sparkles, gradient: "gradient-accent" },
-              { target: "memory" as PostTarget, label: "Save as Memory", desc: "Pin to globe forever", icon: Heart, gradient: "gradient-glow" },
-              { target: "checkin" as PostTarget, label: "Check In Here", desc: "Add to your travel log", icon: MapPin, gradient: "gradient-coral" },
-              { target: "globe" as PostTarget, label: "Pin to Globe", desc: "Add directly to your map", icon: GlobeIcon, gradient: "" },
-              { target: "message" as PostTarget, label: "Send in Message", desc: "Share with a friend", icon: Send, gradient: "" },
-            ]).map((opt) => (
-              <button key={opt.target} onClick={() => handlePost(opt.target)} disabled={posting}
-                className={`w-full rounded-xl p-3 flex items-center gap-3 text-left transition-all disabled:opacity-60 ${opt.gradient || "dark-card-elevated"} text-white`}>
-                <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
-                  <opt.icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[13px] leading-tight">{opt.label}</p>
-                  <p className="text-[10.5px] opacity-75 leading-tight mt-0.5">{opt.desc}</p>
-                </div>
-                {posting && opt.target === "story" && <Loader2 className="h-4 w-4 animate-spin" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <PublishSheet
+        previewUrl={pickedPreview}
+        onClose={() => setPublishOpen(false)}
+        onPosted={() => { reset(); navigate("/home"); }}
+        pickedFile={pickedFile}
+        userId={user?.id}
+        location={autoLocation}
+      />
     );
   }
 
-  // ============================================================
-  // CAMERA VIEWFINDER
-  // ============================================================
+  if (editing && pickedPreview) {
+    return (
+      <EditScreen
+        previewUrl={pickedPreview}
+        onRetake={reset}
+        onSave={() => { toast.success("Saved privately to your globe"); reset(); navigate("/globe"); }}
+        onPostMoment={() => setPublishOpen(true)}
+        location={autoLocation}
+      />
+    );
+  }
+
+  if (checkInOpen) {
+    return (
+      <CheckInScreen
+        previewUrl={pickedPreview}
+        location={autoLocation}
+        onBack={reset}
+        onDropped={() => { toast.success("Pinned to your World globe"); reset(); navigate("/globe"); }}
+      />
+    );
+  }
+
+  if (scanReview) {
+    return <ScanReviewScreen onBack={reset} onAdded={() => { reset(); navigate("/trips"); }} />;
+  }
+
+  // ─────────────── LIVE CAMERA ───────────────
   return (
-    <div className="min-h-screen bg-black flex flex-col relative overflow-hidden">
-      {/* Top status bar */}
-      <div className="relative z-20 flex items-center justify-between px-4 pt-12 pb-2">
-        <button onClick={() => navigate(-1)} className="h-9 w-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
-          <X className="h-4 w-4 text-white" />
-        </button>
-        <div className="flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-full bg-electric/90 text-[hsl(var(--dark-bg))] text-[9px] font-extrabold tracking-wider">HD</span>
-          <span className="text-white/70 text-[10px] font-bold">{mode === "video" ? "4K · 30fps" : "48MP"}</span>
-        </div>
-        <button onClick={handlePickFile} className="h-9 w-9 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center" aria-label="Gallery">
-          <ImageIcon className="h-4 w-4 text-white" />
-        </button>
-      </div>
-
-      {/* Top tool row */}
-      <div className="relative z-20 flex items-center justify-center gap-1.5 px-4 pb-2">
-        <ToolBtn active={flash !== "off"} onClick={() => setFlash(flash === "off" ? "auto" : flash === "auto" ? "on" : "off")}>
-          {flash === "off" ? <ZapOff className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
-          <span className="text-[9px] font-bold ml-0.5 uppercase">{flash}</span>
-        </ToolBtn>
-        <ToolBtn active={showGrid} onClick={() => setShowGrid((v) => !v)}><Grid3X3 className="h-3.5 w-3.5" /></ToolBtn>
-        <ToolBtn active={timer > 0} onClick={() => setTimer(timer === 0 ? 3 : timer === 3 ? 10 : 0)}>
-          <Timer className="h-3.5 w-3.5" />
-          {timer > 0 && <span className="text-[9px] font-bold ml-0.5">{timer}s</span>}
-        </ToolBtn>
-        <ToolBtn active={locationOn} onClick={() => setLocationOn((v) => !v)}><MapPin className="h-3.5 w-3.5" /></ToolBtn>
-        <ToolBtn active={watermark} onClick={() => setWatermark((v) => !v)}>
-          <img src={roavrPin} alt="" className="h-3.5 w-3.5 object-contain brightness-0 invert" />
-        </ToolBtn>
-      </div>
-
-      {/* Viewfinder */}
-      <div className="relative flex-1 mx-3 rounded-3xl overflow-hidden border border-white/10 shadow-elevated">
-        <div className={`absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#0f0f1c] to-[#0a0a14] ${FILTERS.find(f => f.id === activeFilter)?.color || ""}`} />
-        {/* Faux scene */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-30">
-          <CameraIcon className="h-20 w-20 text-white/30" />
-        </div>
-
-        {/* Grid */}
-        {showGrid && (
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/25" />
-            <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/25" />
-            <div className="absolute top-1/3 left-0 right-0 h-px bg-white/25" />
-            <div className="absolute top-2/3 left-0 right-0 h-px bg-white/25" />
-          </div>
-        )}
-
-        {/* Focus reticle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 border-2 border-electric/70 rounded-xl opacity-50" />
-
-        {/* Overlay chips rendered live */}
-        <PreviewOverlays
-          overlays={activeOverlays}
-          trip={selectedTrip}
-          location={autoLocation}
-          watermark={watermark}
-        />
-
-        {/* Trip tag pill */}
-        {trips.length > 0 && (
-          <button
-            onClick={() => setShowTripPicker((v) => !v)}
-            className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1.5"
-          >
-            <Tag className="h-3 w-3 text-electric" />
-            <span className="text-white text-[10px] font-bold truncate max-w-[120px]">
-              {selectedTrip ? selectedTrip.title : "Tag a trip"}
-            </span>
-            <ChevronDown className="h-3 w-3 text-white/60" />
-          </button>
-        )}
-
-        {showTripPicker && trips.length > 0 && (
-          <div className="absolute top-14 left-3 w-56 dark-card-elevated rounded-xl p-1 max-h-52 overflow-y-auto z-30 shadow-elevated">
-            <button onClick={() => { setTripId(""); setShowTripPicker(false); }} className="w-full text-left px-3 py-2 text-[12px] text-white/70 hover:bg-white/5 rounded-lg">No trip</button>
-            {trips.map((t) => (
-              <button key={t.id} onClick={() => { setTripId(t.id); setShowTripPicker(false); }} className={`w-full text-left px-3 py-2 rounded-lg ${tripId === t.id ? "bg-primary/30 text-white" : "text-white/80 hover:bg-white/5"}`}>
-                <p className="font-bold text-[12px] truncate">{t.title}</p>
-                <p className="text-[10px] text-white/50 truncate">{t.destination}</p>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Mode-specific overlay hint */}
-        {mode === "story" && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-electric text-[hsl(var(--dark-bg))] text-[10px] font-extrabold uppercase tracking-wider">
-            Story · 24h
-          </div>
-        )}
-      </div>
-
-      {/* Filter strip */}
-      {showFilters && (
-        <div className="relative z-20 px-3 pt-3 animate-fade-in">
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {FILTERS.map((f) => (
-              <button key={f.id} onClick={() => setActiveFilter(f.id)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-[10.5px] font-bold transition-all ${activeFilter === f.id ? "gradient-glow text-[hsl(var(--dark-bg))]" : "bg-white/10 text-white/70"}`}>
-                {f.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Overlay sticker strip */}
-      {showOverlays && (
-        <div className="relative z-20 px-3 pt-3 animate-fade-in">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {OVERLAYS.map((o) => {
-              const on = activeOverlays.has(o.id);
-              return (
-                <button key={o.id} onClick={() => toggleOverlay(o.id)}
-                  className={`shrink-0 rounded-full px-2.5 py-1.5 text-[10.5px] font-bold flex items-center gap-1 transition-all ${on ? "bg-electric text-[hsl(var(--dark-bg))]" : "bg-white/10 text-white/70"}`}>
-                  {on && <CheckCircle2 className="h-3 w-3" />}
-                  <o.icon className="h-3 w-3" /> {o.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Mode selector */}
-      <div className="relative z-20 flex items-center justify-start gap-4 py-3 px-5 overflow-x-auto no-scrollbar">
-        {MODES.map((m) => (
-          <button key={m.id} onClick={() => setMode(m.id)}
-            className={`shrink-0 flex flex-col items-center gap-0.5 transition-all ${mode === m.id ? "text-electric scale-105" : "text-white/40"}`}>
-            <m.icon className="h-4 w-4" />
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider whitespace-nowrap">{m.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Hidden file picker */}
-      <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelected} />
-
-      {/* Capture controls */}
-      <div className="relative z-20 flex items-center justify-between px-8 pb-2">
-        <button onClick={() => setShowFilters((v) => { setShowOverlays(false); return !v; })} className={`h-11 w-11 rounded-full flex items-center justify-center ${showFilters ? "bg-electric text-[hsl(var(--dark-bg))]" : "bg-white/10 text-white"}`} aria-label="Filters">
-          <Sparkles className="h-4 w-4" />
-        </button>
-
-        <button onClick={handleCapture} className="relative h-[78px] w-[78px] rounded-full border-[3px] border-white flex items-center justify-center active:scale-95 transition-transform">
-          <div className={`h-[64px] w-[64px] rounded-full ${mode === "video" ? "bg-coral" : mode === "story" ? "gradient-glow" : "bg-white"} transition-all`} />
-          {mode === "story" && <Sparkles className="absolute h-5 w-5 text-[hsl(var(--dark-bg))]" />}
-        </button>
-
-        <button onClick={() => setShowOverlays((v) => { setShowFilters(false); return !v; })} className={`h-11 w-11 rounded-full flex items-center justify-center ${showOverlays ? "bg-electric text-[hsl(var(--dark-bg))]" : "bg-white/10 text-white"}`} aria-label="Overlays">
-          <Smile className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Bottom utility row */}
-      <div className="relative z-20 flex items-center justify-center gap-2 pb-3 px-4">
-        <button onClick={() => setFacing(facing === "back" ? "front" : "back")} className="h-8 px-3 rounded-full bg-white/10 flex items-center gap-1.5 text-white text-[10px] font-bold">
-          <RotateCcw className="h-3 w-3" /> Flip
-        </button>
+    <div className="min-h-screen flex flex-col" style={{ background: "#000000" }}>
+      {/* Top row — 3 elements */}
+      <div className="px-5 pt-12 flex items-center justify-between">
         <button
-          onClick={() => mode === "story" ? handleCapture() : setMode("story")}
-          className="h-8 px-3 rounded-full gradient-accent flex items-center gap-1.5 text-white text-[10px] font-bold"
+          onClick={() => navigate(-1)}
+          aria-label="Close"
+          className="h-10 w-10 flex items-center justify-center active:scale-95 transition-transform"
         >
-          <Send className="h-3 w-3" /> Publish Story
+          <X className="h-6 w-6 text-white" strokeWidth={1.5} />
         </button>
-        <button onClick={handlePickFile} className="h-8 px-3 rounded-full bg-white/10 flex items-center gap-1.5 text-white text-[10px] font-bold">
-          <Upload className="h-3 w-3" /> Upload
+        <p className="text-white" style={{ fontSize: 14, letterSpacing: "0.1px" }}>
+          {mode}
+        </p>
+        <button
+          onClick={() => galleryInputRef.current?.click()}
+          aria-label="Gallery"
+          className="h-9 w-9 active:scale-95 transition-transform"
+          style={{ borderRadius: 8, border: "1px solid #FFFFFF", overflow: "hidden", background: "#1A2236" }}
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
+      </div>
+
+      {/* Flash toggle */}
+      <div className="px-5 pt-4">
+        <button
+          onClick={() => setFlash((f) => !f)}
+          aria-label="Flash"
+          className="h-9 w-9 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          {flash ? (
+            <Zap className="h-6 w-6" style={{ color: "#F59E0B", fill: "#F59E0B" }} strokeWidth={1.5} />
+          ) : (
+            <ZapOff className="h-6 w-6" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+          )}
         </button>
       </div>
 
-      <div className="safe-area-bottom pb-2" />
+      {/* Clean viewport */}
+      <div className="flex-1 mx-5 mt-4 mb-6 relative overflow-hidden" style={{ borderRadius: 24, background: "#080D1A" }}>
+        {mode === "Scan" && (
+          <>
+            {/* Corner-only scan frame */}
+            {[
+              { top: 24, left: 24, br: ["1.5px solid white", "none", "none", "1.5px solid white"] },
+              { top: 24, right: 24, br: ["1.5px solid white", "1.5px solid white", "none", "none"] },
+              { bottom: 24, left: 24, br: ["none", "none", "1.5px solid white", "1.5px solid white"] },
+              { bottom: 24, right: 24, br: ["none", "1.5px solid white", "1.5px solid white", "none"] },
+            ].map((c, i) => (
+              <span
+                key={i}
+                className="absolute"
+                style={{
+                  width: 28,
+                  height: 28,
+                  top: c.top,
+                  bottom: c.bottom,
+                  left: c.left,
+                  right: c.right,
+                  borderTop: c.br[0],
+                  borderRight: c.br[1],
+                  borderBottom: c.br[2],
+                  borderLeft: c.br[3],
+                }}
+              />
+            ))}
+            <p
+              className="absolute left-0 right-0 text-center"
+              style={{ bottom: 28, color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}
+            >
+              Point at your booking confirmation
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Mode selector — text only */}
+      <div className="flex items-center justify-center gap-8 pb-3">
+        {MODES.map((m) => {
+          const active = m === mode;
+          return (
+            <button key={m} onClick={() => setMode(m)} className="flex flex-col items-center gap-1.5">
+              <span style={{ color: active ? "#FFFFFF" : "#94A3B8", fontSize: 14, fontWeight: active ? 600 : 400 }}>
+                {m}
+              </span>
+              <span
+                className="rounded-full"
+                style={{
+                  width: 4,
+                  height: 4,
+                  background: active ? "#3B82F6" : "transparent",
+                }}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Shutter */}
+      <div className="flex justify-center pb-12">
+        <button
+          onClick={handleShutter}
+          aria-label="Capture"
+          className="active:scale-95 transition-transform flex items-center justify-center rounded-full"
+          style={{ width: 80, height: 80, border: "2px solid white" }}
+        >
+          <span className="rounded-full" style={{ width: 72, height: 72, background: "white" }} />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={mode === "Scan" ? "image/*" : "image/*,video/*"}
+          capture="environment"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
+      </div>
     </div>
   );
 }
 
-// ============================================================
-// Subcomponents
-// ============================================================
-function ToolBtn({ children, active, onClick }: { children: React.ReactNode; active?: boolean; onClick: () => void }) {
+// ─────────────────────────── EDIT SCREEN ───────────────────────────
+
+function EditScreen({
+  previewUrl,
+  onRetake,
+  onSave,
+  onPostMoment,
+  location,
+}: {
+  previewUrl: string;
+  onRetake: () => void;
+  onSave: () => void;
+  onPostMoment: () => void;
+  location: PhotoLocation | null;
+}) {
+  const { user } = useAuth();
+  const [tab, setTab] = useState<TabId>("frames");
+  const [filter, setFilter] = useState("none");
+  const [stamps, setStamps] = useState<PlacedStamp[]>([]);
+  const [caption, setCaption] = useState("");
+  const [tripId, setTripId] = useState<string>("");
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [adjust, setAdjust] = useState({ brightness: 0, contrast: 0, saturation: 0, warmth: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("trips")
+      .select("id, title, destination")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setTrips((data as Trip[]) || []));
+  }, [user]);
+
+  const filterCss = STYLE_FILTERS.find((f) => f.id === filter)?.css || "";
+  const hasFrame = filter !== "none" || stamps.length > 0;
+
+  const toggleStamp = (id: StampId) => {
+    setStamps((prev) => {
+      const existing = prev.find((s) => s.id === id);
+      if (existing) return prev.filter((s) => s.id !== id);
+      return [...prev, { id, x: 50, y: 50 }];
+    });
+  };
+
+  // Drag handler for stamps (pointer-based, viewport-relative)
+  const dragRef = useRef<HTMLDivElement>(null);
+  const onStampPointerDown = (id: StampId) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    const rect = dragRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const move = (ev: PointerEvent) => {
+      const x = ((ev.clientX - rect.left) / rect.width) * 100;
+      const y = ((ev.clientY - rect.top) / rect.height) * 100;
+      setStamps((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, x: Math.max(5, Math.min(95, x)), y: Math.max(5, Math.min(95, y)) } : s)),
+      );
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const removeStamp = (id: StampId) => setStamps((prev) => prev.filter((s) => s.id !== id));
+
+  const stampLabel = (id: StampId): string => {
+    if (id === "passport") return "✦ POSITANO · MAY 12 ✦";
+    if (id === "city") return "POSITANO";
+    if (id === "flag") return "🇮🇹";
+    if (id === "trip") return "Trip to California";
+    if (id === "time") return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (id === "weather") return "☀️ 24°";
+    if (id === "pin") return "📍 Positano";
+    if (id === "coords") {
+      const lat = location?.latitude ?? 40.628;
+      const lng = location?.longitude ?? 14.485;
+      return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    }
+    return "";
+  };
+
   return (
-    <button onClick={onClick}
-      className={`h-8 min-w-8 px-2 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${active ? "bg-electric text-[hsl(var(--dark-bg))]" : "bg-black/50 text-white"}`}>
-      {children}
-    </button>
+    <div className="min-h-screen flex flex-col" style={{ background: "#000000" }}>
+      {/* Preview */}
+      <div ref={dragRef} className="relative flex-1 overflow-hidden touch-none">
+        <img
+          src={previewUrl}
+          alt="Preview"
+          className={`absolute inset-0 h-full w-full object-cover ${filterCss}`}
+          style={{
+            filter: `brightness(${1 + adjust.brightness / 200}) contrast(${1 + adjust.contrast / 200}) saturate(${1 + adjust.saturation / 200}) hue-rotate(${adjust.warmth / 5}deg)`,
+          }}
+        />
+
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 right-0 px-5 pt-12 flex items-center justify-between">
+          <button onClick={onRetake} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
+            <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
+            Retake
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onSave}
+              className="text-white"
+              style={{
+                background: "#1A2236",
+                border: "1px solid #1E2A3F",
+                borderRadius: 9999,
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              Save
+            </button>
+            <button
+              onClick={onPostMoment}
+              className="text-white"
+              style={{
+                background: "#3B82F6",
+                borderRadius: 9999,
+                padding: "8px 18px",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              Post Moment
+            </button>
+          </div>
+        </div>
+
+        {/* Stamps */}
+        {stamps.map((s) => (
+          <div
+            key={s.id}
+            onPointerDown={onStampPointerDown(s.id)}
+            onDoubleClick={() => removeStamp(s.id)}
+            className="absolute select-none cursor-move text-white"
+            style={{
+              left: `${s.x}%`,
+              top: `${s.y}%`,
+              transform: "translate(-50%, -50%)",
+              background: "rgba(0,0,0,0.55)",
+              padding: "8px 14px",
+              borderRadius: 9999,
+              fontSize: 14,
+              fontWeight: 600,
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              touchAction: "none",
+            }}
+          >
+            {stampLabel(s.id)}
+          </div>
+        ))}
+
+        {/* RF watermark */}
+        {hasFrame && (
+          <span
+            className="absolute text-white"
+            style={{ bottom: 16, right: 16, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", opacity: 0.6 }}
+          >
+            RF
+          </span>
+        )}
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex items-stretch" style={{ background: "#080D1A", borderTop: "1px solid #1E2A3F" }}>
+        {TABS.map((t) => {
+          const active = tab === t.id;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-2 relative"
+            >
+              <Icon className="h-5 w-5" style={{ color: active ? "#FFFFFF" : "#94A3B8" }} strokeWidth={1.5} />
+              <span style={{ color: active ? "#FFFFFF" : "#94A3B8", fontSize: 12, fontWeight: active ? 600 : 400 }}>
+                {t.label}
+              </span>
+              {active && (
+                <span className="absolute left-4 right-4 bottom-0 h-0.5 rounded-full" style={{ background: "#3B82F6" }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab content sheet */}
+      <div style={{ background: "#111827", maxHeight: "40vh", overflowY: "auto" }}>
+        {tab === "frames" && (
+          <div className="px-5 py-4">
+            <h3 className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Roavr Frames</h3>
+
+            <p className="mt-3" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>Filters</p>
+            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+              {STYLE_FILTERS.map((f) => {
+                const selected = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className="shrink-0 relative overflow-hidden"
+                    style={{
+                      width: 64,
+                      height: 96,
+                      borderRadius: 12,
+                      border: selected ? "2px solid #FFFFFF" : "2px solid transparent",
+                      background: "#1A2236",
+                    }}
+                  >
+                    <img src={previewUrl} alt={f.name} className={`absolute inset-0 h-full w-full object-cover ${f.css}`} />
+                    <span
+                      className="absolute bottom-1 left-0 right-0 text-center text-white"
+                      style={{ fontSize: 10, fontWeight: 600, textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+                    >
+                      {f.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-4" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>Stamps</p>
+            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-2">
+              {STAMPS.map((s) => {
+                const active = stamps.some((p) => p.id === s.id);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleStamp(s.id)}
+                    className="shrink-0 text-white"
+                    style={{
+                      borderRadius: 12,
+                      padding: "10px 14px",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      background: active ? "#3B82F6" : "#1A2236",
+                      border: `1px solid ${active ? "#3B82F6" : "#1E2A3F"}`,
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1" style={{ color: "#4B5563", fontSize: 12, letterSpacing: "0.2px" }}>
+              Tap to add · drag to reposition · double-tap to remove
+            </p>
+          </div>
+        )}
+
+        {tab === "stickers" && (
+          <div className="px-5 py-5">
+            <p style={{ color: "#94A3B8", fontSize: 14 }}>Travel sticker packs coming soon.</p>
+            <div className="mt-3 grid grid-cols-5 gap-2">
+              {["🗼", "🏟", "🗻", "🛂", "🎫", "🧳", "🛫", "☕", "🍣", "🏄"].map((s) => (
+                <button
+                  key={s}
+                  className="aspect-square flex items-center justify-center text-2xl"
+                  style={{ background: "#1A2236", borderRadius: 12 }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab === "text" && (
+          <div className="px-5 py-5 space-y-3">
+            <button
+              className="w-full text-white text-left"
+              style={{ background: "#1A2236", borderRadius: 12, padding: 14, border: "1px solid #1E2A3F" }}
+            >
+              + Add text layer
+            </button>
+            <p style={{ color: "#94A3B8", fontSize: 12 }}>Styles: Serif · Bold Sans · Handwritten</p>
+          </div>
+        )}
+
+        {tab === "details" && (
+          <div className="px-5 py-4 space-y-3">
+            <input
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Describe this moment…"
+              className="w-full text-white outline-none"
+              style={{
+                background: "#1A2236",
+                border: "1px solid #1E2A3F",
+                borderRadius: 12,
+                padding: "12px 14px",
+                fontSize: 14,
+              }}
+            />
+            <DetailRow icon={<MapPin className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />}
+              text={location ? `${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)}` : "Positano, Italy"} />
+            <DetailRow icon={<Calendar className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />}
+              text={new Date().toLocaleDateString()} muted />
+            <div
+              className="flex items-center gap-3"
+              style={{ background: "#1A2236", border: "1px solid #1E2A3F", borderRadius: 12, padding: "12px 14px" }}
+            >
+              <TagIcon className="h-5 w-5 shrink-0" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+              <select
+                value={tripId}
+                onChange={(e) => setTripId(e.target.value)}
+                className="flex-1 bg-transparent text-white outline-none"
+                style={{ fontSize: 14 }}
+              >
+                <option value="" style={{ background: "#1A2236" }}>Add to a trip</option>
+                {trips.map((t) => (
+                  <option key={t.id} value={t.id} style={{ background: "#1A2236" }}>
+                    {t.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="h-4 w-4" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+            </div>
+            <DetailRow icon={<Users className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />}
+              text="Tag friends…" muted />
+          </div>
+        )}
+
+        {tab === "adjust" && (
+          <div className="px-5 py-4 space-y-4">
+            {(["brightness", "contrast", "saturation", "warmth"] as const).map((k) => (
+              <div key={k}>
+                <div className="flex justify-between" style={{ color: "#94A3B8", fontSize: 12 }}>
+                  <span className="capitalize">{k}</span>
+                  <span>{adjust[k]}</span>
+                </div>
+                <input
+                  type="range"
+                  min={-100}
+                  max={100}
+                  value={adjust[k]}
+                  onChange={(e) => setAdjust((a) => ({ ...a, [k]: Number(e.target.value) }))}
+                  className="w-full mt-1 accent-[#3B82F6]"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-function PreviewOverlays({
-  overlays, trip, location, watermark,
-}: {
-  overlays: Set<OverlayId>;
-  trip?: Trip;
-  location: PhotoLocation | null;
-  watermark: boolean;
-}) {
-  const now = new Date();
-  const date = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const localTime = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+function DetailRow({ icon, text, muted }: { icon: React.ReactNode; text: string; muted?: boolean }) {
+  return (
+    <div
+      className="flex items-center gap-3"
+      style={{ background: "#1A2236", border: "1px solid #1E2A3F", borderRadius: 12, padding: "12px 14px" }}
+    >
+      {icon}
+      <span style={{ color: muted ? "#94A3B8" : "#FFFFFF", fontSize: 14, letterSpacing: "0.1px" }}>{text}</span>
+    </div>
+  );
+}
 
-  const chips: { id: OverlayId; node: React.ReactNode }[] = [];
-  if (overlays.has("city")) chips.push({ id: "city", node: <>📍 {location ? `${location.latitude.toFixed(1)}°, ${location.longitude.toFixed(1)}°` : "Lisbon, Portugal"}</> });
-  if (overlays.has("flag")) chips.push({ id: "flag", node: <>🇵🇹 PT</> });
-  if (overlays.has("date")) chips.push({ id: "date", node: <>🗓 {date}</> });
-  if (overlays.has("weather")) chips.push({ id: "weather", node: <>☀️ 27°C</> });
-  if (overlays.has("trip") && trip) chips.push({ id: "trip", node: <>✈️ {trip.title}</> });
-  if (overlays.has("altitude")) chips.push({ id: "altitude", node: <>⛰ 142m</> });
-  if (overlays.has("distance")) chips.push({ id: "distance", node: <>📏 8,412 km from home</> });
-  if (overlays.has("localtime")) chips.push({ id: "localtime", node: <>🕒 {localTime} local</> });
-  if (overlays.has("badge")) chips.push({ id: "badge", node: <>🏅 Globetrotter Lv.3</> });
+// ─────────────────────────── PUBLISH SHEET ───────────────────────────
+
+function PublishSheet({
+  previewUrl,
+  onClose,
+  onPosted,
+  pickedFile,
+  userId,
+  location,
+}: {
+  previewUrl: string;
+  onClose: () => void;
+  onPosted: () => void;
+  pickedFile: File | null;
+  userId?: string;
+  location: PhotoLocation | null;
+}) {
+  const [vis, setVis] = useState<Visibility>("private");
+  const [posting, setPosting] = useState(false);
+
+  const post = async (savePrivate: boolean) => {
+    if (!userId) {
+      toast.error("Please sign in first");
+      return;
+    }
+    setPosting(true);
+    try {
+      let mediaUrl = previewUrl;
+      if (pickedFile) {
+        const ext = pickedFile.name.split(".").pop() || "jpg";
+        const path = `${userId}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("checkin-photos")
+          .upload(path, pickedFile, { cacheControl: "3600", upsert: false });
+        if (upErr) throw upErr;
+        mediaUrl = supabase.storage.from("checkin-photos").getPublicUrl(path).data.publicUrl;
+      }
+      const visibility = savePrivate ? "private" : vis;
+      const { error } = await supabase.from("memories").insert({
+        user_id: userId,
+        media_url: mediaUrl,
+        media_type: "photo",
+        visibility,
+        pinned_to_globe: true,
+        latitude: location?.latitude ?? null,
+        longitude: location?.longitude ?? null,
+        source: "camera",
+      });
+      if (error) throw error;
+      toast.success("Pinned to your World globe");
+      onPosted();
+    } catch (e: any) {
+      toast.error(e?.message || "Post failed");
+    } finally {
+      setPosting(false);
+    }
+  };
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* Top-left stack */}
-      <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 max-w-[60%]">
-        {chips.map((c) => (
-          <div key={c.id} className="px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
-            {c.node}
-          </div>
-        ))}
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.6)" }}>
+      <div
+        className="w-full"
+        style={{
+          background: "#111827",
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: 24,
+          boxShadow: "0px 8px 32px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-white" style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.3px" }}>
+            Post Moment
+          </h2>
+          <button onClick={onClose} aria-label="Close" className="h-9 w-9 flex items-center justify-center">
+            <X className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Preview strip */}
+        <div className="mt-4 overflow-hidden" style={{ height: 80, borderRadius: 12 }}>
+          <img src={previewUrl} alt="" className="w-full h-full object-cover" />
+        </div>
+
+        {/* Visibility */}
+        <p className="mt-5" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+          Who can see this
+        </p>
+        <div
+          className="mt-2 flex p-1"
+          style={{ background: "#1A2236", borderRadius: 9999, border: "1px solid #1E2A3F" }}
+        >
+          {([
+            { id: "private", label: "Private", Icon: Lock },
+            { id: "followers", label: "Followers", Icon: Users },
+            { id: "public", label: "Public", Icon: GlobeIcon },
+          ] as const).map(({ id, label, Icon }) => {
+            const active = vis === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setVis(id)}
+                className="flex-1 flex items-center justify-center gap-1.5 transition-colors"
+                style={{
+                  background: active ? "#3B82F6" : "transparent",
+                  color: active ? "#FFFFFF" : "#94A3B8",
+                  borderRadius: 9999,
+                  padding: "10px 0",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                <Icon className="h-4 w-4" strokeWidth={1.5} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2" style={{ color: "#4B5563", fontSize: 12 }}>
+          {vis === "private" ? "Only you can see it" : vis === "followers" ? "Your followers see it for 24h" : "Anyone on Roavr can see it for 24h"}
+        </p>
+
+        {/* What happens */}
+        <div className="mt-5 space-y-3">
+          <StatusRow icon="📍" text="Pinned to your World globe — permanently" />
+          <StatusRow icon="✈️" text="Saved to Trip to California — permanently" />
+          {vis !== "private" && <StatusRow icon="👁" text="Live in feed for 24 hours" />}
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-6 space-y-2.5">
+          <button
+            onClick={() => post(false)}
+            disabled={posting}
+            className="w-full text-white inline-flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{
+              background: "#3B82F6",
+              borderRadius: 9999,
+              height: 52,
+              fontSize: 15,
+              fontWeight: 600,
+            }}
+          >
+            {posting && <Loader2 className="h-4 w-4 animate-spin" />}
+            Post Moment
+          </button>
+          <button
+            onClick={() => post(true)}
+            disabled={posting}
+            className="w-full text-white disabled:opacity-60"
+            style={{
+              background: "#1A2236",
+              border: "1px solid #1E2A3F",
+              borderRadius: 9999,
+              height: 52,
+              fontSize: 15,
+              fontWeight: 600,
+            }}
+          >
+            Save Private Only
+          </button>
+        </div>
+
+        <p className="mt-3 text-center" style={{ color: "#4B5563", fontSize: 12, letterSpacing: "0.2px" }}>
+          After 24 hours, this Moment leaves the live feed but stays on your globe and in your trip forever.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StatusRow({ icon, text }: { icon: string; text: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span style={{ fontSize: 18 }}>{icon}</span>
+      <span style={{ color: "#FFFFFF", fontSize: 14, letterSpacing: "0.1px" }}>{text}</span>
+    </div>
+  );
+}
+
+// ─────────────────────────── CHECK IN SCREEN ───────────────────────────
+
+function CheckInScreen({
+  previewUrl,
+  location,
+  onBack,
+  onDropped,
+}: {
+  previewUrl: string | null;
+  location: PhotoLocation | null;
+  onBack: () => void;
+  onDropped: () => void;
+}) {
+  const { user } = useAuth();
+  const [vis, setVis] = useState<Visibility>("private");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const drop = async () => {
+    if (!user) { toast.error("Please sign in"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("check_ins").insert({
+      user_id: user.id,
+      location_name: "Positano, Italy",
+      latitude: location?.latitude ?? 40.628,
+      longitude: location?.longitude ?? 14.485,
+      notes: note || null,
+      photo: previewUrl || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    onDropped();
+  };
+
+  return (
+    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+      <header className="px-5 pt-12 flex items-center justify-between">
+        <button onClick={onBack} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
+          <ChevronLeft className="h-5 w-5" strokeWidth={1.5} /> Back
+        </button>
+        <h1 className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Check In</h1>
+        <span className="w-10" />
+      </header>
+
+      {/* Map card */}
+      <div className="mx-5 mt-5 relative overflow-hidden" style={{ height: 200, borderRadius: 24, background: "#111827" }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 60%, rgba(59,130,246,0.25), transparent 60%), linear-gradient(180deg, #0a1426 0%, #080D1A 100%)",
+          }}
+        />
+        {/* Pin */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="block rounded-full" style={{ width: 16, height: 16, background: "#3B82F6", boxShadow: "0 0 0 6px rgba(59,130,246,0.25)" }} />
+        </div>
+        {/* Subtle grid lines */}
+        <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
+          {[1, 2, 3].map((i) => (
+            <line key={"h" + i} x1={0} y1={(i * 100) / 4 + "%"} x2="100%" y2={(i * 100) / 4 + "%"} stroke="#1E2A3F" />
+          ))}
+          {[1, 2, 3].map((i) => (
+            <line key={"v" + i} x1={(i * 100) / 4 + "%"} y1={0} x2={(i * 100) / 4 + "%"} y2="100%" stroke="#1E2A3F" />
+          ))}
+        </svg>
       </div>
 
-      {/* Roavr pin watermark */}
-      {(watermark || overlays.has("pin")) && (
-        <div className="absolute bottom-12 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/45 backdrop-blur-md">
-          <img src={roavrPin} alt="Roavr" className="h-3.5 w-3.5 object-contain" />
-          <span className="text-white text-[9px] font-extrabold tracking-widest uppercase">Roavr</span>
+      <div className="px-5 mt-5">
+        <h2 className="text-white" style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.3px" }}>
+          Positano, Italy
+        </h2>
+        <p style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+          {(location?.latitude ?? 40.628).toFixed(3)}, {(location?.longitude ?? 14.485).toFixed(3)} · tap to edit
+        </p>
+      </div>
+
+      <div className="px-5 mt-5 space-y-3">
+        {previewUrl && (
+          <div className="overflow-hidden" style={{ borderRadius: 16, height: 120 }}>
+            <img src={previewUrl} className="w-full h-full object-cover" alt="" />
+          </div>
+        )}
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Add a note…"
+          className="w-full text-white outline-none"
+          style={{
+            background: "#1A2236",
+            border: "1px solid #1E2A3F",
+            borderRadius: 12,
+            padding: "12px 14px",
+            fontSize: 14,
+          }}
+        />
+
+        <p className="pt-1" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+          Who can see this
+        </p>
+        <div className="flex p-1" style={{ background: "#1A2236", borderRadius: 9999, border: "1px solid #1E2A3F" }}>
+          {([
+            { id: "private", label: "Private", Icon: Lock },
+            { id: "followers", label: "Followers", Icon: Users },
+            { id: "public", label: "Public", Icon: GlobeIcon },
+          ] as const).map(({ id, label, Icon }) => {
+            const active = vis === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setVis(id)}
+                className="flex-1 flex items-center justify-center gap-1.5"
+                style={{
+                  background: active ? "#3B82F6" : "transparent",
+                  color: active ? "#FFFFFF" : "#94A3B8",
+                  borderRadius: 9999,
+                  padding: "10px 0",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                <Icon className="h-4 w-4" strokeWidth={1.5} />
+                {label}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      <div className="px-5 mt-6">
+        <button
+          onClick={drop}
+          disabled={busy}
+          className="w-full text-white inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          style={{
+            background: "#3B82F6",
+            borderRadius: 9999,
+            height: 52,
+            fontSize: 15,
+            fontWeight: 600,
+          }}
+        >
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+          Drop Pin
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── SCAN REVIEW SCREEN ───────────────────────────
+
+function ScanReviewScreen({ onBack, onAdded }: { onBack: () => void; onAdded: () => void }) {
+  return (
+    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+      <header className="px-5 pt-12 flex items-center justify-between">
+        <button onClick={onBack} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
+          <ChevronLeft className="h-5 w-5" strokeWidth={1.5} /> Back
+        </button>
+        <h1 className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Booking Found</h1>
+        <span className="w-10" />
+      </header>
+
+      <div className="mx-5 mt-6 flex items-center justify-center">
+        <span
+          className="rounded-full flex items-center justify-center"
+          style={{ width: 64, height: 64, background: "rgba(59,130,246,0.15)" }}
+        >
+          <CheckCircle2 className="h-8 w-8" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+        </span>
+      </div>
+
+      <div className="px-5 mt-6 space-y-3">
+        <Row label="Provider" value="Delta Airlines" />
+        <Row label="Confirmation" value="K3FZ9P" />
+        <Row label="Dates" value="Jul 12 → Jul 19" />
+        <Row label="Route" value="JFK → CDG" />
+      </div>
+
+      <div className="px-5 mt-6 space-y-2.5">
+        <button
+          onClick={onAdded}
+          className="w-full text-white"
+          style={{
+            background: "#3B82F6",
+            borderRadius: 9999,
+            height: 52,
+            fontSize: 15,
+            fontWeight: 600,
+          }}
+        >
+          Add to Trip
+        </button>
+        <button
+          onClick={onBack}
+          className="w-full"
+          style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600, padding: 12 }}
+        >
+          Enter Manually
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="flex items-center justify-between"
+      style={{ background: "#1A2236", border: "1px solid #1E2A3F", borderRadius: 12, padding: "14px 16px" }}
+    >
+      <span style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>{label}</span>
+      <span className="text-white" style={{ fontSize: 14, fontWeight: 600 }}>{value}</span>
     </div>
   );
 }
