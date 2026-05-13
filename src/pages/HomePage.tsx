@@ -35,6 +35,15 @@ const NEARBY = [
   { tag: "Expert", title: "Yuki — Tokyo guide", sub: "4.9 ★ · 127 trips", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600", route: "/discover" },
 ];
 
+const STORY_CATS = ["You", "Friends", "Travelers", "Nearby", "Creators"] as const;
+
+const MEMORIES = [
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300",
+  "https://images.unsplash.com/photo-1493558103817-58b2924bce98?w=300",
+  "https://images.unsplash.com/photo-1528127269322-539801943592?w=300",
+  "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=300",
+];
+
 const FEED = [
   { type: "checkin", user: MOCK_USERS[1], text: "checked in at Positano", meta: "2h · Italy", img: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=600" },
   { type: "badge", user: MOCK_USERS[3], text: "unlocked Globetrotter Lv.3", meta: "5h · 25 countries", img: null },
