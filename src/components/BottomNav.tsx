@@ -7,8 +7,8 @@ const LEFT_ITEMS = [
 ];
 
 const RIGHT_ITEMS = [
-  { to: "/globe", icon: Globe, label: "Globe" },
-  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/globe", icon: Globe, label: "World" },
+  { to: "/profile", icon: User, label: "You" },
 ];
 
 export default function BottomNav() {
@@ -53,7 +53,7 @@ export default function BottomNav() {
             <Camera className="h-6 w-6 text-white" strokeWidth={2.4} />
           </div>
           <span className={`text-[10px] font-semibold tracking-wide mt-0.5 ${cameraActive ? "text-accent" : "text-muted-foreground"}`}>
-            Camera
+            Capture
           </span>
         </button>
 
