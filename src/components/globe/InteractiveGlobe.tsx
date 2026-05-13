@@ -419,7 +419,8 @@ function Scene({
 
   return (
     <>
-      <ambientLight intensity={0.45} />
+      <Stars radius={50} depth={30} count={2200} factor={3.5} saturation={0} fade speed={0.6} />
+      <ambientLight intensity={0.55} />
       <directionalLight position={[5, 4, 5]} intensity={1.1} color="#ffffff" />
       <pointLight position={[-4, -2, -4]} intensity={0.6} color={ROYAL_BLUE_GLOW} />
       <pointLight position={[0, 0, 0]} intensity={1.2} color={ROYAL_BLUE_GLOW} distance={3} />
