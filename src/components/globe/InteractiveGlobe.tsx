@@ -222,104 +222,141 @@ function CrystalPin({
   onHover?: (hovering: boolean) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
   const pos = useMemo(() => latLngToVector3(pin.lat, pin.lng, LAND_RADIUS + 0.06), [pin.lat, pin.lng]);
   const [hovered, setHovered] = useState(false);
+
+  const accent = CATEGORY_COLOR[pin.category] || ROYAL_BLUE_GLOW;
+  const isStory = pin.category === "tip";
+  const isSponsored = pin.category === "sponsored";
+  const hasPhoto = !!pin.thumbnail && (pin.category === "memory" || pin.category === "tip" || pin.category === "checkin");
 
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.y = state.clock.elapsedTime * 0.6;
-      const s = hovered ? 1.35 : 1;
+      const s = hovered ? 1.45 : 1;
       meshRef.current.scale.lerp(new THREE.Vector3(s, s, s), 0.15);
     }
+    if (haloRef.current && (isStory || isSponsored)) {
+      const t = (Math.sin(state.clock.elapsedTime * 2.2) + 1) / 2;
+      const s = 1 + t * 0.35;
+      haloRef.current.scale.set(s, s, s);
+      (haloRef.current.material as THREE.MeshBasicMaterial).opacity = 0.35 - t * 0.25;
+    }
   });
-
-  const accent = pin.category === "wishlist" ? "#f97316" : ROYAL_BLUE_GLOW;
 
   // Orient pin upright relative to globe surface
   const lookAt = useMemo(() => pos.clone().multiplyScalar(2), [pos]);
 
   return (
     <group position={pos}>
-      <mesh
-        ref={meshRef}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHovered(true);
-          onHover?.(true);
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          setHovered(false);
-          onHover?.(false);
-          document.body.style.cursor = "default";
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick?.();
-        }}
-        onUpdate={(self) => self.lookAt(lookAt)}
-      >
-        <octahedronGeometry args={[0.045, 0]} />
-        <meshPhysicalMaterial
-          color={accent}
-          emissive={accent}
-          emissiveIntensity={1.4}
-          metalness={0.2}
-          roughness={0.05}
-          transmission={0.55}
-          thickness={0.3}
-          ior={1.7}
-          clearcoat={1}
-          clearcoatRoughness={0.05}
-        />
-      </mesh>
-      {/* Pin halo */}
-      <mesh>
-        <sphereGeometry args={[0.085, 16, 16]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.15} depthWrite={false} />
-      </mesh>
-
-      {/* Glass-morphic hover preview bubble */}
-      {hovered && (
+      {/* Photo-disc pin (memories / stories / check-ins with media) */}
+      {hasPhoto ? (
         <Html
-          position={[0, 0.18, 0]}
           center
           distanceFactor={6}
-          style={{ pointerEvents: "none" }}
+          zIndexRange={[10, 0]}
+          style={{ pointerEvents: "auto" }}
         >
           <div
+            onPointerOver={() => { setHovered(true); onHover?.(true); document.body.style.cursor = "pointer"; }}
+            onPointerOut={() => { setHovered(false); onHover?.(false); document.body.style.cursor = "default"; }}
+            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
             style={{
-              minWidth: 140,
+              width: hovered ? 38 : 30,
+              height: hovered ? 38 : 30,
+              borderRadius: "50%",
+              padding: 2,
+              background: isStory
+                ? `conic-gradient(from 0deg, ${accent}, ${ROYAL_BLUE_GLOW}, ${CORAL}, ${accent})`
+                : `linear-gradient(135deg, ${accent}, ${ROYAL_BLUE})`,
+              boxShadow: `0 0 14px ${accent}aa, 0 6px 18px rgba(0,0,0,0.55)`,
+              transition: "all 180ms ease",
+              cursor: "pointer",
+            }}
+          >
+            <img
+              src={pin.thumbnail!}
+              alt=""
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                objectFit: "cover",
+                display: "block",
+                border: "2px solid rgba(8,11,24,0.9)",
+              }}
+            />
+          </div>
+        </Html>
+      ) : (
+        <mesh
+          ref={meshRef}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+            onHover?.(true);
+            document.body.style.cursor = "pointer";
+          }}
+          onPointerOut={() => {
+            setHovered(false);
+            onHover?.(false);
+            document.body.style.cursor = "default";
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          onUpdate={(self) => self.lookAt(lookAt)}
+        >
+          <octahedronGeometry args={[0.05, 0]} />
+          <meshPhysicalMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.6}
+            metalness={0.2}
+            roughness={0.05}
+            transmission={0.55}
+            thickness={0.3}
+            ior={1.7}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
+          />
+        </mesh>
+      )}
+
+      {/* Static halo */}
+      <mesh>
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshBasicMaterial color={accent} transparent opacity={0.18} depthWrite={false} />
+      </mesh>
+
+      {/* Pulsing ring for stories & sponsored offers */}
+      {(isStory || isSponsored) && (
+        <mesh ref={haloRef}>
+          <sphereGeometry args={[0.13, 20, 20]} />
+          <meshBasicMaterial color={accent} transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+      )}
+
+      {/* Hover label bubble (non-photo pins) */}
+      {hovered && !hasPhoto && (
+        <Html position={[0, 0.18, 0]} center distanceFactor={6} style={{ pointerEvents: "none" }}>
+          <div
+            style={{
+              minWidth: 120,
               maxWidth: 180,
-              padding: 10,
-              borderRadius: 14,
-              background: "rgba(15, 23, 42, 0.55)",
+              padding: 8,
+              borderRadius: 12,
+              background: "rgba(15, 23, 42, 0.65)",
               backdropFilter: "blur(16px)",
               WebkitBackdropFilter: "blur(16px)",
-              border: "1px solid rgba(147, 197, 253, 0.35)",
-              boxShadow: "0 12px 40px -8px rgba(30, 58, 138, 0.6), 0 0 24px rgba(59, 130, 246, 0.25)",
+              border: `1px solid ${accent}66`,
+              boxShadow: `0 12px 40px -8px ${accent}55, 0 0 24px ${accent}33`,
               color: "white",
               fontFamily: "'Plus Jakarta Sans', sans-serif",
             }}
           >
-            {pin.thumbnail && (
-              <div
-                style={{
-                  width: "100%",
-                  aspectRatio: "16/10",
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  marginBottom: 8,
-                  background: "rgba(255,255,255,0.05)",
-                }}
-              >
-                <img
-                  src={pin.thumbnail}
-                  alt={pin.label}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
-              </div>
-            )}
             <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25 }}>{pin.label}</div>
             {pin.description && (
               <div style={{ fontSize: 9, opacity: 0.75, marginTop: 2, lineHeight: 1.3 }}>
