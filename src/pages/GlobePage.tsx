@@ -1,40 +1,36 @@
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Globe as GlobeIcon, Map, Share2, Camera, Lock, Users, Eye,
-  Compass, Sparkles, Settings, MapPin as MapPinIcon, Layers, Crosshair,
-  Trophy, Heart, Flame, Award, ChevronRight, Plus, Plane,
-} from "lucide-react";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
+import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera } from "lucide-react";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
-import ShareMapSheet from "@/components/globe/ShareMapSheet";
-import StoryConversionSettings from "@/components/globe/StoryConversionSettings";
 import {
-  MOCK_MAP_PINS, MOCK_GLOBE_STATS, MOCK_CHECKINS,
-  MOCK_MEMORIES, MOCK_BADGES, MOCK_USERS, MOCK_TRIPS,
-  MOCK_STORIES,
+  MOCK_MAP_PINS, MOCK_CHECKINS, MOCK_MEMORIES, MOCK_USERS, MOCK_TRIPS,
 } from "@/data";
-import type { MapPin, Visibility } from "@/data/types";
+import type { MapPin } from "@/data/types";
 
 const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
 
-type ViewMode = "globe" | "map";
 type Tab = "mine" | "followers" | "explore";
-type PrivacyMode = "public" | "followers" | "private";
-type LayerKey = "trips" | "stories" | "memories" | "checkins" | "offers" | "friends" | "safety";
+type ViewMode = "globe" | "map";
 
-function buildAllPins(userId: string): MapPin[] {
-  const basePins = [...MOCK_MAP_PINS];
+// CANONICAL DATA — must match Home and You
+const STATS = { countries: 27, cities: 64, memories: 342 };
+const TOTAL_PINS = 12;
+const LATEST_PIN = {
+  city: "Positano",
+  country: "Italy",
+  ago: "2h ago",
+  lat: 40.6281,
+  lng: 14.4848,
+};
+
+function buildMyPins(userId: string): MapPin[] {
+  const base = [...MOCK_MAP_PINS];
   MOCK_CHECKINS.filter(ci => ci.userId === userId && ci.latitude && ci.longitude).forEach(ci => {
-    if (!basePins.find(p => p.latitude === ci.latitude && p.longitude === ci.longitude && p.category === "checkin")) {
-      basePins.push({
+    if (!base.find(p => p.latitude === ci.latitude && p.longitude === ci.longitude && p.category === "checkin")) {
+      base.push({
         id: `pin-ci-${ci.id}`, userId, latitude: ci.latitude!, longitude: ci.longitude!,
         label: ci.locationName, description: ci.notes, category: "checkin",
         linkedId: ci.id, visibility: "public", createdAt: ci.timestamp,
@@ -42,199 +38,90 @@ function buildAllPins(userId: string): MapPin[] {
     }
   });
   MOCK_MEMORIES.filter(m => m.userId === userId && m.latitude && m.longitude && m.pinnedToGlobe).forEach(m => {
-    if (!basePins.find(p => p.linkedId === m.id)) {
-      basePins.push({
+    if (!base.find(p => p.linkedId === m.id)) {
+      base.push({
         id: `pin-mem-${m.id}`, userId, latitude: m.latitude!, longitude: m.longitude!,
         label: m.locationName || "Memory", description: m.caption, category: "memory",
         linkedId: m.id, visibility: m.visibility, createdAt: m.createdAt,
       });
     }
   });
-  const now = Date.now();
-  MOCK_STORIES.filter(s =>
-    s.userId === userId && s.latitude && s.longitude &&
-    s.autoSaveToGlobe !== false && new Date(s.expiresAt).getTime() > now
-  ).forEach(s => {
-    basePins.push({
-      id: `pin-story-${s.id}`, userId, latitude: s.latitude!, longitude: s.longitude!,
-      label: s.locationName || "Story", description: s.caption,
-      category: "tip", linkedId: s.id, visibility: s.visibility, createdAt: s.createdAt,
-    });
-  });
-  return basePins.filter(p => p.latitude !== 0 || p.longitude !== 0);
+  return base.filter(p => p.latitude !== 0 || p.longitude !== 0);
 }
-
-function buildFollowingPins(): MapPin[] {
-  const followedIds = ["u-002", "u-004", "u-005"];
-  const pins: MapPin[] = [];
-  MOCK_MEMORIES.filter(m => followedIds.includes(m.userId) && m.visibility === "public" && m.latitude && m.longitude).forEach(m => {
-    pins.push({
-      id: `fp-${m.id}`, userId: m.userId, latitude: m.latitude!, longitude: m.longitude!,
-      label: m.locationName || "Memory", description: m.caption, category: "memory",
-      linkedId: m.id, visibility: "public", createdAt: m.createdAt,
-    });
-  });
-  MOCK_STORIES.filter(s => followedIds.includes(s.userId) && s.visibility === "public" && s.latitude && s.longitude).forEach(s => {
-    pins.push({
-      id: `fp-s-${s.id}`, userId: s.userId, latitude: s.latitude!, longitude: s.longitude!,
-      label: s.locationName || "Story", description: s.caption,
-      category: "tip" as MapPin["category"], linkedId: s.id, visibility: "public", createdAt: s.createdAt,
-    });
-  });
-  return pins;
-}
-
-function buildExplorePins(): MapPin[] {
-  const pins: MapPin[] = [];
-  MOCK_STORIES.filter(s => s.visibility === "public" && s.latitude && s.longitude).forEach(s => {
-    pins.push({
-      id: `ep-s-${s.id}`, userId: s.userId, latitude: s.latitude!, longitude: s.longitude!,
-      label: s.locationName || "Story", description: `${s.viewCount} views · ${s.caption || ""}`,
-      category: "tip" as MapPin["category"], linkedId: s.id, visibility: "public", createdAt: s.createdAt,
-    });
-  });
-  MOCK_MEMORIES.filter(m => m.visibility === "public" && m.latitude && m.longitude).forEach(m => {
-    pins.push({
-      id: `ep-m-${m.id}`, userId: m.userId, latitude: m.latitude!, longitude: m.longitude!,
-      label: m.locationName || "Memory", description: m.caption, category: "memory",
-      linkedId: m.id, visibility: "public", createdAt: m.createdAt,
-    });
-  });
-  return pins;
-}
-
-const DEFAULT_LAYERS: Record<LayerKey, boolean> = {
-  trips: true, stories: true, memories: true, checkins: true,
-  offers: false, friends: false, safety: false,
-};
 
 export default function GlobePage() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>("globe");
   const [activeTab, setActiveTab] = useState<Tab>("mine");
-  const [privacy, setPrivacy] = useState<PrivacyMode>("public");
+  const [viewMode, setViewMode] = useState<ViewMode>("globe");
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
   const [pinSheetOpen, setPinSheetOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [layersOpen, setLayersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [layers, setLayers] = useState<Record<LayerKey, boolean>>(DEFAULT_LAYERS);
-  const [storyConversion, setStoryConversion] = useState<"auto" | "ask" | "never">("auto");
   const [recenterKey, setRecenterKey] = useState(0);
-  const [sponsoredPins, setSponsoredPins] = useState<MapPin[]>([]);
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    supabase.from("sponsored_pins")
-      .select("id, name, tagline, latitude, longitude, sponsor_name, category")
-      .eq("active", true)
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setSponsoredPins(data.map((s) => ({
-          id: `sp-${s.id}`, userId: "milo", latitude: s.latitude, longitude: s.longitude,
-          label: `🐾 Milo: ${s.name}`, description: `${s.tagline} · ${s.sponsor_name}`,
-          category: "sponsored" as MapPin["category"], linkedId: s.id,
-          visibility: "public" as Visibility, createdAt: new Date().toISOString(),
-        })));
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  const stats = MOCK_GLOBE_STATS;
-  const memories = MOCK_MEMORIES;
-  const badges = MOCK_BADGES;
-
-  const allMyPins = useMemo(() => buildAllPins("u-001"), []);
-  const followingPins = useMemo(() => buildFollowingPins(), []);
-  const explorePins = useMemo(() => buildExplorePins(), []);
-
-  const tabPins = useMemo(() => {
-    const base = activeTab === "mine" ? allMyPins
-      : activeTab === "followers" ? followingPins : explorePins;
-    return [...base, ...(layers.offers ? sponsoredPins : [])];
-  }, [activeTab, allMyPins, followingPins, explorePins, sponsoredPins, layers.offers]);
-
-  // Filter pins by enabled layers
-  const activePins = useMemo(() => tabPins.filter((p) => {
-    if (p.category === "memory") return layers.memories;
-    if (p.category === "checkin") return layers.checkins;
-    if (p.category === "tip") return layers.stories;
-    if (p.category === "visited" || p.category === "wishlist") return layers.trips;
-    if (p.category === "sponsored") return layers.offers;
-    return true;
-  }), [tabPins, layers]);
+  const allMyPins = useMemo(() => buildMyPins("u-001"), []);
 
   const memoryByLinked = useMemo(() => {
     const map: Record<string, string> = {};
     MOCK_MEMORIES.forEach(m => { if (m.mediaUrl) map[m.id] = m.mediaUrl; });
-    MOCK_STORIES.forEach(s => { const mu = (s as any).mediaUrl; if (mu) map[s.id] = mu; });
     return map;
   }, []);
 
-  const globePins = useMemo(
-    () => activePins.map((p) => ({
+  const globePins = useMemo(() => {
+    const sorted = [...allMyPins].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const recentId = sorted[0]?.id;
+    return sorted.map(p => ({
       lat: p.latitude,
       lng: p.longitude,
       label: p.label,
       category: p.category,
       thumbnail: p.linkedId ? memoryByLinked[p.linkedId] ?? null : null,
       description: p.description,
-    })),
-    [activePins, memoryByLinked]
-  );
+      recent: p.id === recentId,
+    }));
+  }, [allMyPins, memoryByLinked]);
 
   const globeArcs = useMemo(() => {
-    const memPins = activePins
+    const memPins = allMyPins
       .filter(p => p.category === "memory" || p.category === "checkin")
       .slice(0, 8);
-    const arcs: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; color?: string }[] = [];
+    const arcs: { from: { lat: number; lng: number }; to: { lat: number; lng: number } }[] = [];
     for (let i = 0; i < memPins.length - 1; i++) {
       arcs.push({
         from: { lat: memPins[i].latitude, lng: memPins[i].longitude },
         to: { lat: memPins[i + 1].latitude, lng: memPins[i + 1].longitude },
-        color: "#22d3ee",
       });
     }
     return arcs;
-  }, [activePins]);
+  }, [allMyPins]);
 
   const flatPins = useMemo(
-    () => activePins.map((p) => ({ id: p.id, lat: p.latitude, lng: p.longitude, label: p.label, description: p.description, category: p.category })),
-    [activePins]
+    () => allMyPins.map(p => ({ id: p.id, lat: p.latitude, lng: p.longitude, label: p.label, description: p.description, category: p.category })),
+    [allMyPins]
   );
 
   const handlePinClick = useCallback((pinData: { id?: string; label?: string; lat?: number; lng?: number }) => {
-    const pin = activePins.find(p =>
+    const pin = allMyPins.find(p =>
       (pinData.id && p.id === pinData.id) ||
-      (pinData.lat && pinData.lng && Math.abs(p.latitude - pinData.lat) < 0.01 && Math.abs(p.longitude - pinData.lng) < 0.01)
+      (pinData.lat != null && pinData.lng != null && Math.abs(p.latitude - pinData.lat) < 0.01 && Math.abs(p.longitude - pinData.lng) < 0.01)
     );
     if (pin) { setSelectedPin(pin); setPinSheetOpen(true); }
-  }, [activePins]);
+  }, [allMyPins]);
 
   const selectedPinLinked = useMemo(() => {
     if (!selectedPin) return undefined;
     const memory = MOCK_MEMORIES.find(m => m.id === selectedPin.linkedId);
     const checkIn = MOCK_CHECKINS.find(c => c.id === selectedPin.linkedId);
-    const trip = MOCK_TRIPS.find(t => t.id === selectedPin.linkedId);
     return {
       photo: memory?.mediaUrl || checkIn?.photo || undefined,
       caption: memory?.caption || checkIn?.notes || undefined,
-      tripTitle: trip?.title || (memory?.tripId ? MOCK_TRIPS.find(t => t.id === memory.tripId)?.title : undefined),
+      tripTitle: memory?.tripId ? MOCK_TRIPS.find(t => t.id === memory.tripId)?.title : undefined,
       badgeName: undefined,
       date: memory?.createdAt || checkIn?.timestamp || selectedPin.createdAt,
-      reactions: Math.floor(Math.random() * 50),
-      comments: Math.floor(Math.random() * 12),
+      reactions: 0,
+      comments: 0,
     };
   }, [selectedPin]);
-
-  const PrivIcon = privacy === "public" ? Eye : privacy === "followers" ? Users : Lock;
-  const cyclePrivacy = () => {
-    const order: PrivacyMode[] = ["public", "followers", "private"];
-    setPrivacy(order[(order.indexOf(privacy) + 1) % 3]);
-  };
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "mine", label: "My Globe" },
@@ -242,143 +129,126 @@ export default function GlobePage() {
     { key: "explore", label: "Explore" },
   ];
 
-  // Featured derived data
-  const latestMemory = useMemo(
-    () => [...memories].filter(m => m.userId === "u-001")
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0],
-    [memories]
-  );
-  const favoriteCity = useMemo(() => {
-    const counts: Record<string, { count: number; img?: string }> = {};
-    memories.filter(m => m.userId === "u-001" && m.locationName).forEach(m => {
-      const k = m.locationName!;
-      counts[k] = { count: (counts[k]?.count || 0) + 1, img: counts[k]?.img || m.mediaUrl };
-    });
-    const top = Object.entries(counts).sort((a, b) => b[1].count - a[1].count)[0];
-    return top ? { name: top[0], visits: top[1].count, img: top[1].img } : null;
-  }, [memories]);
-  const topCountry = stats.countriesList?.[0] || "Japan";
-  const nextBadge = badges.find(b => true);
+  const followingActivity = useMemo(() => {
+    const followed = ["u-002", "u-004", "u-005"];
+    return MOCK_MEMORIES
+      .filter(m => followed.includes(m.userId) && m.locationName)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 5)
+      .map(m => {
+        const u = MOCK_USERS.find(u => u.id === m.userId);
+        return {
+          id: m.id,
+          name: u?.displayName || u?.username || "Traveler",
+          avatar: u?.avatarUrl,
+          city: m.locationName!,
+          photo: m.mediaUrl,
+          when: timeAgo(m.createdAt),
+        };
+      });
+  }, []);
 
-  const isEmpty = activeTab === "mine" && activePins.length === 0;
-
-  const STAT_TILES = [
-    { label: "Countries", value: stats.totalCountries, icon: GlobeIcon },
-    { label: "Cities", value: stats.totalCities, icon: MapPinIcon },
-    { label: "Trips", value: MOCK_TRIPS.length, icon: Plane },
-    { label: "Check-Ins", value: stats.totalCheckins, icon: Crosshair },
-    { label: "Memories", value: stats.totalMemories, icon: Sparkles },
-    { label: "Pins", value: stats.totalPins, icon: MapPinIcon },
-  ];
+  const exploreCards = useMemo(() => {
+    return MOCK_MEMORIES
+      .filter(m => m.mediaUrl && m.locationName)
+      .slice(0, 6)
+      .map(m => ({
+        id: m.id,
+        city: m.locationName!,
+        country: m.locationName?.split(",").pop()?.trim() || "",
+        img: m.mediaUrl!,
+      }));
+  }, []);
 
   return (
-    <div className="dark-immersive min-h-screen pb-28">
-      {/* ── Clean Header ───────────────────────────────── */}
-      <div className="relative">
-        <div className="absolute inset-0 gradient-dark-radial pointer-events-none" />
-        <div className="relative px-5 pt-12 pb-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex items-center gap-2.5">
-              <img src={roavrPin} alt="" className="h-9 w-9 drop-shadow-[0_0_12px_rgba(59,130,246,0.55)]" />
-              <div>
-                <h1 className="font-heading text-[26px] font-bold text-white tracking-tight leading-none">Globe</h1>
-                <p className="text-[11px] text-dark-muted mt-1">Your world, mapped by memories</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={cyclePrivacy}
-                className="flex items-center gap-1.5 rounded-full px-3 h-9 text-[11px] font-semibold dark-card-elevated"
-                title="Privacy"
-              >
-                <PrivIcon className={`h-3.5 w-3.5 ${privacy === "public" ? "text-glow" : privacy === "followers" ? "text-blue-400" : "text-dark-muted"}`} />
-                <span className="text-white">
-                  {privacy === "public" ? "Public" : privacy === "followers" ? "Followers" : "Private"}
-                </span>
-              </button>
-              <button
-                onClick={() => setShareOpen(true)}
-                className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center"
-                aria-label="Share"
-              >
-                <Share2 className="h-4 w-4 text-glow" />
-              </button>
-              <button
-                onClick={() => setSettingsOpen(true)}
-                className="h-9 w-9 rounded-full dark-card-elevated flex items-center justify-center"
-                aria-label="Settings"
-              >
-                <Settings className="h-4 w-4 text-dark-muted" />
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
+      {/* Header */}
+      <div className="px-5 pt-12 pb-4 flex items-start justify-between">
+        <div>
+          <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-none">World</h1>
+          <p className="text-[14px] text-[#94A3B8] mt-2">Your life, mapped by memories</p>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <button
+            className="h-10 w-10 rounded-full flex items-center justify-center"
+            style={{ background: "#111827", border: "1px solid #1E2A3F" }}
+            aria-label="Share"
+          >
+            <Share2 className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
+          </button>
+          <button
+            className="h-10 w-10 rounded-full flex items-center justify-center"
+            style={{ background: "#111827", border: "1px solid #1E2A3F" }}
+            aria-label="Settings"
+          >
+            <Settings className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
+          </button>
         </div>
       </div>
 
-      {/* ── Immersive Globe Hero ───────────────────────── */}
-      <div className="relative px-3">
+      {/* Stats Row */}
+      <div className="px-5 pb-5">
+        <div className="flex items-end justify-between">
+          {[
+            { v: STATS.countries, l: "Countries" },
+            { v: STATS.cities, l: "Cities" },
+            { v: STATS.memories, l: "Memories" },
+          ].map(s => (
+            <div key={s.l} className="flex-1 text-center">
+              <p className="font-heading text-[32px] font-bold text-white leading-none tracking-tight">{s.v}</p>
+              <p className="text-[12px] text-[#94A3B8] uppercase mt-2" style={{ letterSpacing: "0.08em" }}>{s.l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Segment Control */}
+      <div className="px-5 pb-4">
+        <div className="flex p-1 rounded-full" style={{ background: "#1A2236" }}>
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className="flex-1 rounded-full py-2.5 text-[13px] font-semibold transition-all"
+              style={{
+                background: activeTab === key ? "#3B82F6" : "transparent",
+                color: activeTab === key ? "#FFFFFF" : "#94A3B8",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* THE GLOBE */}
+      <div className="px-3">
         <div
-          className="relative rounded-3xl overflow-hidden border border-white/[0.06]"
+          className="relative overflow-hidden"
           style={{
-            height: "min(58vh, 560px)",
-            background:
-              "radial-gradient(ellipse at 50% 30%, rgba(30,58,138,0.45) 0%, rgba(8,11,24,1) 70%)",
-            boxShadow: "0 30px 80px -20px rgba(30,58,138,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
+            height: "55vh",
+            maxHeight: 560,
+            borderRadius: 24,
+            background: "#080D1A",
+            border: "1px solid #1E2A3F",
           }}
         >
-          {/* Atmosphere accent blooms */}
-          <div className="absolute -top-24 -left-16 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -right-16 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-
-          {/* Floating top-right controls */}
-          <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
-            <div className="flex rounded-full backdrop-blur-xl bg-white/5 border border-white/10 p-0.5">
-              <button
-                onClick={() => setViewMode("globe")}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
-                  viewMode === "globe" ? "gradient-glow text-white" : "text-dark-muted"
-                }`}
-              >
-                <GlobeIcon className="h-3 w-3 inline mr-1" />3D
-              </button>
-              <button
-                onClick={() => setViewMode("map")}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
-                  viewMode === "map" ? "gradient-glow text-white" : "text-dark-muted"
-                }`}
-              >
-                <Map className="h-3 w-3 inline mr-1" />Map
-              </button>
-            </div>
-            <button
-              onClick={() => setLayersOpen(true)}
-              className="h-9 w-9 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-center self-end"
-              aria-label="Layers"
-            >
-              <Layers className="h-4 w-4 text-white" />
-            </button>
-            <button
-              onClick={() => setRecenterKey((k) => k + 1)}
-              className="h-9 w-9 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-center self-end"
-              aria-label="Recenter"
-            >
-              <Crosshair className="h-4 w-4 text-white" />
-            </button>
+          {/* Pin count chip — top-left */}
+          <div
+            className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full"
+            style={{ background: "rgba(0,0,0,0.45)", padding: "4px 10px" }}
+          >
+            <img src={roavrPin} alt="" className="h-3 w-3" />
+            <span className="text-[12px] text-white font-medium">{TOTAL_PINS} pins</span>
           </div>
 
-          {/* Pin counter — top left */}
-          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 px-2.5 py-1.5">
-            <MapPinIcon className="h-3 w-3 text-glow" />
-            <span className="text-[10px] font-bold text-white">{activePins.length} pins</span>
-          </div>
-
-          {/* The globe */}
+          {/* The globe / map */}
           <div className="absolute inset-0">
             {viewMode === "globe" ? (
               <Suspense
                 fallback={
                   <div className="h-full flex items-center justify-center">
-                    <div className="h-16 w-16 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                    <div className="h-12 w-12 rounded-full border-2 border-[#1E2A3F] border-t-[#3B82F6] animate-spin" />
                   </div>
                 }
               >
@@ -398,263 +268,141 @@ export default function GlobePage() {
             )}
           </div>
 
-          {/* Bottom gesture hint */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full backdrop-blur-xl bg-black/30 border border-white/10">
-            <p className="text-[9px] text-white/60 tracking-wide">Drag to rotate · Pinch to zoom</p>
-          </div>
-
-          {/* Empty-state overlay CTA */}
-          {isEmpty && (
-            <div className="absolute inset-x-0 bottom-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <p className="text-center text-white font-heading text-[15px] font-semibold mb-3">
-                Start filling your world
-              </p>
-              <div className="flex gap-2 justify-center">
-                <button onClick={() => navigate("/camera")} className="flex items-center gap-1.5 px-3 py-2 rounded-full gradient-glow text-white text-[11px] font-bold">
-                  <Camera className="h-3.5 w-3.5" /> Capture
-                </button>
-                <button onClick={() => navigate("/check-in")} className="flex items-center gap-1.5 px-3 py-2 rounded-full dark-card-elevated text-white text-[11px] font-bold">
-                  <MapPinIcon className="h-3.5 w-3.5 text-glow" /> Check In
-                </button>
-                <button onClick={() => navigate("/trips")} className="flex items-center gap-1.5 px-3 py-2 rounded-full dark-card-elevated text-white text-[11px] font-bold">
-                  <Plane className="h-3.5 w-3.5 text-glow" /> Plan Trip
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Tabs (segmented) ───────────────────────────── */}
-      <div className="px-5 pt-5">
-        <div className="flex gap-1 rounded-full dark-card p-1">
-          {TABS.map(({ key, label }) => (
+          {/* Recenter — bottom-right */}
+          <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
             <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-1 rounded-full py-2 text-[11px] font-bold transition-all ${
-                activeTab === key ? "gradient-glow text-white glow-accent" : "text-dark-muted"
-              }`}
+              onClick={() => setRecenterKey(k => k + 1)}
+              className="rounded-full flex items-center gap-1.5"
+              style={{ background: "#1A2236", border: "1px solid #1E2A3F", padding: "8px 14px" }}
+              aria-label="Recenter"
             >
-              {label}
+              <Crosshair className="h-4 w-4 text-white" style={{ strokeWidth: 1.5 }} />
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode(v => v === "globe" ? "map" : "globe")}
+              className="rounded-full flex items-center gap-1.5"
+              style={{ background: "#1A2236", border: "1px solid #1E2A3F", padding: "6px 12px" }}
+              aria-label="Toggle map view"
+            >
+              <MapIcon className="h-3.5 w-3.5 text-white" style={{ strokeWidth: 1.5 }} />
+              <span className="text-[12px] text-white font-medium">{viewMode === "globe" ? "Map" : "Globe"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── Compact Stats Card ─────────────────────────── */}
-      <div className="px-5 pt-4">
-        <div className="dark-card rounded-2xl p-3">
-          <div className="grid grid-cols-6 gap-1">
-            {STAT_TILES.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="text-center px-1">
-                <Icon className="h-3.5 w-3.5 text-glow mx-auto mb-1" />
-                <p className="font-heading font-bold text-[15px] text-white leading-none">{value}</p>
-                <p className="text-[8px] text-dark-muted uppercase tracking-wider mt-1 truncate">{label}</p>
+      {/* Content below */}
+      <div className="px-5 pt-5">
+        {activeTab === "mine" && (
+          allMyPins.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="font-heading text-[16px] font-semibold text-white">Your globe is waiting.</p>
+              <p className="text-[14px] text-[#94A3B8] mt-2">Check in somewhere to start mapping your world.</p>
+              <button
+                onClick={() => navigate("/camera")}
+                className="mt-5 px-6 rounded-full font-semibold text-white text-[14px]"
+                style={{ background: "#3B82F6", height: 52 }}
+              >
+                Open Capture
+              </button>
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl p-4 flex items-center gap-3"
+              style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
+            >
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: "rgba(59,130,246,0.12)" }}
+              >
+                <img src={roavrPin} alt="" className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[16px] font-semibold text-white leading-tight">
+                  {LATEST_PIN.city}, {LATEST_PIN.country}
+                </p>
+                <p className="text-[12px] text-[#94A3B8] mt-0.5">{LATEST_PIN.ago} · 1 check-in</p>
+              </div>
+              <div
+                className="h-10 w-10 rounded-lg shrink-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url(https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?auto=format&fit=crop&w=200&q=70)`,
+                }}
+              />
+            </div>
+          )
+        )}
+
+        {activeTab === "followers" && (
+          <div className="space-y-2">
+            {followingActivity.map(a => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 p-3 rounded-2xl"
+                style={{ background: "#111827" }}
+              >
+                <div
+                  className="h-8 w-8 rounded-full bg-cover bg-center shrink-0"
+                  style={{ background: a.avatar ? `url(${a.avatar})` : "#1A2236", backgroundSize: "cover" }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] text-white leading-tight">
+                    <span className="font-semibold">{a.name}</span>
+                    <span className="text-[#94A3B8]"> checked in at </span>
+                    <span className="font-semibold">{a.city}</span>
+                  </p>
+                  <p className="text-[12px] text-[#94A3B8] mt-0.5">{a.when}</p>
+                </div>
+                {a.photo && (
+                  <div
+                    className="h-10 w-10 rounded-lg shrink-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${a.photo})` }}
+                  />
+                )}
               </div>
             ))}
+            <button className="w-full mt-2 text-[13px] font-semibold flex items-center justify-center gap-1" style={{ color: "#3B82F6" }}>
+              See all <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* ── Featured Memory Section ────────────────────── */}
-      <div className="px-5 pt-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[13px] font-bold text-white">Highlights</h3>
-          <button className="text-[10px] text-glow font-bold flex items-center gap-0.5">
-            See all <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* Latest Memory — large */}
-          {latestMemory && (
-            <div
-              onClick={() => {
-                const pin = allMyPins.find(p => p.linkedId === latestMemory.id);
-                if (pin) { setSelectedPin(pin); setPinSheetOpen(true); }
-              }}
-              className="col-span-2 dark-card rounded-2xl overflow-hidden relative h-36 cursor-pointer group"
-            >
-              {latestMemory.mediaUrl && (
-                <img src={latestMemory.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-md bg-white/10 border border-white/10">
-                <Sparkles className="h-3 w-3 text-glow" />
-                <span className="text-[9px] font-bold text-white uppercase tracking-wider">Latest Memory</span>
-              </div>
-              <div className="absolute bottom-3 left-3 right-3">
-                <p className="text-white font-heading text-[16px] font-bold leading-tight">{latestMemory.locationName || "Untitled"}</p>
-                {latestMemory.caption && (
-                  <p className="text-white/70 text-[11px] mt-0.5 line-clamp-1">{latestMemory.caption}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Favorite City */}
-          <div className="dark-card rounded-2xl overflow-hidden relative h-28">
-            {favoriteCity?.img && (
-              <img src={favoriteCity.img} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 to-black/20" />
-            <div className="absolute inset-0 p-3 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5">
-                <Heart className="h-3 w-3 text-rose-400" />
-                <span className="text-[9px] font-bold text-white/80 uppercase tracking-wider">Favorite City</span>
-              </div>
-              <div>
-                <p className="text-white font-heading text-[14px] font-bold leading-tight">{favoriteCity?.name || "—"}</p>
-                <p className="text-white/60 text-[10px] mt-0.5">{favoriteCity?.visits || 0} visits</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Top Country */}
-          <div className="dark-card rounded-2xl p-3 h-28 relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl" />
-            <div className="flex items-center gap-1.5 relative">
-              <Flame className="h-3 w-3 text-orange-400" />
-              <span className="text-[9px] font-bold text-white/80 uppercase tracking-wider">Top Country</span>
-            </div>
-            <div className="relative">
-              <p className="text-white font-heading text-[14px] font-bold leading-tight">{topCountry}</p>
-              <p className="text-glow text-[10px] font-semibold mt-0.5">{stats.topContinent}</p>
-            </div>
-          </div>
-
-          {/* Travel Score */}
-          <div className="dark-card rounded-2xl p-3 h-28 relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center gap-1.5">
-              <Trophy className="h-3 w-3 text-amber-400" />
-              <span className="text-[9px] font-bold text-white/80 uppercase tracking-wider">Travel Score</span>
-            </div>
-            <div>
-              <p className="text-white font-heading text-[22px] font-bold leading-none">{stats.travelScore}</p>
-              <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full gradient-glow" style={{ width: `${Math.min(stats.travelScore, 100)}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Badge Progress */}
-          <div className="dark-card rounded-2xl p-3 h-28 relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center gap-1.5">
-              <Award className="h-3 w-3 text-purple-400" />
-              <span className="text-[9px] font-bold text-white/80 uppercase tracking-wider">Badges</span>
-            </div>
-            <div>
-              <p className="text-white font-heading text-[14px] font-bold leading-tight truncate">{nextBadge?.badgeName || "Explorer"}</p>
-              <p className="text-white/60 text-[10px] mt-0.5">{badges.length} earned</p>
-              <div className="mt-2 flex -space-x-1.5">
-                {badges.slice(0, 4).map((b, i) => (
-                  <div key={b.id} className="h-5 w-5 rounded-full ring-2 ring-[hsl(220_30%_6%)] bg-gradient-to-br from-emerald-500/30 to-teal-500/20 flex items-center justify-center text-[9px]">
-                    {b.category === "milestone" ? "🏆" : b.category === "social" ? "🦋" : "⭐"}
+        {activeTab === "explore" && (
+          <div className="-mx-5 px-5 overflow-x-auto scrollbar-none">
+            <div className="flex gap-3" style={{ width: "max-content" }}>
+              {exploreCards.map(c => (
+                <div
+                  key={c.id}
+                  className="relative overflow-hidden bg-cover bg-center shrink-0"
+                  style={{ width: 140, height: 160, borderRadius: 16, backgroundImage: `url(${c.img})` }}
+                >
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%)" }} />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-[12px] text-white font-semibold leading-tight">{c.city}</p>
                   </div>
-                ))}
-                {badges.length > 4 && (
-                  <div className="h-5 w-5 rounded-full ring-2 ring-[hsl(220_30%_6%)] bg-white/10 flex items-center justify-center text-[8px] text-white font-bold">
-                    +{badges.length - 4}
-                  </div>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* ── Quick Action ───────────────────────────────── */}
-      <div className="px-5 pt-5">
-        <button
-          onClick={() => navigate("/camera")}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl gradient-glow text-white font-bold py-3.5 text-[13px] glow-accent"
-        >
-          <Plus className="h-4 w-4" /> Add to your Globe
-        </button>
-      </div>
-
-      {/* ── Sheets ─────────────────────────────────────── */}
       <PinDetailSheet
         pin={selectedPin}
         open={pinSheetOpen}
         onOpenChange={setPinSheetOpen}
         linkedData={selectedPinLinked}
       />
-      <ShareMapSheet
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        userName={user?.email?.split("@")[0]}
-      />
-
-      {/* Layers sheet */}
-      <Sheet open={layersOpen} onOpenChange={setLayersOpen}>
-        <SheetContent side="bottom" className="dark-card border-white/10 rounded-t-3xl">
-          <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-heading flex items-center gap-2">
-              <Layers className="h-4 w-4 text-glow" /> Map Layers
-            </SheetTitle>
-            <SheetDescription className="text-dark-muted text-[11px]">
-              Choose what to show on your globe
-            </SheetDescription>
-          </SheetHeader>
-          <div className="grid grid-cols-2 gap-2 mt-5">
-            {([
-              { key: "trips", label: "Trips", icon: Plane },
-              { key: "stories", label: "Stories", icon: Sparkles },
-              { key: "memories", label: "Memories", icon: Heart },
-              { key: "checkins", label: "Check-Ins", icon: MapPinIcon },
-              { key: "offers", label: "Offers", icon: Flame },
-              { key: "friends", label: "Friends", icon: Users },
-              { key: "safety", label: "Safety", icon: Compass },
-            ] as { key: LayerKey; label: string; icon: typeof Plane }[]).map(({ key, label, icon: Icon }) => {
-              const on = layers[key];
-              return (
-                <button
-                  key={key}
-                  onClick={() => setLayers((l) => ({ ...l, [key]: !l[key] }))}
-                  className={`flex items-center justify-between rounded-xl px-3 py-3 border transition-all ${
-                    on ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/[0.02]"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${on ? "text-glow" : "text-dark-muted"}`} />
-                    <span className={`text-[12px] font-semibold ${on ? "text-white" : "text-dark-muted"}`}>{label}</span>
-                  </span>
-                  <span className={`h-4 w-7 rounded-full p-0.5 transition-colors ${on ? "bg-emerald-500" : "bg-white/10"}`}>
-                    <span className={`block h-3 w-3 rounded-full bg-white transition-transform ${on ? "translate-x-3" : ""}`} />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Settings sheet */}
-      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent side="bottom" className="dark-card border-white/10 rounded-t-3xl max-h-[85vh] overflow-y-auto">
-          <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-heading flex items-center gap-2">
-              <Settings className="h-4 w-4 text-dark-muted" /> Globe Settings
-            </SheetTitle>
-            <SheetDescription className="text-dark-muted text-[11px]">
-              Control how your world is shared
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-5 space-y-4">
-            <StoryConversionSettings mode={storyConversion} onChange={setStoryConversion} />
-            <div className="dark-card-elevated rounded-xl p-4 space-y-2">
-              <h4 className="text-[12px] font-bold text-white flex items-center gap-2">
-                <Lock className="h-3.5 w-3.5 text-glow" /> Per-Item Visibility
-              </h4>
-              <p className="text-[10px] text-dark-muted leading-relaxed">
-                Tap any pin to set its visibility individually — Public, Followers, or Private.
-              </p>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
