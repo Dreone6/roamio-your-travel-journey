@@ -403,13 +403,34 @@ export default function HomePage() {
               { v: stats.countries, l: "Countries" },
               { v: stats.cities, l: "Cities" },
               { v: stats.checkIns, l: "Check-ins" },
-              { v: stats.trips, l: "Trips" },
+              { v: MEMORIES.length * 7, l: "Memories" },
             ].map((s) => (
               <div key={s.l} className="rounded-lg bg-white/5 px-2 py-2 text-center">
                 <p className="text-white font-extrabold text-[15px] leading-none">{s.v}</p>
                 <p className="text-white/55 text-[9.5px] uppercase tracking-wider mt-1">{s.l}</p>
               </div>
             ))}
+          </div>
+
+          {/* Latest memories strip */}
+          <div className="relative mt-3 flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {MEMORIES.map((m, i) => (
+                <img
+                  key={i}
+                  src={m}
+                  alt=""
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-[hsl(var(--dark-bg))]"
+                />
+              ))}
+            </div>
+            <div className="ml-1 flex-1 min-w-0">
+              <p className="text-white/55 text-[9.5px] uppercase tracking-wider leading-none">Latest pin</p>
+              <p className="text-white text-[12px] font-bold flex items-center gap-1 mt-1 truncate">
+                <MapPin className="h-3 w-3 text-electric shrink-0" />
+                Positano, Italy · 2h ago
+              </p>
+            </div>
           </div>
         </button>
 
