@@ -472,11 +472,14 @@ export default function ConversationPage() {
           <div className="bg-card rounded-t-3xl w-full max-w-md p-5 space-y-1 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 pb-2">Share in Chat</p>
             {[
-              { icon: Plane, label: "Share a Trip", type: "trip_share", color: "text-accent" },
-              { icon: MapPin, label: "Send Map Pin", type: "map_pin", color: "text-emerald-500" },
-              { icon: Globe, label: "Share Memory", type: "memory_share", color: "text-blue-500" },
-              { icon: Image, label: "Photo or Video", type: "image", color: "text-purple-500" },
-              { icon: Camera, label: "Open Camera", type: "camera", color: "text-amber-500" },
+              { icon: Plane, label: "Share a Trip", type: "trip_share", color: "text-primary" },
+              { icon: MapPin, label: "Send Map Pin", type: "map_pin", color: "text-electric" },
+              { icon: Globe, label: "Share Memory", type: "memory_share", color: "text-primary" },
+              { icon: Globe, label: "Share Public Globe", type: "public_globe", color: "text-electric" },
+              { icon: Image, label: "Photo or Video", type: "image", color: "text-primary" },
+              { icon: Camera, label: "Open Camera", type: "camera", color: "text-coral" },
+              { icon: Tag, label: "Share Local Offer", type: "offer_share", color: "text-coral" },
+              { icon: Shield, label: "Recommend Local Expert", type: "expert_share", color: "text-primary" },
             ].map((item) => (
               <button
                 key={item.type}
