@@ -11,6 +11,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
 import ShareMapSheet from "@/components/globe/ShareMapSheet";
