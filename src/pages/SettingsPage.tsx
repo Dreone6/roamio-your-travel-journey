@@ -7,8 +7,15 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   ArrowLeft, Bell, MapPin, Shield, FileText, Mail, LogOut,
-  Trash2, ChevronRight, AlertTriangle, Moon, HelpCircle
+  Trash2, ChevronRight, AlertTriangle, Moon, HelpCircle, Camera, Volume2,
 } from "lucide-react";
+
+const PING_SOUNDS = [
+  { id: "sonar",  label: "Sonar",  desc: "Soft descending ping (default)" },
+  { id: "bell",   label: "Bell",   desc: "Single clear bell tone" },
+  { id: "chime",  label: "Chime",  desc: "Two-note ascending chime" },
+  { id: "silent", label: "Silent", desc: "Vibration only" },
+] as const;
 
 export default function SettingsPage() {
   const { signOut, user } = useAuth();
@@ -17,6 +24,13 @@ export default function SettingsPage() {
   const [locationStatus, setLocationStatus] = useState<string>("unknown");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [pingSound, setPingSound] = useState<string>(() => localStorage.getItem("roavr.pingSound") || "sonar");
+
+  const updatePingSound = (id: string) => {
+    setPingSound(id);
+    localStorage.setItem("roavr.pingSound", id);
+    toast.success(`Pin ping set to ${PING_SOUNDS.find(s => s.id === id)?.label}`);
+  };
 
   useEffect(() => {
     if (navigator.permissions) {
