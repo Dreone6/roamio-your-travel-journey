@@ -412,6 +412,17 @@ export default function GlobePage() {
         onOpenChange={setPinSheetOpen}
         linkedData={selectedPinLinked}
       />
+
+      <PinContextMenu
+        pin={contextPin}
+        open={contextOpen}
+        onOpenChange={setContextOpen}
+        onChangeVisibility={(v: Visibility) => {
+          toast.success(`Pin set to ${v}`);
+        }}
+        onDelete={() => toast.success("Pin deleted")}
+        onViewPhoto={() => { if (contextPin) { setSelectedPin(contextPin); setPinSheetOpen(true); } }}
+      />
     </div>
   );
 }
