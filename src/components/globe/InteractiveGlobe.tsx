@@ -198,17 +198,17 @@ function CityPin({
     <group position={pos} quaternion={quaternion}>
       {/* Outer glow disc */}
       <mesh ref={haloRef}>
-        <circleGeometry args={[0.045, 24]} />
-        <meshBasicMaterial color={ACCENT} map={sprite} transparent opacity={0.35} depthWrite={false} />
+        <circleGeometry args={[0.085, 24]} />
+        <meshBasicMaterial color={ACCENT} map={sprite} transparent opacity={0.4} depthWrite={false} />
       </mesh>
-      {/* Solid core dot */}
+      {/* Solid core dot — bright white */}
       <mesh
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         onPointerOver={() => { document.body.style.cursor = "pointer"; }}
         onPointerOut={() => { document.body.style.cursor = "default"; }}
       >
-        <circleGeometry args={[0.018, 16]} />
-        <meshBasicMaterial color={ACCENT} depthWrite={false} />
+        <circleGeometry args={[0.032, 20]} />
+        <meshBasicMaterial color={PIN_CORE} depthWrite={false} />
       </mesh>
     </group>
   );
