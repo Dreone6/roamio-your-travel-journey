@@ -154,12 +154,12 @@ function VisitedHalo({ lat, lng, size = 0.2, sprite }: { lat: number; lng: numbe
 
   return (
     <mesh position={pos} quaternion={quaternion}>
-      <circleGeometry args={[size, 32]} />
+      <circleGeometry args={[size * 0.45, 32]} />
       <meshBasicMaterial
         color={ACCENT}
         map={sprite}
         transparent
-        opacity={0.5}
+        opacity={0.4}
         depthWrite={false}
         side={THREE.DoubleSide}
       />
