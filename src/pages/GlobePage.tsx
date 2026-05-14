@@ -57,6 +57,8 @@ export default function GlobePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("globe");
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
   const [pinSheetOpen, setPinSheetOpen] = useState(false);
+  const [contextPin, setContextPin] = useState<MapPin | null>(null);
+  const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
