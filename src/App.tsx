@@ -30,6 +30,7 @@ import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
 import SafePassPage from "@/pages/SafePassPage";
 import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
+import TravelHistoryPage from "@/pages/TravelHistoryPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
