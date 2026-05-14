@@ -4,9 +4,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   MapPin, Camera, Calendar, Navigation, Eye, Users, Lock,
-  Heart, MessageCircle, Share2, Award, Globe,
+  Heart, MessageCircle, Share2, Award, Globe, BadgeCheck, Plane,
 } from "lucide-react";
-import type { MapPin as MapPinType, Visibility } from "@/data/types";
+import type { MapPin as MapPinType, Visibility, VerificationSource } from "@/data/types";
 
 interface PinDetailSheetProps {
   pin: MapPinType | null;
