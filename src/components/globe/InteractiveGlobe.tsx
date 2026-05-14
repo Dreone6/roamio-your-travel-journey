@@ -39,8 +39,10 @@ interface InteractiveGlobeProps {
 }
 
 const ACCENT = "#3B82F6";
-const LAND = "#1E3A5F";
-const OCEAN = "#0A1628";
+const PIN_CORE = "#FFFFFF";
+const CLUSTER = "#F59E0B";
+const LAND = "#2A4A7F";
+const OCEAN = "#080D1A";
 const RADIUS = 2;
 const LAND_RADIUS = 2.005;
 
