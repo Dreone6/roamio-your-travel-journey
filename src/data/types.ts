@@ -174,6 +174,8 @@ export interface StoryReaction {
 
 // ─── Map & Globe ─────────────────────────────────────────
 
+export type VerificationSource = "capture" | "exif" | "booking" | "checkin" | "wishlist";
+
 export interface MapPin {
   id: string;
   userId: string;
@@ -185,6 +187,8 @@ export interface MapPin {
   linkedId: string | null;
   visibility: Visibility;
   createdAt: string;
+  verifiedSource?: VerificationSource;
+  verifiedAt?: string;
 }
 
 export interface GlobeStats {
