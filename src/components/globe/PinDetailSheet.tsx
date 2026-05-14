@@ -166,3 +166,34 @@ export default function PinDetailSheet({ pin, open, onOpenChange, linkedData }: 
     </Sheet>
   );
 }
+
+const SOURCE_META: Record<VerificationSource, { label: string; Icon: typeof Camera }> = {
+  capture: { label: "Verified via Roavr Capture", Icon: BadgeCheck },
+  exif:    { label: "Verified via Photo GPS",     Icon: Camera },
+  booking: { label: "Verified via Booking",       Icon: Plane },
+  checkin: { label: "Verified via Check-In",      Icon: MapPin },
+  wishlist:{ label: "Wishlist — not yet visited", Icon: Globe },
+};
+
+function VerificationRow({ source, verifiedAt }: { source?: VerificationSource; verifiedAt: string }) {
+  const meta = source ? SOURCE_META[source] : null;
+  if (!meta) return null;
+  const isWishlist = source === "wishlist";
+  const Icon = meta.Icon;
+  const date = new Date(verifiedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return (
+    <div
+      className="rounded-xl p-3 flex items-center gap-2.5"
+      style={{
+        background: isWishlist ? "rgba(245,158,11,0.08)" : "rgba(59,130,246,0.10)",
+        border: `1px solid ${isWishlist ? "rgba(245,158,11,0.3)" : "rgba(59,130,246,0.3)"}`,
+      }}
+    >
+      <Icon className="h-4 w-4 shrink-0" style={{ color: isWishlist ? "#F59E0B" : "#3B82F6", strokeWidth: 1.5 }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold text-white leading-tight">{meta.label}</p>
+        {!isWishlist && <p className="text-[11px] text-[#94A3B8] mt-0.5">{date}</p>}
+      </div>
+    </div>
+  );
+}
