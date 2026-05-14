@@ -91,6 +91,12 @@ export default function SettingsPage() {
           desc: "Stories, map, messaging",
           onClick: () => navigate("/privacy"),
         },
+        {
+          icon: Camera,
+          label: "Connected Sources",
+          desc: "Photo library, bookings",
+          onClick: () => navigate("/travel-history"),
+        },
       ],
     },
     {
