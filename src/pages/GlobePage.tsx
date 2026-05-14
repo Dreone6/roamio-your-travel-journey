@@ -1,14 +1,16 @@
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
-import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera } from "lucide-react";
+import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
+import PinContextMenu from "@/components/globe/PinContextMenu";
 import {
   MOCK_MAP_PINS, MOCK_CHECKINS, MOCK_MEMORIES, MOCK_USERS, MOCK_TRIPS,
 } from "@/data";
-import type { MapPin } from "@/data/types";
+import type { MapPin, Visibility } from "@/data/types";
 
 const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
 
@@ -46,7 +48,17 @@ function buildMyPins(userId: string): MapPin[] {
       });
     }
   });
-  return base.filter(p => p.latitude !== 0 || p.longitude !== 0);
+  return base
+    .filter(p => p.latitude !== 0 || p.longitude !== 0)
+    .map(p => ({
+      ...p,
+      verifiedSource:
+        p.category === "wishlist" ? "wishlist" as const :
+        p.category === "checkin"  ? "checkin"  as const :
+        p.category === "memory"   ? "capture"  as const :
+        "exif" as const,
+      verifiedAt: p.createdAt,
+    }));
 }
 
 export default function GlobePage() {
@@ -55,6 +67,8 @@ export default function GlobePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("globe");
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
   const [pinSheetOpen, setPinSheetOpen] = useState(false);
+  const [contextPin, setContextPin] = useState<MapPin | null>(null);
+  const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
@@ -170,6 +184,15 @@ export default function GlobePage() {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
+            onClick={() => navigate("/travel-history")}
+            className="h-10 w-10 rounded-full flex items-center justify-center"
+            style={{ background: "#111827", border: "1px solid #1E2A3F" }}
+            aria-label="Sync from Photos"
+            title="Sync from Photos"
+          >
+            <ImageIcon className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
+          </button>
+          <button
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Share"
@@ -177,6 +200,7 @@ export default function GlobePage() {
             <Share2 className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
           <button
+            onClick={() => navigate("/settings")}
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Settings"
@@ -308,7 +332,12 @@ export default function GlobePage() {
             </div>
           ) : (
             <div
-              className="rounded-2xl p-4 flex items-center gap-3"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                const sorted = [...allMyPins].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                if (sorted[0]) { setContextPin(sorted[0]); setContextOpen(true); }
+              }}
+              className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer"
               style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
             >
               <div
@@ -392,6 +421,17 @@ export default function GlobePage() {
         open={pinSheetOpen}
         onOpenChange={setPinSheetOpen}
         linkedData={selectedPinLinked}
+      />
+
+      <PinContextMenu
+        pin={contextPin}
+        open={contextOpen}
+        onOpenChange={setContextOpen}
+        onChangeVisibility={(v: Visibility) => {
+          toast.success(`Pin set to ${v}`);
+        }}
+        onDelete={() => toast.success("Pin deleted")}
+        onViewPhoto={() => { if (contextPin) { setSelectedPin(contextPin); setPinSheetOpen(true); } }}
       />
     </div>
   );

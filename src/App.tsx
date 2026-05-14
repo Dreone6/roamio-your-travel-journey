@@ -30,6 +30,7 @@ import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
 import SafePassPage from "@/pages/SafePassPage";
 import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
+import TravelHistoryPage from "@/pages/TravelHistoryPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
             <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
+            <Route path="/travel-history" element={<ProtectedRoute><TravelHistoryPage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />

@@ -969,7 +969,7 @@ function CheckInScreen({
           }}
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Drop Pin
+          Pin to Globe
         </button>
       </div>
     </div>

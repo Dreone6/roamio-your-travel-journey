@@ -7,8 +7,15 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   ArrowLeft, Bell, MapPin, Shield, FileText, Mail, LogOut,
-  Trash2, ChevronRight, AlertTriangle, Moon, HelpCircle
+  Trash2, ChevronRight, AlertTriangle, Moon, HelpCircle, Camera, Volume2,
 } from "lucide-react";
+
+const PING_SOUNDS = [
+  { id: "sonar",  label: "Sonar",  desc: "Soft descending ping (default)" },
+  { id: "bell",   label: "Bell",   desc: "Single clear bell tone" },
+  { id: "chime",  label: "Chime",  desc: "Two-note ascending chime" },
+  { id: "silent", label: "Silent", desc: "Vibration only" },
+] as const;
 
 export default function SettingsPage() {
   const { signOut, user } = useAuth();
@@ -17,6 +24,13 @@ export default function SettingsPage() {
   const [locationStatus, setLocationStatus] = useState<string>("unknown");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [pingSound, setPingSound] = useState<string>(() => localStorage.getItem("roavr.pingSound") || "sonar");
+
+  const updatePingSound = (id: string) => {
+    setPingSound(id);
+    localStorage.setItem("roavr.pingSound", id);
+    toast.success(`Pin ping set to ${PING_SOUNDS.find(s => s.id === id)?.label}`);
+  };
 
   useEffect(() => {
     if (navigator.permissions) {
@@ -77,6 +91,12 @@ export default function SettingsPage() {
           desc: "Stories, map, messaging",
           onClick: () => navigate("/privacy"),
         },
+        {
+          icon: Camera,
+          label: "Connected Sources",
+          desc: "Photo library, bookings",
+          onClick: () => navigate("/travel-history"),
+        },
       ],
     },
     {
@@ -135,6 +155,37 @@ export default function SettingsPage() {
             </div>
           </div>
         ))}
+
+        {/* Roavr Pin Sound */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] px-1 mb-1.5 flex items-center gap-1.5">
+            <Volume2 className="h-3 w-3" /> Roavr Pin Sound
+          </p>
+          <div className="rounded-xl border border-border/40 bg-card divide-y divide-border/30 overflow-hidden shadow-soft">
+            {PING_SOUNDS.map(s => (
+              <button
+                key={s.id}
+                onClick={() => updatePingSound(s.id)}
+                className="w-full flex items-center justify-between px-3.5 py-3 text-left hover:bg-secondary/30 transition-colors"
+              >
+                <div>
+                  <span className="text-[13px] font-semibold text-foreground block">{s.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{s.desc}</span>
+                </div>
+                <div
+                  className="h-4 w-4 rounded-full border-2"
+                  style={{
+                    borderColor: pingSound === s.id ? "#3B82F6" : "hsl(var(--border))",
+                    background: pingSound === s.id ? "#3B82F6" : "transparent",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground px-1 pt-1">
+            Plays when someone you follow pins a new place. Private pins never notify.
+          </p>
+        </div>
 
         {/* Sign Out */}
         <Button variant="outline" onClick={signOut} className="w-full h-11 rounded-xl gap-2 font-semibold text-[13px]">
