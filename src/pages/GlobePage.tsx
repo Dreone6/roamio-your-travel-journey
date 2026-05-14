@@ -1,14 +1,16 @@
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
-import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera } from "lucide-react";
+import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
+import PinContextMenu from "@/components/globe/PinContextMenu";
 import {
   MOCK_MAP_PINS, MOCK_CHECKINS, MOCK_MEMORIES, MOCK_USERS, MOCK_TRIPS,
 } from "@/data";
-import type { MapPin } from "@/data/types";
+import type { MapPin, Visibility } from "@/data/types";
 
 const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
 
