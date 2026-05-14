@@ -132,6 +132,9 @@ export default function PinDetailSheet({ pin, open, onOpenChange, linkedData }: 
             )}
           </div>
 
+          {/* Verification badge */}
+          <VerificationRow source={pin.verifiedSource} verifiedAt={pin.verifiedAt || pin.createdAt} />
+
           {/* Coordinates */}
           <div className="dark-card rounded-xl p-3 flex items-center justify-between">
             <span className="text-[10px] text-dark-muted font-mono">
