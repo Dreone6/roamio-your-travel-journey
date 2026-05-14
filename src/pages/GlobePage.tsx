@@ -322,7 +322,12 @@ export default function GlobePage() {
             </div>
           ) : (
             <div
-              className="rounded-2xl p-4 flex items-center gap-3"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                const sorted = [...allMyPins].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                if (sorted[0]) { setContextPin(sorted[0]); setContextOpen(true); }
+              }}
+              className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer"
               style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
             >
               <div
