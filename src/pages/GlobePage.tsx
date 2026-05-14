@@ -48,7 +48,17 @@ function buildMyPins(userId: string): MapPin[] {
       });
     }
   });
-  return base.filter(p => p.latitude !== 0 || p.longitude !== 0);
+  return base
+    .filter(p => p.latitude !== 0 || p.longitude !== 0)
+    .map(p => ({
+      ...p,
+      verifiedSource:
+        p.category === "wishlist" ? "wishlist" as const :
+        p.category === "checkin"  ? "checkin"  as const :
+        p.category === "memory"   ? "capture"  as const :
+        "exif" as const,
+      verifiedAt: p.createdAt,
+    }));
 }
 
 export default function GlobePage() {
