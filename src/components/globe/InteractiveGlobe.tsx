@@ -39,8 +39,10 @@ interface InteractiveGlobeProps {
 }
 
 const ACCENT = "#3B82F6";
-const LAND = "#1E3A5F";
-const OCEAN = "#0A1628";
+const PIN_CORE = "#FFFFFF";
+const CLUSTER = "#F59E0B";
+const LAND = "#2A4A7F";
+const OCEAN = "#080D1A";
 const RADIUS = 2;
 const LAND_RADIUS = 2.005;
 
@@ -152,12 +154,12 @@ function VisitedHalo({ lat, lng, size = 0.2, sprite }: { lat: number; lng: numbe
 
   return (
     <mesh position={pos} quaternion={quaternion}>
-      <circleGeometry args={[size, 32]} />
+      <circleGeometry args={[size * 0.45, 32]} />
       <meshBasicMaterial
         color={ACCENT}
         map={sprite}
         transparent
-        opacity={0.5}
+        opacity={0.4}
         depthWrite={false}
         side={THREE.DoubleSide}
       />
@@ -196,17 +198,17 @@ function CityPin({
     <group position={pos} quaternion={quaternion}>
       {/* Outer glow disc */}
       <mesh ref={haloRef}>
-        <circleGeometry args={[0.045, 24]} />
-        <meshBasicMaterial color={ACCENT} map={sprite} transparent opacity={0.35} depthWrite={false} />
+        <circleGeometry args={[0.085, 24]} />
+        <meshBasicMaterial color={ACCENT} map={sprite} transparent opacity={0.4} depthWrite={false} />
       </mesh>
-      {/* Solid core dot */}
+      {/* Solid core dot — bright white */}
       <mesh
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         onPointerOver={() => { document.body.style.cursor = "pointer"; }}
         onPointerOut={() => { document.body.style.cursor = "default"; }}
       >
-        <circleGeometry args={[0.018, 16]} />
-        <meshBasicMaterial color={ACCENT} depthWrite={false} />
+        <circleGeometry args={[0.032, 20]} />
+        <meshBasicMaterial color={PIN_CORE} depthWrite={false} />
       </mesh>
     </group>
   );
