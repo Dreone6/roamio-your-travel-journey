@@ -174,6 +174,15 @@ export default function GlobePage() {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
+            onClick={() => navigate("/travel-history")}
+            className="h-10 w-10 rounded-full flex items-center justify-center"
+            style={{ background: "#111827", border: "1px solid #1E2A3F" }}
+            aria-label="Sync from Photos"
+            title="Sync from Photos"
+          >
+            <ImageIcon className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
+          </button>
+          <button
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Share"
@@ -181,6 +190,7 @@ export default function GlobePage() {
             <Share2 className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
           <button
+            onClick={() => navigate("/settings")}
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Settings"
