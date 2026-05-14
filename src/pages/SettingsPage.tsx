@@ -156,6 +156,37 @@ export default function SettingsPage() {
           </div>
         ))}
 
+        {/* Roavr Pin Sound */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] px-1 mb-1.5 flex items-center gap-1.5">
+            <Volume2 className="h-3 w-3" /> Roavr Pin Sound
+          </p>
+          <div className="rounded-xl border border-border/40 bg-card divide-y divide-border/30 overflow-hidden shadow-soft">
+            {PING_SOUNDS.map(s => (
+              <button
+                key={s.id}
+                onClick={() => updatePingSound(s.id)}
+                className="w-full flex items-center justify-between px-3.5 py-3 text-left hover:bg-secondary/30 transition-colors"
+              >
+                <div>
+                  <span className="text-[13px] font-semibold text-foreground block">{s.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{s.desc}</span>
+                </div>
+                <div
+                  className="h-4 w-4 rounded-full border-2"
+                  style={{
+                    borderColor: pingSound === s.id ? "#3B82F6" : "hsl(var(--border))",
+                    background: pingSound === s.id ? "#3B82F6" : "transparent",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground px-1 pt-1">
+            Plays when someone you follow pins a new place. Private pins never notify.
+          </p>
+        </div>
+
         {/* Sign Out */}
         <Button variant="outline" onClick={signOut} className="w-full h-11 rounded-xl gap-2 font-semibold text-[13px]">
           <LogOut className="h-4 w-4" /> Sign Out
