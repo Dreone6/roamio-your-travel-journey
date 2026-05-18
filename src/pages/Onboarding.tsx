@@ -35,17 +35,48 @@ const ONBOARDING_ARCS = [
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
-  const { user } = useAuth();
+  const [checking, setChecking] = useState(true);
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
+  // Guard: if not signed in → /auth; if already onboarded → /home
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      navigate("/auth", { replace: true });
+      return;
+    }
+    supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.onboarding_completed) {
+          navigate("/home", { replace: true });
+        } else {
+          setChecking(false);
+        }
+      });
+  }, [user, loading, navigate]);
+
   const handleFinish = async () => {
-    if (!user) { navigate("/home", { replace: true }); return; }
+    if (!user) { navigate("/auth", { replace: true }); return; }
     setSaving(true);
     await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
     navigate("/home", { replace: true });
   };
 
   const next = () => setStep(s => (s < 3 ? s + 1 : s));
+
+  if (loading || checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "#080D1A" }}>
+        <Compass className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#080D1A" }}>
