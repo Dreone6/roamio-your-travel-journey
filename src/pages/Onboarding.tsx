@@ -1,8 +1,8 @@
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Compass } from "lucide-react";
 
 const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
 
