@@ -52,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith("roavr_onboarded_"))
+      .forEach((k) => sessionStorage.removeItem(k));
     await supabase.auth.signOut();
   };
 
