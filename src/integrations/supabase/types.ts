@@ -18,8 +18,10 @@ export type Database = {
         Row: {
           badge_image: string | null
           badge_name: string
+          badge_slug: string | null
           category: string | null
           created_at: string
+          description: string | null
           earned_date: string
           id: string
           user_id: string
@@ -27,8 +29,10 @@ export type Database = {
         Insert: {
           badge_image?: string | null
           badge_name: string
+          badge_slug?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           earned_date?: string
           id?: string
           user_id: string
@@ -36,8 +40,10 @@ export type Database = {
         Update: {
           badge_image?: string | null
           badge_name?: string
+          badge_slug?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           earned_date?: string
           id?: string
           user_id?: string
@@ -650,6 +656,8 @@ export type Database = {
       }
       offer_interactions: {
         Row: {
+          claim_code: string | null
+          claim_expires_at: string | null
           created_at: string
           id: string
           interaction_type: string
@@ -657,6 +665,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          claim_code?: string | null
+          claim_expires_at?: string | null
           created_at?: string
           id?: string
           interaction_type?: string
@@ -664,6 +674,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          claim_code?: string | null
+          claim_expires_at?: string | null
           created_at?: string
           id?: string
           interaction_type?: string

@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { useBadges } from "@/components/badges/BadgeProvider";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -40,6 +42,8 @@ export default function CheckInPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { checkBadges } = useBadges();
+
 
   const [tab, setTab] = useState<"new" | "history">("new");
   const [step, setStep] = useState<Step>("detecting");
@@ -231,6 +235,9 @@ export default function CheckInPage() {
       const offerCount = offers?.length || 0;
 
       qc.invalidateQueries({ queryKey: ["check-ins"] });
+      // award any newly earned badges
+      checkBadges();
+
       toast({ title: "Memory saved", description: `${place.city}, ${place.country}` });
 
       if (offerCount > 0 && offers) {
