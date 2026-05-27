@@ -4,8 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { BadgeProvider } from "@/components/badges/BadgeProvider";
-
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppShell from "@/components/AppShell";
 import Auth from "@/pages/Auth";
@@ -16,10 +14,6 @@ import DiscoverPage from "@/pages/DiscoverPage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
-import PublicProfilePage from "@/pages/PublicProfilePage";
-import TripPlannerPage from "@/pages/TripPlannerPage";
-import TripDetailPage from "@/pages/TripDetailPage";
-import JoinTripPage from "@/pages/JoinTripPage";
 import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -38,23 +32,16 @@ import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
 import TravelHistoryPage from "@/pages/TravelHistoryPage";
 import AuthGate from "@/components/AuthGate";
-import PartnerProtectedRoute from "@/components/PartnerProtectedRoute";
-import PartnerPortal from "@/pages/partners/PartnerPortal";
-import PartnerDashboard from "@/pages/partners/PartnerDashboard";
-import PartnerAnalytics from "@/pages/partners/PartnerAnalytics";
-import PartnerOffers from "@/pages/partners/PartnerOffers";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <BadgeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<AuthGate />} />
             <Route path="/auth" element={<Auth />} />
@@ -63,11 +50,7 @@ const App = () => (
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
-            <Route path="/trips/new" element={<ProtectedRoute><TripPlannerPage /></ProtectedRoute>} />
-            <Route path="/trips/:id" element={<ProtectedRoute><TripDetailPage /></ProtectedRoute>} />
-            <Route path="/join/:invite_code" element={<JoinTripPage />} />
-            
-            
+            <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
             <Route path="/safety" element={<ProtectedRoute><SafePassPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
@@ -86,23 +69,15 @@ const App = () => (
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/profile/:username" element={<PublicProfilePage />} />
-              <Route path="/checkin" element={<CheckInPage />} />
             </Route>
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<TripsPage />} />
             </Route>
-            <Route path="/partners" element={<PartnerPortal />} />
-            <Route path="/partners/dashboard" element={<PartnerProtectedRoute><PartnerDashboard /></PartnerProtectedRoute>} />
-            <Route path="/partners/analytics" element={<PartnerProtectedRoute><PartnerAnalytics /></PartnerProtectedRoute>} />
-            <Route path="/partners/offers" element={<PartnerProtectedRoute><PartnerOffers /></PartnerProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        </TooltipProvider>
-      </BadgeProvider>
+      </TooltipProvider>
     </AuthProvider>
-
   </QueryClientProvider>
 );
 

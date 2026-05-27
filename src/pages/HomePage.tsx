@@ -1,528 +1,427 @@
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, MapPin, Trophy, ChevronRight, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppStore } from "@/stores/useAppStore";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WhatsNewModal from "@/components/WhatsNewModal";
+import { useNavigate } from "react-router-dom";
+import {
+  MapPin, Sparkles, Globe, Shield,
+  MessageCircle, Bell, Search, Heart, ChevronRight, Mic,
+} from "lucide-react";
+import roavrLogo from "@/assets/roavr-logo.png";
 
-// Canonical fallbacks (locked project data)
+// Canonical data — locked
 const CANON = {
   countries: 27,
   cities: 64,
-  trips: 1,
   memories: 342,
-  worldPct: 13,
+  followers: 1200,
+  following: 318,
+  latestPin: "Positano, Italy · 2h ago",
+  unread: 3,
+  hasNotifications: true,
+  safePassNeedsAttention: true,
 };
 
-const STALE = 60_000;
+const LATEST_THUMBS = [
+  "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=120&q=80", // Positano
+  "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=120&q=80", // Paris
+  "https://images.unsplash.com/photo-1493558103817-58b2924bce98?w=120&q=80", // Switzerland
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=120&q=80", // Beach
+];
 
-function Skeleton({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      className={`animate-pulse rounded-2xl ${className}`}
-      style={{ background: "#1A2236", ...style }}
-    />
-  );
-}
+// California coastal — Big Sur / PCH
+const CALIFORNIA_IMG =
+  "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=1200&q=80&auto=format&fit=crop";
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-}
-
-function greetingFor(h: number) {
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
-}
+const NEARBY = [
+  {
+    tag: "OFFER",
+    tagBg: "bg-[#3B82F6]",
+    title: "Coastal Kitchen",
+    sub: "20% off brunch · 0.4 mi",
+    img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+  },
+  {
+    tag: "TOUR",
+    tagBg: "bg-[#10B981]",
+    title: "Sunset Sailing",
+    sub: "From $48 · Tonight",
+    img: "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=600&q=80",
+  },
+  {
+    tag: "FOOD",
+    tagBg: "bg-[#F59E0B]",
+    title: "Sakura Ramen",
+    sub: "4.8 ★ · 8 min walk",
+    img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80",
+  },
+  {
+    tag: "FOOD",
+    tagBg: "bg-[#F59E0B]",
+    title: "Rooftop 360",
+    sub: "Live DJ tonight",
+    img: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&q=80",
+  },
+];
 
 export default function HomePage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const profile = useAppStore((s) => s.user.profile);
+  const navigate = useNavigate();
+  const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Andre";
+  const [aiInput, setAiInput] = useState("");
 
-  const firstName =
-    profile?.name?.split(" ")[0] ||
-    user?.user_metadata?.full_name?.split(" ")[0] ||
-    "Traveler";
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
-  const greeting = greetingFor(new Date().getHours());
-  const today = fmtDate(new Date());
-
-  // === Queries ===
-  const tripQuery = useQuery({
-    queryKey: ["home", "active-trip", user?.id],
-    staleTime: STALE,
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("trips")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("status", ["active", "planning"])
-        .order("start_date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const offersQuery = useQuery({
-    queryKey: ["home", "offers"],
-    staleTime: STALE,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partner_offers")
-        .select("*")
-        .eq("active", true)
-        .limit(6);
-      return data ?? [];
-    },
-  });
-
-  const challengesQuery = useQuery({
-    queryKey: ["home", "challenges", user?.id],
-    staleTime: STALE,
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("challenges")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("status", "active")
-        .limit(4);
-      return data ?? [];
-    },
-  });
-
-  const memoriesQuery = useQuery({
-    queryKey: ["home", "memories", user?.id],
-    staleTime: STALE,
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("check_ins")
-        .select("id, location_name, photo, created_at")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      return data ?? [];
-    },
-  });
-
-  const countries = profile?.total_countries_visited ?? CANON.countries;
-  const cities = profile?.total_cities_visited ?? CANON.cities;
-  const trips = profile?.total_trips ?? CANON.trips;
-
-  const daysLeft = useMemo(() => {
-    const t = tripQuery.data;
-    if (!t?.end_date) return null;
-    const diff = Math.ceil((+new Date(t.end_date) - Date.now()) / 86_400_000);
-    return diff > 0 ? diff : null;
-  }, [tripQuery.data]);
-
-  const initials = firstName.slice(0, 2).toUpperCase();
+  const handleAsk = () => {
+    if (!aiInput.trim()) return;
+    navigate(`/trips?ask=${encodeURIComponent(aiInput)}`);
+  };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* 1) GREETING HEADER */}
-      <section
-        className="px-6 pb-6 pt-5"
-        style={{
-          background: "#0D0F1C",
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1
-              className="font-display text-foreground"
-              style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.4px", lineHeight: 1.15 }}
+    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+      <WhatsNewModal />
+
+      {/* === HEADER (40px) === */}
+      <header className="px-5 pt-12 pb-2">
+        <div className="h-10 flex items-center justify-between">
+          <img src={roavrLogo} alt="Roavr" className="h-5 w-auto brightness-0 invert" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/notifications")}
+              aria-label="Notifications"
+              className="relative h-10 w-10 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ background: "#111827" }}
             >
-              {greeting}, {firstName}
-            </h1>
-            <p className="mt-1 text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {today}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/profile")}
-            aria-label="Open profile"
-            className="shrink-0"
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={profile?.profile_photo} alt={firstName} />
-              <AvatarFallback className="bg-primary/20 text-xs font-semibold text-primary">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-2">
-          {[
-            { icon: "🌍", label: `${countries} countries` },
-            { icon: "🏙", label: `${cities} cities` },
-            { icon: "✈️", label: `${trips} trips` },
-          ].map((s) => (
-            <span
-              key={s.label}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px]"
-              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)" }}
+              <Bell className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
+              {CANON.hasNotifications && (
+                <span
+                  className="absolute top-2 right-2 h-2 w-2 rounded-full"
+                  style={{ background: "#EF4444" }}
+                />
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/messages")}
+              aria-label="Messages"
+              className="relative h-10 w-10 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ background: "#111827" }}
             >
-              <span>{s.icon}</span>
-              {s.label}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* 2) ACTIVE TRIP CARD */}
-      <section className="px-5 pt-6">
-        {tripQuery.isLoading ? (
-          <Skeleton className="h-[180px] w-full" />
-        ) : tripQuery.data ? (
-          <button
-            onClick={() => navigate("/trips")}
-            className="relative block h-[180px] w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
-            style={{ borderRadius: 20, background: "linear-gradient(135deg, #111827 0%, #1A2236 100%)" }}
-          >
-            {/* Optional cover image */}
-            {(tripQuery.data as any).cover_photo && (
-              <img
-                src={(tripQuery.data as any).cover_photo}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            )}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to top, rgba(13,15,28,0.85) 0%, rgba(13,15,28,0.15) 60%, transparent 100%)",
-              }}
-            />
-            <div className="absolute inset-x-5 bottom-4">
-              <h2
-                className="font-display text-foreground"
-                style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.3px" }}
-              >
-                {tripQuery.data.title}
-              </h2>
-              <p className="mt-0.5 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
-                {tripQuery.data.destination}
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                {daysLeft !== null && (
-                  <span
-                    className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                    style={{ background: "#3B82F6", color: "#0D0F1C" }}
-                  >
-                    {daysLeft} days left
-                  </span>
-                )}
-                {["Itinerary", "Checklist", "Share"].map((chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full px-2.5 py-1 text-[11px]"
-                    style={{ background: "rgba(255,255,255,0.1)", color: "#FFFFFF" }}
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={() => navigate("/trips")}
-            className="flex w-full flex-col items-center justify-center gap-2 px-6 py-8 text-center active:scale-[0.99] transition-transform"
-            style={{
-              borderRadius: 20,
-              border: "1.5px dashed #3B82F6",
-              background: "#111827",
-            }}
-          >
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-full"
-              style={{ background: "rgba(59,130,246,0.15)" }}
-            >
-              <Plus className="h-6 w-6" style={{ color: "#3B82F6" }} strokeWidth={1.75} />
-            </div>
-            <p className="font-display text-foreground" style={{ fontSize: 17, fontWeight: 600 }}>
-              Plan your next trip
-            </p>
-            <p className="text-[13px]" style={{ color: "#94A3B8" }}>
-              Let AI build your itinerary in seconds.
-            </p>
-            <span
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold"
-              style={{ background: "#3B82F6", color: "#FFFFFF" }}
-            >
-              <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-              Start planning
-            </span>
-          </button>
-        )}
-      </section>
-
-      {/* 3) NEARBY PARTNER OFFERS */}
-      <section className="pt-7">
-        <div className="flex items-center justify-between px-5">
-          <p
-            className="text-[11px] uppercase"
-            style={{ color: "#7B7D96", letterSpacing: "0.08em", fontWeight: 600 }}
-          >
-            Deals near you
-          </p>
-          <span
-            className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
-            style={{ background: "rgba(59,130,246,0.15)", color: "#3B82F6" }}
-          >
-            Within 2 miles
-          </span>
-        </div>
-
-        {offersQuery.isLoading ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto px-5 no-scrollbar">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-[240px] shrink-0" style={{ width: "72%" }} />
-            ))}
-          </div>
-        ) : offersQuery.data && offersQuery.data.length > 0 ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar">
-            {offersQuery.data.map((o: any) => (
-              <article
-                key={o.id}
-                className="shrink-0 overflow-hidden"
-                style={{ width: "72%", borderRadius: 16, background: "#111827" }}
-              >
-                {o.image ? (
-                  <img src={o.image} alt={o.business_name} className="h-[120px] w-full object-cover" />
-                ) : (
-                  <div className="h-[120px] w-full" style={{ background: "#1A2236" }} />
-                )}
-                <div className="p-[14px]">
-                  <h3
-                    className="font-display text-foreground"
-                    style={{ fontSize: 15, fontWeight: 600 }}
-                  >
-                    {o.business_name}
-                  </h3>
-                  <span
-                    className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] capitalize"
-                    style={{ background: "#1A2236", color: "#94A3B8" }}
-                  >
-                    {o.category}
-                  </span>
-                  <p className="mt-2 text-[13px]" style={{ color: "#94A3B8" }}>
-                    {o.offer_description}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[11px]" style={{ color: "#7B7D96" }}>
-                      0.4 mi away
-                    </span>
-                    {o.discount && (
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                        style={{ background: "#3B82F6", color: "#FFFFFF" }}
-                      >
-                        {o.discount}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="mt-3 w-full rounded-full py-2 text-[13px] font-semibold active:scale-[0.98] transition-transform"
-                    style={{ background: "#3B82F6", color: "#FFFFFF" }}
-                  >
-                    Claim offer
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-3 px-5">
-            <div
-              className="flex flex-col items-center gap-2 px-5 py-6 text-center"
-              style={{ borderRadius: 16, background: "#111827" }}
-            >
-              <MapPin className="h-6 w-6" style={{ color: "#3B82F6" }} strokeWidth={1.75} />
-              <p className="font-display text-foreground" style={{ fontSize: 15, fontWeight: 600 }}>
-                Enable location to see nearby deals
-              </p>
-              <button
-                className="mt-1 rounded-full px-4 py-1.5 text-[12px] font-semibold"
-                style={{ background: "#3B82F6", color: "#FFFFFF" }}
-              >
-                Enable location
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 4) CHALLENGES */}
-      <section className="pt-7">
-        <p
-          className="px-5 text-[11px] uppercase"
-          style={{ color: "#7B7D96", letterSpacing: "0.08em", fontWeight: 600 }}
-        >
-          Challenges for you
-        </p>
-
-        {challengesQuery.isLoading ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto px-5 no-scrollbar">
-            {[0, 1].map((i) => (
-              <Skeleton key={i} className="h-[140px] shrink-0" style={{ width: "72%" }} />
-            ))}
-          </div>
-        ) : challengesQuery.data && challengesQuery.data.length > 0 ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar">
-            {challengesQuery.data.map((c: any) => (
-              <article
-                key={c.id}
-                className="shrink-0 p-4"
-                style={{ width: "72%", borderRadius: 16, background: "#111827" }}
-              >
-                <span className="text-2xl">🏆</span>
-                <h3
-                  className="mt-2 font-display text-foreground"
-                  style={{ fontSize: 15, fontWeight: 600 }}
+              <MessageCircle className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
+              {CANON.unread > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
+                  style={{ background: "#EF4444", boxShadow: "0 0 0 2px #080D1A" }}
                 >
-                  {c.challenge_text}
-                </h3>
-                {c.location && (
-                  <p className="mt-0.5 text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                    {c.location}
-                  </p>
-                )}
-                <div className="mt-3 flex items-center justify-between">
-                  <div
-                    className="flex h-7 w-7 items-center justify-center rounded-full"
-                    style={{ background: "rgba(245,158,11,0.18)" }}
-                  >
-                    <Trophy className="h-4 w-4" style={{ color: "#F59E0B" }} strokeWidth={1.75} />
-                  </div>
-                  <button
-                    className="rounded-full px-3 py-1 text-[11px] font-semibold"
-                    style={{ border: "1px solid rgba(255,255,255,0.4)", color: "#FFFFFF" }}
-                  >
-                    Accept challenge
-                  </button>
-                </div>
-              </article>
+                  {CANON.unread}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* === GREETING (Large Title) === */}
+      <div className="px-5 pt-4">
+        <h1
+          className="text-white"
+          style={{
+            fontSize: 32,
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+            lineHeight: 1.1,
+          }}
+        >
+          {greeting()}, {displayName} 👋
+        </h1>
+      </div>
+
+      {/* === ASK ROAVR (HERO) === */}
+      <section className="px-5 pt-6">
+        <div
+          className="rounded-[24px] p-5"
+          style={{
+            background: "#111827",
+            boxShadow: "0px 2px 8px rgba(0,0,0,0.4)",
+          }}
+        >
+          {/* Row 1 */}
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+            <h2
+              className="text-white"
+              style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.3px" }}
+            >
+              Ask Roavr
+            </h2>
+            <span
+              className="rounded-full px-2.5 py-0.5 text-white"
+              style={{ background: "#3B82F6", fontSize: 10, fontWeight: 700, letterSpacing: 0.4 }}
+            >
+              AI
+            </span>
+          </div>
+
+          {/* Row 2 */}
+          <p
+            className="mt-2"
+            style={{ color: "#94A3B8", fontSize: 14, fontWeight: 400, letterSpacing: "0.1px" }}
+          >
+            Plan, find, translate, compare, or solve any travel issue
+          </p>
+
+          {/* Row 3 — Input */}
+          <div
+            className="mt-4 flex items-center gap-2.5 rounded-2xl px-3"
+            style={{ background: "#1A2236", height: 48 }}
+          >
+            <Search className="h-[18px] w-[18px] shrink-0" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+            <input
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+              placeholder="Plan 5 days in Lisbon under $1500"
+              className="flex-1 bg-transparent outline-none text-white"
+              style={{ fontSize: 14 }}
+            />
+            <button
+              onClick={handleAsk}
+              aria-label="Voice"
+              className="h-8 w-8 flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <Mic className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          {/* Row 4 — Chips */}
+          <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+            {["Plan a trip", "Find food nearby", "Translate menu"].map((q) => (
+              <button
+                key={q}
+                onClick={() => setAiInput(q)}
+                className="shrink-0 text-white"
+                style={{
+                  background: "#1A2236",
+                  border: "1px solid #1E2A3F",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  fontSize: 12,
+                }}
+              >
+                {q}
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="mt-3 px-5">
-            <div
-              className="flex items-center gap-3 p-4"
-              style={{ borderRadius: 16, background: "#111827" }}
-            >
-              <MapPin className="h-5 w-5 shrink-0" style={{ color: "#3B82F6" }} strokeWidth={1.75} />
-              <p className="text-[13px]" style={{ color: "#94A3B8" }}>
-                Check in somewhere to unlock challenges
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
       </section>
 
-      {/* 5) GLOBE MINI */}
-      <section className="px-5 pt-7">
+      {/* === YOUR WORLD === */}
+      <section className="px-5 pt-4">
         <button
           onClick={() => navigate("/globe")}
-          className="flex w-full items-center gap-4 p-5 text-left active:scale-[0.99] transition-transform"
-          style={{ borderRadius: 20, background: "#111827" }}
+          className="w-full text-left rounded-[24px] p-5 active:scale-[0.99] transition-transform"
+          style={{ background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
         >
-          <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
             <h3
-              className="font-display text-foreground"
-              style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.2px" }}
+              className="flex-1 text-white"
+              style={{ fontSize: 16, fontWeight: 600 }}
             >
-              Your world
+              Your World
             </h3>
-            <p className="mt-1 text-[13px]" style={{ color: "#94A3B8" }}>
-              You have visited {CANON.worldPct}% of the world
-            </p>
-            <span
-              className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold"
-              style={{ color: "#3B82F6" }}
-            >
-              Explore your globe <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
-            </span>
+            <ChevronRight className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
           </div>
-          {/* Mini globe SVG teaser */}
-          <svg width="84" height="84" viewBox="0 0 84 84" className="shrink-0">
-            <defs>
-              <radialGradient id="g" cx="35%" cy="35%">
-                <stop offset="0%" stopColor="#1E3A8A" />
-                <stop offset="100%" stopColor="#0D0F1C" />
-              </radialGradient>
-            </defs>
-            <circle cx="42" cy="42" r="38" fill="url(#g)" stroke="#1E2A3F" strokeWidth="1" />
-            <ellipse cx="42" cy="42" rx="38" ry="14" fill="none" stroke="#1E2A3F" strokeWidth="0.6" />
-            <ellipse cx="42" cy="42" rx="14" ry="38" fill="none" stroke="#1E2A3F" strokeWidth="0.6" />
-            {[
-              [30, 32],
-              [52, 36],
-              [44, 54],
-              [60, 50],
-            ].map(([x, y], i) => (
-              <circle key={i} cx={x} cy={y} r="2.5" fill="#3B82F6">
-                <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite" begin={`${i * 0.3}s`} />
-              </circle>
-            ))}
-          </svg>
+
+          <p
+            className="mt-2"
+            style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}
+          >
+            {CANON.countries} countries · {CANON.cities} cities · {CANON.memories} memories
+          </p>
+
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex">
+              {LATEST_THUMBS.map((t, i) => (
+                <img
+                  key={i}
+                  src={t}
+                  alt=""
+                  className="h-6 w-6 rounded-full object-cover"
+                  style={{
+                    border: "1.5px solid #FFFFFF",
+                    marginLeft: i === 0 ? 0 : -8,
+                  }}
+                />
+              ))}
+            </div>
+            <p
+              className="flex-1 truncate"
+              style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}
+            >
+              Latest Pin: {CANON.latestPin}
+            </p>
+          </div>
         </button>
       </section>
 
-      {/* 6) RECENT MEMORIES */}
-      <section className="pt-7">
-        <p
-          className="px-5 text-[11px] uppercase"
-          style={{ color: "#7B7D96", letterSpacing: "0.08em", fontWeight: 600 }}
+      {/* === CURRENT TRIP — California (Past) === */}
+      <section className="px-5 pt-4">
+        <button
+          onClick={() => navigate("/trips")}
+          className="relative w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
+          style={{ height: 160, borderRadius: 24 }}
         >
-          Recent memories
-        </p>
+          <img
+            src={CALIFORNIA_IMG}
+            alt="Trip to California"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* Gradient overlay starting at 40% from bottom */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to top, #080D1A 0%, rgba(8,13,26,0.85) 25%, rgba(8,13,26,0) 60%)",
+            }}
+          />
 
-        {memoriesQuery.isLoading ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto px-5 no-scrollbar">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-[80px] w-[80px] shrink-0" style={{ borderRadius: 12 }} />
-            ))}
-          </div>
-        ) : memoriesQuery.data && memoriesQuery.data.length > 0 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar">
-            {memoriesQuery.data.map((m: any) => (
-              <button
-                key={m.id}
-                className="h-[80px] w-[80px] shrink-0 overflow-hidden"
-                style={{ borderRadius: 12, background: "#1A2236" }}
-              >
-                {m.photo ? (
-                  <img src={m.photo} alt={m.location_name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-2xl">📍</div>
-                )}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-3 px-5">
-            <div
-              className="flex items-center justify-center px-5 py-6 text-center"
-              style={{ borderRadius: 16, background: "#111827" }}
+          {/* Top-left chip */}
+          <div className="absolute top-3 left-3">
+            <span
+              className="inline-flex items-center rounded-full text-white"
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                padding: "4px 10px",
+                fontSize: 12,
+                letterSpacing: "0.2px",
+              }}
             >
-              <p className="text-[13px]" style={{ color: "#94A3B8" }}>
-                Your check-in photos will appear here
+              ✈️ RECENT TRIP
+            </span>
+          </div>
+
+          {/* Bottom row */}
+          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+            <div className="min-w-0">
+              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>
+                Trip to California
+              </p>
+              <p className="mt-0.5" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+                California · May 7
               </p>
             </div>
+            <span
+              className="shrink-0"
+              style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}
+            >
+              Open Trip →
+            </span>
           </div>
-        )}
+        </button>
+      </section>
+
+      {/* === SAFEPASS ALERT (conditional) === */}
+      {CANON.safePassNeedsAttention && (
+        <section className="px-5 pt-4">
+          <button
+            onClick={() => navigate("/safety")}
+            className="w-full flex items-center gap-3 active:scale-[0.99] transition-transform"
+            style={{
+              background: "#FFFFFF",
+              borderLeft: "3px solid #F59E0B",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Shield className="h-5 w-5 shrink-0" style={{ color: "#F59E0B" }} strokeWidth={1.5} />
+            <div className="flex-1 min-w-0 text-left">
+              <p style={{ color: "#080D1A", fontSize: 16, fontWeight: 600 }}>SafePass</p>
+              <p style={{ color: "#94A3B8", fontSize: 14, letterSpacing: "0.1px" }}>
+                3 required items need attention
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+          </button>
+        </section>
+      )}
+
+      {/* === NEARBY TONIGHT === */}
+      <section className="pt-6">
+        <div className="px-5 flex items-center justify-between">
+          <h2
+            className="text-white"
+            style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.3px" }}
+          >
+            🔥 Nearby Tonight
+          </h2>
+          <button
+            onClick={() => navigate("/discover")}
+            style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}
+          >
+            See all ›
+          </button>
+        </div>
+
+        <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar pl-5 pr-5">
+          {NEARBY.map((n) => (
+            <button
+              key={n.title}
+              onClick={() => navigate("/discover")}
+              className="shrink-0 relative overflow-hidden text-left active:scale-[0.98] transition-transform"
+              style={{ width: 160, height: 180, borderRadius: 16 }}
+            >
+              <img
+                src={n.img}
+                alt={n.title}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)",
+                }}
+              />
+
+              {/* Top-left tag */}
+              <span
+                className={`absolute top-2 left-2 rounded-full text-white ${n.tagBg}`}
+                style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, letterSpacing: "0.2px" }}
+              >
+                {n.tag}
+              </span>
+
+              {/* Top-right heart */}
+              <button
+                aria-label="Save"
+                className="absolute top-2 right-2 h-7 w-7 rounded-full flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Heart className="h-5 w-5 text-white" strokeWidth={1.5} />
+              </button>
+
+              {/* Bottom-left text */}
+              <div className="absolute bottom-2 left-2.5 right-2.5">
+                <p
+                  className="text-white truncate"
+                  style={{ fontSize: 16, fontWeight: 600 }}
+                >
+                  {n.title}
+                </p>
+                <p
+                  className="truncate mt-0.5"
+                  style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}
+                >
+                  {n.sub}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
       </section>
     </div>
   );

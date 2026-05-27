@@ -1,64 +1,18 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   ArrowRight, Check, Crown, Zap, Sparkles, Globe, MapPin,
   Camera, Shield, MessageCircle, Users, Map, Compass, Star,
   ChevronRight, Play, Heart, Lock, Eye, Navigation, Trophy,
-  Loader2, Copy,
 } from "lucide-react";
 import roavrLogo from "@/assets/roavr-logo.png";
 import miloMascot from "@/assets/roavr-pin.png";
 import { PLANS } from "@/services/subscriptions";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-function genReferralCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-
-function useWaitlistForm(source: "user" | "partner") {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [code, setCode] = useState<string | null>(null);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      toast.error("Enter a valid email address");
-      return;
-    }
-    setLoading(true);
-    const referral_code = genReferralCode();
-    const { error } = await supabase
-      .from("waitlist")
-      .insert({ email: email.toLowerCase().trim(), source, referral_code });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message.toLowerCase().includes("duplicate") ? "You're already on the list." : "Something went wrong. Try again.");
-      return;
-    }
-    setCode(referral_code);
-    toast.success(source === "partner" ? "Application received." : "You're on the list!");
-  };
-  return { email, setEmail, loading, code, submit };
-}
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const userForm = useWaitlistForm("user");
-  const partnerForm = useWaitlistForm("partner");
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-
-  const copyCode = (c: string) => {
-    navigator.clipboard.writeText(c);
-    toast.success("Referral code copied");
-  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -111,43 +65,8 @@ export default function LandingPage() {
               See How Roavr Works
             </Button>
           </div>
-
-          {/* ── Waitlist Form ───────────────────────────── */}
-          <div className="max-w-md mx-auto pt-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            {userForm.code ? (
-              <div className="rounded-2xl border border-accent/30 bg-accent/[0.04] p-5 text-left space-y-3">
-                <p className="text-sm text-foreground font-medium">You're on the list 🎉</p>
-                <div className="flex items-center justify-between gap-3 rounded-xl bg-card border border-border/50 px-4 py-3">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your referral code</p>
-                    <p className="font-heading text-lg font-bold text-foreground tracking-wide">{userForm.code}</p>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => copyCode(userForm.code!)} className="gap-1.5">
-                    <Copy className="h-3.5 w-3.5" /> Copy
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">Refer 3 friends to skip the waitlist.</p>
-              </div>
-            ) : (
-              <form onSubmit={userForm.submit} className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="email"
-                  value={userForm.email}
-                  onChange={(e) => userForm.setEmail(e.target.value)}
-                  placeholder="you@email.com"
-                  className="h-12 rounded-xl bg-card border-border/60 font-body"
-                  disabled={userForm.loading}
-                />
-                <Button type="submit" disabled={userForm.loading} className="h-12 rounded-xl gradient-accent border-0 font-semibold px-6">
-                  {userForm.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join Waitlist"}
-                </Button>
-              </form>
-            )}
-            <p className="text-[11px] text-muted-foreground mt-2 font-body">Be first to know when Roavr launches.</p>
-          </div>
         </div>
       </section>
-
 
       {/* ── App Preview Cards ──────────────────────────── */}
       <section className="max-w-6xl mx-auto px-5 pb-16 md:pb-24">
@@ -524,56 +443,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Partner Section ─────────────────────────────── */}
-      <section id="partners" className="border-t border-border/30 bg-gradient-to-b from-amber-500/[0.03] to-transparent py-20 md:py-28">
-        <div className="max-w-3xl mx-auto px-5 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 text-amber-600 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider">
-            <Star className="h-3.5 w-3.5" /> For Local Businesses
-          </div>
-          <h2 className="font-heading text-3xl md:text-5xl font-bold text-foreground tracking-tight">
-            Reach travelers <span className="italic text-accent">where they explore</span>
-          </h2>
-          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed font-body">
-            Restaurants, hotels, tours, and creators — get discovered by Roavr travelers actively planning trips in your area. Apply for the partner program below.
-          </p>
-
-          <div className="max-w-md mx-auto pt-4">
-            {partnerForm.code ? (
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 text-left space-y-3">
-                <p className="text-sm text-foreground font-medium font-body">Application received ✨</p>
-                <p className="text-sm text-muted-foreground font-body">Our partnerships team will reach out within 5 business days.</p>
-                <div className="flex items-center justify-between gap-3 rounded-xl bg-card border border-border/50 px-4 py-3">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your reference code</p>
-                    <p className="font-heading text-lg font-bold text-foreground tracking-wide">{partnerForm.code}</p>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => copyCode(partnerForm.code!)} className="gap-1.5">
-                    <Copy className="h-3.5 w-3.5" /> Copy
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={partnerForm.submit} className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="email"
-                  value={partnerForm.email}
-                  onChange={(e) => partnerForm.setEmail(e.target.value)}
-                  placeholder="business@email.com"
-                  className="h-12 rounded-xl bg-card border-border/60 font-body"
-                  disabled={partnerForm.loading}
-                />
-                <Button type="submit" disabled={partnerForm.loading} className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white border-0 font-semibold px-6">
-                  {partnerForm.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-                </Button>
-              </form>
-            )}
-            <p className="text-[11px] text-muted-foreground mt-2 font-body">Already a partner? <button onClick={() => navigate("/partners")} className="underline hover:text-foreground">Sign in</button></p>
-          </div>
-        </div>
-      </section>
-
       {/* ── Final CTA ──────────────────────────────────── */}
-
       <section className="border-t border-border/30">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.04] to-emerald-500/[0.06]" />

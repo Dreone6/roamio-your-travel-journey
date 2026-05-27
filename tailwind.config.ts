@@ -17,14 +17,6 @@ export default {
         heading: ['Sora', 'DM Sans', 'sans-serif'],
         body: ['DM Sans', 'sans-serif'],
         display: ['Sora', 'DM Sans', 'sans-serif'],
-        // Reserved for future opt-in light theme — do not apply by default.
-        'serif-display': ['Fraunces', 'Georgia', 'serif'],
-      },
-      // Future light-theme palette (not wired). Apply via a `.theme-light` wrapper
-      // when we're ready to ship a cream/serif mode. Dark Sora brand stays default.
-      backgroundImage: {
-        // placeholder hook so the tokens below survive purge
-        'light-cream': 'linear-gradient(#FAF6F0,#FAF6F0)',
       },
       colors: {
         border: "hsl(var(--border))",
