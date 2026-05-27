@@ -76,9 +76,14 @@ interface Props {
   onPinClick?: (pin: FlagGlobePin) => void;
   /** ISO-2 country codes that represent a milestone (5th, 10th, 25th country) — get amber halo */
   milestoneCodes?: string[];
+  /** Filter pins/countries to those visited on or before this year */
+  yearFilter?: number;
+  /** Tab mode — 'mine' shows your visited, 'explore' colors by global density */
+  mode?: "mine" | "explore";
 }
 
-export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Props) {
+export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes, yearFilter, mode = "mine" }: Props) {
+
   const milestoneSet = useMemo(
     () => new Set((milestoneCodes ?? ["it", "jp", "za"]).map(c => c.toLowerCase())),
     [milestoneCodes]
