@@ -148,37 +148,61 @@ export type Database = {
       }
       check_ins: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           id: string
+          is_milestone: boolean
           latitude: number | null
           location_name: string
           longitude: number | null
+          milestone_type: string | null
+          mood_tags: string[]
           notes: string | null
           photo: string | null
+          photos: string[]
           timestamp: string
           user_id: string
+          verification_metadata: Json
+          verified: boolean
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           location_name: string
           longitude?: number | null
+          milestone_type?: string | null
+          mood_tags?: string[]
           notes?: string | null
           photo?: string | null
+          photos?: string[]
           timestamp?: string
           user_id: string
+          verification_metadata?: Json
+          verified?: boolean
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           location_name?: string
           longitude?: number | null
+          milestone_type?: string | null
+          mood_tags?: string[]
           notes?: string | null
           photo?: string | null
+          photos?: string[]
           timestamp?: string
           user_id?: string
+          verification_metadata?: Json
+          verified?: boolean
         }
         Relationships: []
       }
@@ -785,8 +809,10 @@ export type Database = {
           created_at: string
           date_visited: string | null
           id: string
+          is_milestone: boolean
           latitude: number | null
           longitude: number | null
+          milestone_type: string | null
           photos_count: number
           trip_id: string | null
           user_id: string
@@ -797,8 +823,10 @@ export type Database = {
           created_at?: string
           date_visited?: string | null
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
+          milestone_type?: string | null
           photos_count?: number
           trip_id?: string | null
           user_id: string
@@ -809,8 +837,10 @@ export type Database = {
           created_at?: string
           date_visited?: string | null
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
+          milestone_type?: string | null
           photos_count?: number
           trip_id?: string | null
           user_id?: string
@@ -838,6 +868,7 @@ export type Database = {
           onboarding_completed: boolean
           profile_photo: string | null
           referral_code: string | null
+          total_checkins: number
           total_cities_visited: number
           total_countries_visited: number
           total_trips: number
@@ -856,6 +887,7 @@ export type Database = {
           onboarding_completed?: boolean
           profile_photo?: string | null
           referral_code?: string | null
+          total_checkins?: number
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
@@ -874,6 +906,7 @@ export type Database = {
           onboarding_completed?: boolean
           profile_photo?: string | null
           referral_code?: string | null
+          total_checkins?: number
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
