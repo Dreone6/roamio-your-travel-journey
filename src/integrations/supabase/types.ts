@@ -902,6 +902,7 @@ export type Database = {
           home_city: string | null
           id: string
           interests: string[] | null
+          is_private: boolean
           member_since: string
           name: string | null
           onboarding_completed: boolean
@@ -913,6 +914,7 @@ export type Database = {
           total_trips: number
           travel_style: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           bio?: string | null
@@ -921,6 +923,7 @@ export type Database = {
           home_city?: string | null
           id: string
           interests?: string[] | null
+          is_private?: boolean
           member_since?: string
           name?: string | null
           onboarding_completed?: boolean
@@ -932,6 +935,7 @@ export type Database = {
           total_trips?: number
           travel_style?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           bio?: string | null
@@ -940,6 +944,7 @@ export type Database = {
           home_city?: string | null
           id?: string
           interests?: string[] | null
+          is_private?: boolean
           member_since?: string
           name?: string | null
           onboarding_completed?: boolean
@@ -951,6 +956,7 @@ export type Database = {
           total_trips?: number
           travel_style?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -1386,6 +1392,27 @@ export type Database = {
           relationship?: string | null
           share_live_location?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }
