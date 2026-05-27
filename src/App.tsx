@@ -14,6 +14,8 @@ import DiscoverPage from "@/pages/DiscoverPage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
+import TripPlannerPage from "@/pages/TripPlannerPage";
+import TripDetailPage from "@/pages/TripDetailPage";
 import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
