@@ -367,17 +367,18 @@ function ChecklistView({
   const [adding, setAdding] = useState<string | null>(null);
   const [text, setText] = useState("");
 
-  const cats = ["clothing", "documents", "electronics", "toiletries", "other"];
+  const cats = ["packing", "documents", "pre_trip_tasks", "day_of", "booking", "other"] as const;
+  type Cat = (typeof cats)[number];
   const grouped = cats.map((c) => ({
     cat: c,
-    items: items.filter((i) => i.category === c || (c === "other" && !cats.includes(i.category))),
+    items: items.filter((i) => (i.category as Cat) === c),
   }));
 
   const total = items.length;
   const done = items.filter((i) => i.completed).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
-  const addItem = async (category: string) => {
+  const addItem = async (category: Cat) => {
     if (!text.trim()) return;
     await supabase.from("checklists").insert({
       user_id: userId,
