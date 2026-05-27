@@ -231,6 +231,9 @@ export default function CheckInPage() {
       const offerCount = offers?.length || 0;
 
       qc.invalidateQueries({ queryKey: ["check-ins"] });
+      // award any newly earned badges
+      checkBadges();
+
       toast({ title: "Memory saved", description: `${place.city}, ${place.country}` });
 
       if (offerCount > 0 && offers) {
