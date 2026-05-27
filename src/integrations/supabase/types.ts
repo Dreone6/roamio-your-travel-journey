@@ -297,6 +297,45 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_alerts: {
+        Row: {
+          active: boolean
+          alert_types: string[] | null
+          created_at: string
+          departure_date: string | null
+          destination: string | null
+          flight_number: string
+          id: string
+          last_status: Json | null
+          origin: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          alert_types?: string[] | null
+          created_at?: string
+          departure_date?: string | null
+          destination?: string | null
+          flight_number: string
+          id?: string
+          last_status?: Json | null
+          origin?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          alert_types?: string[] | null
+          created_at?: string
+          departure_date?: string | null
+          destination?: string | null
+          flight_number?: string
+          id?: string
+          last_status?: Json | null
+          origin?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -680,6 +719,12 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          monthly_claim_target: number
+          monthly_revenue_target: number
+          monthly_view_target: number
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
         }
         Insert: {
           active?: boolean
@@ -693,6 +738,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monthly_claim_target?: number
+          monthly_revenue_target?: number
+          monthly_view_target?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
         }
         Update: {
           active?: boolean
@@ -706,6 +757,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monthly_claim_target?: number
+          monthly_revenue_target?: number
+          monthly_view_target?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
         }
         Relationships: []
       }
@@ -1087,6 +1144,38 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_members: {
+        Row: {
+          id: string
+          joined_at: string
+          role: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          role?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          role?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_shares: {
         Row: {
           created_at: string
@@ -1252,6 +1341,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          referral_code: string | null
+          referred_by: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          source?: string
         }
         Relationships: []
       }
