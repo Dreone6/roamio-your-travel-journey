@@ -111,8 +111,43 @@ export default function LandingPage() {
               See How Roavr Works
             </Button>
           </div>
+
+          {/* ── Waitlist Form ───────────────────────────── */}
+          <div className="max-w-md mx-auto pt-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            {userForm.code ? (
+              <div className="rounded-2xl border border-accent/30 bg-accent/[0.04] p-5 text-left space-y-3">
+                <p className="text-sm text-foreground font-medium">You're on the list 🎉</p>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-card border border-border/50 px-4 py-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your referral code</p>
+                    <p className="font-heading text-lg font-bold text-foreground tracking-wide">{userForm.code}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => copyCode(userForm.code!)} className="gap-1.5">
+                    <Copy className="h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Refer 3 friends to skip the waitlist.</p>
+              </div>
+            ) : (
+              <form onSubmit={userForm.submit} className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => userForm.setEmail(e.target.value)}
+                  placeholder="you@email.com"
+                  className="h-12 rounded-xl bg-card border-border/60 font-body"
+                  disabled={userForm.loading}
+                />
+                <Button type="submit" disabled={userForm.loading} className="h-12 rounded-xl gradient-accent border-0 font-semibold px-6">
+                  {userForm.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join Waitlist"}
+                </Button>
+              </form>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-2 font-body">Be first to know when Roavr launches.</p>
+          </div>
         </div>
       </section>
+
 
       {/* ── App Preview Cards ──────────────────────────── */}
       <section className="max-w-6xl mx-auto px-5 pb-16 md:pb-24">
