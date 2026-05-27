@@ -74,6 +74,7 @@ const App = () => (
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/checkin" element={<CheckInPage />} />
             </Route>
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<TripsPage />} />
