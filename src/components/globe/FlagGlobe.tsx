@@ -260,13 +260,27 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
           el.style.position = "relative";
           el.style.width = "32px";
           el.style.height = "32px";
+          const sparks = data.milestone
+            ? Array.from({ length: 6 })
+                .map((_, i) => {
+                  const angle = (i / 6) * Math.PI * 2;
+                  const dist = 22;
+                  const tx = `${Math.cos(angle) * dist}px`;
+                  const ty = `${Math.sin(angle) * dist}px`;
+                  return `<span class="flagpin-spark" style="--tx:${tx};--ty:${ty};animation-delay:${i * 0.18}s"></span>`;
+                })
+                .join("")
+            : "";
           el.innerHTML = `
+            ${data.milestone ? `<span class="flagpin-milestone"></span>` : ""}
+            ${sparks}
             <div class="${data.recent ? "flagpin-recent" : ""}" style="
               width:28px;height:28px;border-radius:9999px;
               background-image:url(https://flagcdn.com/w80/${data.code}.png);
               background-size:cover;background-position:center;
-              border:2px solid #FFFFFF;
+              border:2px solid ${data.milestone ? "#F4A261" : "#FFFFFF"};
               box-shadow:0 2px 8px rgba(0,0,0,0.55);
+              position:relative;
             "></div>
             ${
               data.count > 1
@@ -280,6 +294,7 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
                 : ""
             }
           `;
+
           el.onclick = (e) => {
             e.stopPropagation();
             // find best matching pin in country
