@@ -390,6 +390,33 @@ export type Database = {
         }
         Relationships: []
       }
+      itinerary_item_votes: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          trip_id: string
+          user_id: string
+          vote: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          trip_id: string
+          user_id: string
+          vote: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          trip_id?: string
+          user_id?: string
+          vote?: string
+        }
+        Relationships: []
+      }
       itinerary_items: {
         Row: {
           activity: string
@@ -1274,6 +1301,8 @@ export type Database = {
           end_date: string | null
           id: string
           interests: string[] | null
+          invite_code: string | null
+          is_collaborative: boolean
           pace: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
@@ -1293,6 +1322,8 @@ export type Database = {
           end_date?: string | null
           id?: string
           interests?: string[] | null
+          invite_code?: string | null
+          is_collaborative?: boolean
           pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
@@ -1312,6 +1343,8 @@ export type Database = {
           end_date?: string | null
           id?: string
           interests?: string[] | null
+          invite_code?: string | null
+          is_collaborative?: boolean
           pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
@@ -1439,6 +1472,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_trip_by_invite: {
+        Args: { _code: string }
+        Returns: {
+          destination: string
+          id: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
