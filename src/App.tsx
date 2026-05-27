@@ -55,7 +55,7 @@ const App = () => (
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
-            <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
+            
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
             <Route path="/safety" element={<ProtectedRoute><SafePassPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
@@ -74,6 +74,7 @@ const App = () => (
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/checkin" element={<CheckInPage />} />
             </Route>
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<TripsPage />} />
