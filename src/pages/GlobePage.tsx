@@ -455,7 +455,10 @@ export default function GlobePage() {
         onDelete={() => toast.success("Pin deleted")}
         onViewPhoto={() => { if (contextPin) { setSelectedPin(contextPin); setPinSheetOpen(true); } }}
       />
+
+      <TrophyShelfModal open={trophyOpen} onOpenChange={setTrophyOpen} />
     </div>
+
   );
 }
 
