@@ -524,7 +524,56 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Partner Section ─────────────────────────────── */}
+      <section id="partners" className="border-t border-border/30 bg-gradient-to-b from-amber-500/[0.03] to-transparent py-20 md:py-28">
+        <div className="max-w-3xl mx-auto px-5 text-center space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 text-amber-600 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider">
+            <Star className="h-3.5 w-3.5" /> For Local Businesses
+          </div>
+          <h2 className="font-heading text-3xl md:text-5xl font-bold text-foreground tracking-tight">
+            Reach travelers <span className="italic text-accent">where they explore</span>
+          </h2>
+          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed font-body">
+            Restaurants, hotels, tours, and creators — get discovered by Roavr travelers actively planning trips in your area. Apply for the partner program below.
+          </p>
+
+          <div className="max-w-md mx-auto pt-4">
+            {partnerForm.code ? (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 text-left space-y-3">
+                <p className="text-sm text-foreground font-medium font-body">Application received ✨</p>
+                <p className="text-sm text-muted-foreground font-body">Our partnerships team will reach out within 5 business days.</p>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-card border border-border/50 px-4 py-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your reference code</p>
+                    <p className="font-heading text-lg font-bold text-foreground tracking-wide">{partnerForm.code}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => copyCode(partnerForm.code!)} className="gap-1.5">
+                    <Copy className="h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={partnerForm.submit} className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  value={partnerForm.email}
+                  onChange={(e) => partnerForm.setEmail(e.target.value)}
+                  placeholder="business@email.com"
+                  className="h-12 rounded-xl bg-card border-border/60 font-body"
+                  disabled={partnerForm.loading}
+                />
+                <Button type="submit" disabled={partnerForm.loading} className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white border-0 font-semibold px-6">
+                  {partnerForm.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </Button>
+              </form>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-2 font-body">Already a partner? <button onClick={() => navigate("/partners")} className="underline hover:text-foreground">Sign in</button></p>
+          </div>
+        </div>
+      </section>
+
       {/* ── Final CTA ──────────────────────────────────── */}
+
       <section className="border-t border-border/30">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.04] to-emerald-500/[0.06]" />
