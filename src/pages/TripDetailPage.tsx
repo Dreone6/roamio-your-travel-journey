@@ -342,7 +342,7 @@ export default function TripDetailPage() {
 
         {tab === "packing" && (
           <PackingView
-            items={(checklistQ.data ?? []).filter((c: any) => c.category === "other" || !c.category)}
+            items={(checklistQ.data ?? []).filter((c: any) => c.category === "packing")}
             onToggle={(itemId, completed) => toggleChecklist.mutate({ itemId, completed })}
           />
         )}
