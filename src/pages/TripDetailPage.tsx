@@ -364,6 +364,14 @@ export default function TripDetailPage() {
                               {isOpen && (it.tips || it.notes) && (
                                 <p className="mt-2 text-[12px] text-white/60">{it.tips || it.notes}</p>
                               )}
+                              {user && members.length > 0 && (
+                                <ItemVotes
+                                  itemId={it.id}
+                                  tripId={id!}
+                                  userId={user.id}
+                                  memberCount={members.length}
+                                />
+                              )}
                             </div>
                           </div>
                         </article>
