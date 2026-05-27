@@ -1,6 +1,8 @@
-import { Menu, ChevronLeft, Bell } from "lucide-react";
+import { useState } from "react";
+import { Menu, ChevronLeft, Bell, Plane } from "lucide-react";
 import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import { useAppStore } from "@/stores/useAppStore";
+import FlightAlertsModal from "@/components/flight/FlightAlertsModal";
 
 const TOP_LEVEL = ["/home", "/trips", "/globe", "/checkin", "/profile", "/discover"];
 
