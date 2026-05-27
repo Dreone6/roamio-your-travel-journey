@@ -226,18 +226,18 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
         backgroundColor="rgba(0,0,0,0)"
         showGlobe={true}
         showAtmosphere={true}
-        atmosphereColor="#3B82F6"
-        atmosphereAltitude={0.18}
+        atmosphereColor="#47B6D8"
+        atmosphereAltitude={0.2}
         globeMaterial={
           new THREE.MeshPhongMaterial({
-            color: new THREE.Color("#2A4A7F"),
-            emissive: new THREE.Color("#0A1628"),
-            emissiveIntensity: 0.25,
-            shininess: 5,
+            color: new THREE.Color("#ffffff"),
+            emissive: new THREE.Color("#1E88C8"),
+            emissiveIntensity: 0.06,
+            shininess: 10,
           })
         }
-        globeImageUrl="https://unpkg.com/three-globe@2.31.0/example/img/earth-dark.jpg"
-        bumpImageUrl={undefined}
+        globeImageUrl="https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg"
+        bumpImageUrl="https://unpkg.com/three-globe@2.31.0/example/img/earth-topology.png"
         // arcs
         arcsData={arcData}
         arcColor={() => ["rgba(59,130,246,0)", "rgba(59,130,246,0.6)", "rgba(59,130,246,0)"]}
