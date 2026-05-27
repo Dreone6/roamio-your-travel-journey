@@ -16,6 +16,7 @@ import DiscoverPage from "@/pages/DiscoverPage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
+import PublicProfilePage from "@/pages/PublicProfilePage";
 import TripPlannerPage from "@/pages/TripPlannerPage";
 import TripDetailPage from "@/pages/TripDetailPage";
 import JoinTripPage from "@/pages/JoinTripPage";
@@ -85,6 +86,7 @@ const App = () => (
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:username" element={<PublicProfilePage />} />
               <Route path="/checkin" element={<CheckInPage />} />
             </Route>
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
