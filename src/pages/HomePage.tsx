@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, MapPin, Trophy, Globe2, ChevronRight, Sparkles } from "lucide-react";
+import { Plus, MapPin, Trophy, ChevronRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStore } from "@/stores/useAppStore";
