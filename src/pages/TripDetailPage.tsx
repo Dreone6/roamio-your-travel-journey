@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import TripMap from "@/components/trips/TripMap";
+import FlightStatusCard from "@/components/flight/FlightStatusCard";
 
 const ACCENT = "#3B82F6";
 const SURFACE = "#111827";
@@ -214,6 +215,10 @@ export default function TripDetailPage() {
             )}
             {days.map(([dayNum, dayItems]) => {
               const d = dayDate(dayNum);
+              const flightItem = dayItems.find((it: any) => it.type === "transport" && /\b[A-Z]{2}\s?\d{1,4}\b/.test(it.activity || ""));
+              const flightMatch = flightItem?.activity?.match(/\b([A-Z]{2})\s?(\d{1,4})\b/);
+              const flightNum = flightMatch ? `${flightMatch[1]}${flightMatch[2]}` : null;
+              const flightDate = d ? format(d, "yyyy-MM-dd") : null;
               return (
                 <section key={dayNum}>
                   <div className="mb-3">
@@ -222,7 +227,13 @@ export default function TripDetailPage() {
                       {d && ` — ${format(d, "EEEE MMM d")}`}
                     </h2>
                   </div>
+                  {flightNum && flightDate && (
+                    <div className="mb-3">
+                      <FlightStatusCard flightNumber={flightNum} date={flightDate} />
+                    </div>
+                  )}
                   <div className="space-y-2">
+
                     {dayItems.map((it) => {
                       const color = TYPE_COLORS[it.type] ?? ACCENT;
                       const isOpen = expandedTips.has(it.id);
