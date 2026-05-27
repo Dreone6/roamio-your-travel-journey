@@ -1,18 +1,20 @@
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
-import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera, Image as ImageIcon } from "lucide-react";
+import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Camera, Image as ImageIcon, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
 import PinDetailSheet from "@/components/globe/PinDetailSheet";
 import PinContextMenu from "@/components/globe/PinContextMenu";
+import TrophyShelfModal from "@/components/globe/TrophyShelfModal";
 import {
   MOCK_MAP_PINS, MOCK_CHECKINS, MOCK_MEMORIES, MOCK_USERS, MOCK_TRIPS,
 } from "@/data";
 import type { MapPin, Visibility } from "@/data/types";
 
 const InteractiveGlobe = lazy(() => import("@/components/globe/FlagGlobe"));
+
 
 type Tab = "mine" | "followers" | "explore";
 type ViewMode = "globe" | "map";
@@ -70,6 +72,8 @@ export default function GlobePage() {
   const [contextPin, setContextPin] = useState<MapPin | null>(null);
   const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
+  const [trophyOpen, setTrophyOpen] = useState(false);
+
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
 
@@ -184,6 +188,21 @@ export default function GlobePage() {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
+            onClick={() => setTrophyOpen(true)}
+            className="h-10 w-10 rounded-full flex items-center justify-center relative"
+            style={{ background: "#111827", border: "1px solid rgba(244,162,97,0.35)" }}
+            aria-label="Trophy shelf"
+            title="Trophy shelf"
+          >
+            <Trophy className="h-[18px] w-[18px]" style={{ color: "#F4A261", strokeWidth: 1.6 }} />
+            <span
+              className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full text-[9px] font-bold flex items-center justify-center"
+              style={{ background: "#F4A261", color: "#080D1A", border: "1.5px solid #080D1A" }}
+            >
+              8
+            </span>
+          </button>
+          <button
             onClick={() => navigate("/travel-history")}
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
@@ -192,6 +211,7 @@ export default function GlobePage() {
           >
             <ImageIcon className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
+
           <button
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
@@ -280,8 +300,10 @@ export default function GlobePage() {
                   key={recenterKey}
                   pins={globePins}
                   arcs={globeArcs}
+                  milestoneCodes={["it", "jp", "za"]}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
+
               </Suspense>
             ) : (
               <FlatMapView
@@ -433,7 +455,10 @@ export default function GlobePage() {
         onDelete={() => toast.success("Pin deleted")}
         onViewPhoto={() => { if (contextPin) { setSelectedPin(contextPin); setPinSheetOpen(true); } }}
       />
+
+      <TrophyShelfModal open={trophyOpen} onOpenChange={setTrophyOpen} />
     </div>
+
   );
 }
 

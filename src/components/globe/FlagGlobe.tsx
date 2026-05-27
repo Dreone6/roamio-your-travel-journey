@@ -68,15 +68,22 @@ function nearestCountry(lat: number, lng: number): CountryDef {
   return best;
 }
 
-type FlagDatum = CountryDef & { count: number; recent: boolean };
+type FlagDatum = CountryDef & { count: number; recent: boolean; milestone: boolean };
 
 interface Props {
   pins: FlagGlobePin[];
   arcs?: FlagGlobeArc[];
   onPinClick?: (pin: FlagGlobePin) => void;
+  /** ISO-2 country codes that represent a milestone (5th, 10th, 25th country) — get amber halo */
+  milestoneCodes?: string[];
 }
 
-export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
+export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Props) {
+  const milestoneSet = useMemo(
+    () => new Set((milestoneCodes ?? ["it", "jp", "za"]).map(c => c.toLowerCase())),
+    [milestoneCodes]
+  );
+
   const globeRef = useRef<GlobeMethods>();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -146,8 +153,10 @@ export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
       ...c,
       count: counts.get(c.code) ?? 1,
       recent: c.code === recentCode,
+      milestone: milestoneSet.has(c.code),
     }));
-  }, [pins]);
+  }, [pins, milestoneSet]);
+
 
   // arc data mapped for react-globe.gl
   const arcData = useMemo(
@@ -161,10 +170,9 @@ export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
     [arcs]
   );
 
-  // pin pulse animation via DOM
+  // pin pulse + milestone halo + unlock particles
   useEffect(() => {
-    const style = document.getElementById("flagpin-anim");
-    if (style) return;
+    if (document.getElementById("flagpin-anim")) return;
     const el = document.createElement("style");
     el.id = "flagpin-anim";
     el.innerHTML = `
@@ -173,9 +181,31 @@ export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
         50% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(59,130,246,0); }
       }
       .flagpin-recent { animation: flagpin-pulse 1.8s ease-in-out infinite; }
+      @keyframes flagpin-halo {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(244,162,97,0.55), 0 0 14px 2px rgba(244,162,97,0.35); }
+        50% { box-shadow: 0 0 0 6px rgba(244,162,97,0), 0 0 22px 6px rgba(244,162,97,0.55); }
+      }
+      .flagpin-milestone {
+        position:absolute; inset:-6px; border-radius:9999px;
+        border:1.5px solid rgba(244,162,97,0.75);
+        animation: flagpin-halo 2.4s ease-in-out infinite;
+        pointer-events:none;
+      }
+      @keyframes flagpin-spark {
+        0% { transform: translate(-50%,-50%) scale(0.4); opacity: 1; }
+        100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; }
+      }
+      .flagpin-spark {
+        position:absolute; left:50%; top:50%; width:4px; height:4px;
+        border-radius:9999px; background:#F4A261;
+        box-shadow:0 0 6px 1px rgba(244,162,97,0.9);
+        animation: flagpin-spark 2.6s ease-out infinite;
+        pointer-events:none;
+      }
     `;
     document.head.appendChild(el);
   }, []);
+
 
   if (!size.w || !size.h) {
     return <div ref={wrapRef} className="w-full h-full" />;
@@ -230,13 +260,27 @@ export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
           el.style.position = "relative";
           el.style.width = "32px";
           el.style.height = "32px";
+          const sparks = data.milestone
+            ? Array.from({ length: 6 })
+                .map((_, i) => {
+                  const angle = (i / 6) * Math.PI * 2;
+                  const dist = 22;
+                  const tx = `${Math.cos(angle) * dist}px`;
+                  const ty = `${Math.sin(angle) * dist}px`;
+                  return `<span class="flagpin-spark" style="--tx:${tx};--ty:${ty};animation-delay:${i * 0.18}s"></span>`;
+                })
+                .join("")
+            : "";
           el.innerHTML = `
+            ${data.milestone ? `<span class="flagpin-milestone"></span>` : ""}
+            ${sparks}
             <div class="${data.recent ? "flagpin-recent" : ""}" style="
               width:28px;height:28px;border-radius:9999px;
               background-image:url(https://flagcdn.com/w80/${data.code}.png);
               background-size:cover;background-position:center;
-              border:2px solid #FFFFFF;
+              border:2px solid ${data.milestone ? "#F4A261" : "#FFFFFF"};
               box-shadow:0 2px 8px rgba(0,0,0,0.55);
+              position:relative;
             "></div>
             ${
               data.count > 1
@@ -250,6 +294,7 @@ export default function FlagGlobe({ pins, arcs, onPinClick }: Props) {
                 : ""
             }
           `;
+
           el.onclick = (e) => {
             e.stopPropagation();
             // find best matching pin in country
