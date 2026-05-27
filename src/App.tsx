@@ -32,6 +32,11 @@ import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
 import TravelHistoryPage from "@/pages/TravelHistoryPage";
 import AuthGate from "@/components/AuthGate";
+import PartnerProtectedRoute from "@/components/PartnerProtectedRoute";
+import PartnerPortal from "@/pages/partners/PartnerPortal";
+import PartnerDashboard from "@/pages/partners/PartnerDashboard";
+import PartnerAnalytics from "@/pages/partners/PartnerAnalytics";
+import PartnerOffers from "@/pages/partners/PartnerOffers";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +78,10 @@ const App = () => (
             <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<TripsPage />} />
             </Route>
+            <Route path="/partners" element={<PartnerPortal />} />
+            <Route path="/partners/dashboard" element={<PartnerProtectedRoute><PartnerDashboard /></PartnerProtectedRoute>} />
+            <Route path="/partners/analytics" element={<PartnerProtectedRoute><PartnerAnalytics /></PartnerProtectedRoute>} />
+            <Route path="/partners/offers" element={<PartnerProtectedRoute><PartnerOffers /></PartnerProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
