@@ -203,7 +203,7 @@ export default function TripPlannerPage() {
             user_id: user.id,
             trip_id: trip.id,
             item_name: s,
-            category: "other",
+            category: "packing",
           }))
         );
       }
