@@ -57,6 +57,9 @@ const App = () => (
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+            <Route path="/trips/new" element={<ProtectedRoute><TripPlannerPage /></ProtectedRoute>} />
+            <Route path="/trips/:id" element={<ProtectedRoute><TripDetailPage /></ProtectedRoute>} />
+            
             
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
             <Route path="/safety" element={<ProtectedRoute><SafePassPage /></ProtectedRoute>} />
