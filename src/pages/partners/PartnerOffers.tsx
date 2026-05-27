@@ -33,7 +33,8 @@ type Offer = {
   active: boolean;
 };
 
-const CATEGORIES = ["restaurant", "cafe", "bar", "shop", "experience", "hotel", "spa", "other"];
+const CATEGORIES = ["food", "lodging", "transport", "activity", "shopping", "other"] as const;
+type OfferCategory = typeof CATEGORIES[number];
 
 function OffersInner() {
   const { partner } = usePartner();
@@ -217,7 +218,7 @@ function OfferSheet({
   const [discountValue, setDiscountValue] = useState(20);
   const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
   const [radius, setRadius] = useState(1.5);
-  const [category, setCategory] = useState("restaurant");
+  const [category, setCategory] = useState<OfferCategory>("food");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -226,7 +227,7 @@ function OfferSheet({
     if (offer) {
       setTitle(offer.business_name);
       setDescription(offer.offer_description);
-      setCategory(offer.category);
+      setCategory(offer.category as OfferCategory);
       setImageUrl(offer.image);
       if (offer.discount) {
         const isPct = offer.discount.includes("%");
@@ -239,7 +240,7 @@ function OfferSheet({
       setDiscountValue(20);
       setDiscountType("percent");
       setRadius(1.5);
-      setCategory("restaurant");
+      setCategory("food");
       setImageUrl(null);
     }
   }, [offer, open]);
@@ -278,7 +279,7 @@ function OfferSheet({
       business_name: partnerName,
       offer_description: description || title,
       discount: discountType === "percent" ? `${discountValue}%` : `$${discountValue}`,
-      category: category as Offer["category"],
+      category,
       image: imageUrl,
       active: isActive,
     };
@@ -373,7 +374,7 @@ function OfferSheet({
             </Label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => setCategory(e.target.value as OfferCategory)}
               className="w-full h-10 px-3 rounded-md border bg-white font-dm text-sm capitalize"
               style={{ borderColor: PARTNER.border }}
             >
