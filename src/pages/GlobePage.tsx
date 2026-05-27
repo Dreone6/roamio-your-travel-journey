@@ -305,8 +305,35 @@ export default function GlobePage() {
                   pins={globePins}
                   arcs={globeArcs}
                   milestoneCodes={["it", "jp", "za"]}
+                  yearFilter={year}
+                  mode={activeTab === "explore" ? "explore" : "mine"}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
+
+              </Suspense>
+            ) : (
+              <FlatMapView
+                key={recenterKey}
+                pins={flatPins}
+                onPinClick={(pin) => handlePinClick({ id: pin.id, lat: pin.lat, lng: pin.lng })}
+              />
+            )}
+          </div>
+
+          {/* World % chip — bottom-left */}
+          <div
+            className="absolute bottom-3 left-3 z-20 rounded-full text-[11px] font-semibold"
+            style={{
+              background: "rgba(59,130,246,0.15)",
+              border: "1px solid rgba(59,130,246,0.4)",
+              color: "#FFFFFF",
+              padding: "6px 12px",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            You've explored {worldPct}% of the world
+          </div>
+
 
               </Suspense>
             ) : (
