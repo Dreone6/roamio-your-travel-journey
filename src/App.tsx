@@ -63,6 +63,7 @@ const App = () => (
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/trips/new" element={<ProtectedRoute><TripPlannerPage /></ProtectedRoute>} />
             <Route path="/trips/:id" element={<ProtectedRoute><TripDetailPage /></ProtectedRoute>} />
+            <Route path="/join/:invite_code" element={<JoinTripPage />} />
             
             
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
