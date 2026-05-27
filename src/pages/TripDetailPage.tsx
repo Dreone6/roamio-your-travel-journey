@@ -332,6 +332,11 @@ export default function TripDetailPage() {
                               >
                                 {it.activity}
                               </p>
+                              {editingBy && (
+                                <p className="mt-0.5 text-[11px] text-[#F59E0B]">
+                                  {editingBy.slice(0, 6)} is editing…
+                                </p>
+                              )}
                               {it.location && (
                                 <p className="text-[12px] text-white/50">{it.location}</p>
                               )}
