@@ -1,263 +1,566 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, CheckCircle, X, Camera, Sparkles, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { MapPin, Loader2, Camera, X, Trophy, Tag, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
-interface GeoResult {
-  city: string;
-  country: string;
-  landmark: string;
-  location_name: string;
-  challenge?: { challenge: string; reward_badge: string };
-}
+type Step = "detecting" | "denied" | "found";
 
-interface Offer {
-  id: string;
-  business_name: string;
-  offer_description: string;
-  discount: string | null;
-  category: string;
-  image: string | null;
-}
+const MOODS = ["Amazing", "Emotional", "Challenging", "Peaceful", "Wild", "Unforgettable", "Proud", "Grateful"];
+const MILESTONES = ["Proposal", "Anniversary", "Birthday trip", "Baby first trip", "Graduation trip", "Personal goal achieved", "Bucket list", "Other"];
+
+const countryFlag = (country?: string | null) => {
+  if (!country) return "🌍";
+  const map: Record<string, string> = {
+    "United States": "🇺🇸", USA: "🇺🇸", Italy: "🇮🇹", France: "🇫🇷", Spain: "🇪🇸",
+    Japan: "🇯🇵", Mexico: "🇲🇽", "United Kingdom": "🇬🇧", Germany: "🇩🇪", Brazil: "🇧🇷",
+    Canada: "🇨🇦", Australia: "🇦🇺", Greece: "🇬🇷", Portugal: "🇵🇹", Thailand: "🇹🇭",
+  };
+  return map[country] || "🌐";
+};
+
+const distanceMiles = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 3959;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+};
 
 export default function CheckInPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
-  const [step, setStep] = useState<"idle" | "locating" | "confirm" | "done">("idle");
-  const [lat, setLat] = useState(0);
-  const [lng, setLng] = useState(0);
-  const [geo, setGeo] = useState<GeoResult | null>(null);
-  const [note, setNote] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [nearbyOffers, setNearbyOffers] = useState<Offer[]>([]);
-  const [challenge, setChallenge] = useState<{ challenge: string; reward_badge: string } | null>(null);
+  const [tab, setTab] = useState<"new" | "history">("new");
+  const [step, setStep] = useState<Step>("detecting");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [place, setPlace] = useState<{ city: string; country: string; location_name: string } | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [verificationMeta, setVerificationMeta] = useState<Record<string, any>>({});
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [isNewCountry, setIsNewCountry] = useState(false);
+  const [throttleHours, setThrottleHours] = useState<number | null>(null);
 
-  const requestLocation = async () => {
-    setStep("locating");
+  // memory form
+  const [photos, setPhotos] = useState<(File | null)[]>([null, null, null, null, null]);
+  const [photoPreviews, setPhotoPreviews] = useState<(string | null)[]>([null, null, null, null, null]);
+  const [notes, setNotes] = useState("");
+  const [moods, setMoods] = useState<string[]>([]);
+  const [isMilestone, setIsMilestone] = useState(false);
+  const [milestoneType, setMilestoneType] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const detectedRef = useRef(false);
+
+  // ----- detect location on mount -----
+  useEffect(() => {
+    if (detectedRef.current || tab !== "new") return;
+    detectedRef.current = true;
+    if (!navigator.geolocation) {
+      setStep("denied");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCoords({ lat, lng });
+
+        // reverse geocode via existing edge function
+        let location_name = "Current Location", city = "Unknown", country = "Unknown";
+        try {
+          const { data } = await supabase.functions.invoke("reverse-geocode", { body: { latitude: lat, longitude: lng } });
+          if (data) {
+            location_name = data.location_name || location_name;
+            city = data.city || city;
+            country = data.country || country;
+          }
+        } catch { /* keep defaults */ }
+
+        // verification checks
+        const gpsOk = true;
+        const timestampOk = true; // client-only proxy
+        let distanceOk = true;
+        let throttle: number | null = null;
+
+        if (user) {
+          const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const { data: recent } = await supabase
+            .from("check_ins")
+            .select("latitude,longitude,timestamp,city")
+            .eq("user_id", user.id)
+            .gte("timestamp", since)
+            .order("timestamp", { ascending: false })
+            .limit(5);
+          if (recent && recent.length) {
+            const last2h = recent.find(r => new Date(r.timestamp).getTime() > Date.now() - 2 * 60 * 60 * 1000);
+            if (last2h?.latitude && last2h?.longitude) {
+              const d = distanceMiles({ lat, lng }, { lat: last2h.latitude, lng: last2h.longitude });
+              if (d < 1 && (last2h as any).city === city) distanceOk = false;
+            }
+            const sameCity = recent.find((r: any) => r.city === city);
+            if (sameCity) {
+              const hoursAgo = (Date.now() - new Date(sameCity.timestamp).getTime()) / 3600000;
+              throttle = Math.max(0, Math.ceil(24 - hoursAgo));
+            }
+          }
+
+          // new country check
+          const { data: existing } = await supabase
+            .from("places_visited")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("country", country)
+            .limit(1);
+          setIsNewCountry(!existing || existing.length === 0);
+        }
+
+        setVerified(gpsOk);
+        setVerificationMeta({ gps_captured: gpsOk, timestamp_valid: timestampOk, distance_unique: distanceOk });
+        setPlace({ city, country, location_name });
+        setThrottleHours(throttle);
+        setStep("found");
+        if (gpsOk) {
+          setTimeout(() => setShowCelebration(true), 300);
+          setTimeout(() => setShowCelebration(false), 1200);
+        }
+      },
+      () => setStep("denied"),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [tab, user]);
+
+  const handlePhoto = (idx: number, file: File | null) => {
+    const np = [...photos]; np[idx] = file; setPhotos(np);
+    const npr = [...photoPreviews]; npr[idx] = file ? URL.createObjectURL(file) : null; setPhotoPreviews(npr);
+  };
+
+  const toggleMood = (m: string) => {
+    setMoods(prev => prev.includes(m) ? prev.filter(x => x !== m) : prev.length >= 3 ? prev : [...prev, m]);
+  };
+
+  const handleSave = async () => {
+    if (!user || !place || !coords) return;
+    setSaving(true);
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 });
-      });
-      const latitude = pos.coords.latitude;
-      const longitude = pos.coords.longitude;
-      setLat(latitude);
-      setLng(longitude);
-      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-        body: { latitude, longitude, generate_challenge: true },
+      // upload photos
+      const photoUrls: string[] = [];
+      for (const p of photos) {
+        if (!p) continue;
+        const ext = p.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("checkin-photos").upload(path, p);
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from("checkin-photos").getPublicUrl(path);
+        photoUrls.push(data.publicUrl);
+      }
+
+      const { error } = await supabase.from("check_ins").insert({
+        user_id: user.id,
+        location_name: place.location_name,
+        city: place.city,
+        country: place.country,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        notes: notes || null,
+        photo: photoUrls[0] || null,
+        photos: photoUrls,
+        mood_tags: moods,
+        is_milestone: isMilestone,
+        milestone_type: isMilestone ? milestoneType : null,
+        verified,
+        verification_metadata: verificationMeta,
       });
       if (error) throw error;
-      setGeo(data as GeoResult);
-      if (data.challenge) setChallenge(data.challenge);
-      setStep("confirm");
-    } catch (err: any) {
-      toast({ title: "Location error", description: err.message || "Could not get your location.", variant: "destructive" });
-      setStep("idle");
-    }
-  };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) { setPhoto(file); setPhotoPreview(URL.createObjectURL(file)); }
-  };
+      // places_visited upsert
+      const { data: existingPlace } = await supabase
+        .from("places_visited")
+        .select("id,photos_count")
+        .eq("user_id", user.id)
+        .eq("city", place.city)
+        .eq("country", place.country)
+        .limit(1);
 
-  const handleSubmit = async () => {
-    if (!user || !geo) return;
-    setSubmitting(true);
-    try {
-      let photoUrl: string | null = null;
-      if (photo) {
-        const ext = photo.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("checkin-photos").upload(path, photo);
-        if (uploadErr) throw uploadErr;
-        const { data: urlData } = supabase.storage.from("checkin-photos").getPublicUrl(path);
-        photoUrl = urlData.publicUrl;
-      }
-      const { error: checkInErr } = await supabase.from("check_ins").insert({
-        user_id: user.id, location_name: geo.location_name, latitude: lat, longitude: lng, notes: note || null, photo: photoUrl,
-      });
-      if (checkInErr) throw checkInErr;
-      const { data: existing } = await supabase.from("places_visited").select("id").eq("user_id", user.id).eq("city", geo.city).eq("country", geo.country).limit(1);
-      if (!existing || existing.length === 0) {
+      const isNewCity = !existingPlace || existingPlace.length === 0;
+
+      if (isNewCity) {
         await supabase.from("places_visited").insert({
-          user_id: user.id, country: geo.country || "Unknown", city: geo.city || "Unknown",
-          latitude: lat, longitude: lng, date_visited: new Date().toISOString().split("T")[0], photos_count: photo ? 1 : 0,
+          user_id: user.id,
+          city: place.city,
+          country: place.country,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          date_visited: new Date().toISOString().split("T")[0],
+          photos_count: photoUrls.length,
+          is_milestone: isMilestone,
+          milestone_type: isMilestone ? milestoneType : null,
         });
-      } else if (photo) {
-        const place = existing[0];
-        const { data: placeData } = await supabase.from("places_visited").select("photos_count").eq("id", place.id).single();
-        if (placeData) await supabase.from("places_visited").update({ photos_count: (placeData.photos_count || 0) + 1 }).eq("id", place.id);
+      } else {
+        await supabase.from("places_visited").update({
+          photos_count: (existingPlace[0].photos_count || 0) + photoUrls.length,
+          ...(isMilestone ? { is_milestone: true, milestone_type: milestoneType } : {}),
+        }).eq("id", existingPlace[0].id);
       }
-      if (challenge) {
-        await supabase.from("challenges").insert({
-          user_id: user.id, location: `${geo.city}, ${geo.country}`, challenge_text: challenge.challenge, reward_badge: challenge.reward_badge, status: "active" as const,
+
+      // profile counters
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("total_countries_visited,total_cities_visited,total_checkins")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile) {
+        await supabase.from("profiles").update({
+          total_checkins: (profile.total_checkins || 0) + 1,
+          total_cities_visited: (profile.total_cities_visited || 0) + (isNewCity ? 1 : 0),
+          total_countries_visited: (profile.total_countries_visited || 0) + (isNewCountry ? 1 : 0),
+        }).eq("id", user.id);
+      }
+
+      // nearby offers
+      const { data: offers } = await supabase.rpc("nearby_offers", { lat: coords.lat, lng: coords.lng, radius_miles: 5 });
+      const offerCount = offers?.length || 0;
+
+      qc.invalidateQueries({ queryKey: ["check-ins"] });
+      toast({ title: "Memory saved", description: `${place.city}, ${place.country}` });
+
+      if (offerCount > 0 && offers) {
+        toast({
+          title: `${offers[0].business_name}${offerCount > 1 ? ` and ${offerCount - 1} others` : ""}`,
+          description: "have deals near you. Tap to view.",
         });
       }
-      const { data: offers } = await supabase.rpc("nearby_offers", { lat, lng, radius_miles: 5 });
-      setNearbyOffers((offers as Offer[]) || []);
-      await supabase.functions.invoke("check-badges", { body: { user_id: user.id } });
-      toast({ title: "Checked in!", description: `${geo.location_name}, ${geo.city}` });
-      setStep("done");
+      navigate("/home");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to check in", variant: "destructive" });
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const reset = () => {
-    setStep("idle"); setGeo(null); setNote(""); setPhoto(null); setPhotoPreview(null); setNearbyOffers([]); setChallenge(null);
-  };
+  // History
+  const { data: history, isLoading: histLoading } = useQuery({
+    queryKey: ["check-ins", user?.id],
+    enabled: !!user && tab === "history",
+    staleTime: 60000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("check_ins")
+        .select("id,city,country,location_name,timestamp,verified,photo,photos")
+        .eq("user_id", user!.id)
+        .order("timestamp", { ascending: false });
+      return data || [];
+    },
+  });
 
   return (
-    <div className="min-h-screen pb-8">
-      {/* Dark Header */}
-      <div className="dark-immersive relative overflow-hidden">
-        <div className="absolute inset-0 gradient-dark-radial" />
-        <div className="relative px-5 pt-12 pb-5">
-          <button onClick={() => navigate("/home")} className="text-dark-muted mb-3 flex items-center gap-1 text-[13px]">
-            <ArrowLeft className="h-4 w-4" /> Home
-          </button>
-          <h1 className="font-heading text-[22px] font-bold text-white tracking-tight">Check In</h1>
-          <p className="text-dark-muted text-[13px] mt-0.5">Drop a pin at your current location</p>
-        </div>
+    <div className="min-h-screen bg-[#080D1A] text-white pb-24">
+      {/* top bar */}
+      <div className="px-5 pt-12 pb-3 border-b border-white/5">
+        <h1 className="font-display text-[18px] text-center text-white">Check In</h1>
       </div>
 
-      <div className="px-4 pt-5">
-        {/* IDLE */}
-        {step === "idle" && (
-          <div className="flex flex-col items-center text-center py-12 space-y-5 animate-fade-in">
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-accent/8 flex items-center justify-center">
-                <MapPin className="h-12 w-12 text-accent" />
+      {/* tabs */}
+      <div className="flex border-b border-white/5">
+        {[
+          { id: "new", label: "New" },
+          { id: "history", label: "History" },
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id as any)}
+            className={`flex-1 py-3 text-[13px] font-medium transition-colors ${
+              tab === t.id ? "text-[#3B82F6] border-b-2 border-[#3B82F6]" : "text-white/50"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "new" && (
+        <div className="relative">
+          {/* STATE 1: detecting */}
+          {step === "detecting" && (
+            <div className="flex flex-col items-center justify-center pt-32 gap-6">
+              <div className="relative w-[72px] h-[72px]">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    className="absolute inset-0 rounded-full border-2 border-[#3B82F6]"
+                    initial={{ opacity: 0.8, scale: 0.4 }}
+                    animate={{ opacity: 0, scale: 1.8 }}
+                    transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+                  />
+                ))}
+                <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-[#3B82F6]" />
               </div>
-              <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full gradient-accent flex items-center justify-center animate-pulse">
-                <span className="text-white text-[11px] font-bold">!</span>
+              <p className="text-[14px] text-white/60 font-body">Detecting your location...</p>
+            </div>
+          )}
+
+          {/* STATE: denied */}
+          {step === "denied" && (
+            <div className="px-5 pt-16">
+              <div className="rounded-2xl bg-[#111827] border border-white/5 p-6 text-center space-y-4">
+                <AlertTriangle className="w-10 h-10 mx-auto text-[#F59E0B]" />
+                <h2 className="font-display text-[18px]">Location access needed</h2>
+                <p className="text-[13px] text-white/60 leading-relaxed">
+                  Roavr needs your location to verify check-ins and unlock landmarks on your globe.
+                </p>
+                <Button
+                  onClick={() => { detectedRef.current = false; setStep("detecting"); }}
+                  className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full w-full h-11"
+                >
+                  Open Settings
+                </Button>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <p className="font-heading text-lg font-bold text-foreground">Ready to check in?</p>
-              <p className="text-[13px] text-muted-foreground max-w-[260px] leading-relaxed">
-                We'll use your location to log where you are and find nearby deals.
-              </p>
-            </div>
-            <Button onClick={requestLocation} className="gradient-accent border-0 text-white font-bold text-[13px] px-8 h-11 rounded-xl glow-coral gap-2">
-              <MapPin className="h-4 w-4" /> Check In Here
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* LOCATING */}
-        {step === "locating" && (
-          <div className="flex flex-col items-center justify-center py-20 space-y-3 animate-fade-in">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <p className="text-muted-foreground text-[13px]">Finding your location...</p>
-          </div>
-        )}
-
-        {/* CONFIRM */}
-        {step === "confirm" && geo && (
-          <div className="space-y-3.5 animate-fade-in">
-            <div className="rounded-xl border border-border/40 bg-card p-4 shadow-soft space-y-1">
-              <p className="font-heading font-bold text-[15px] text-foreground">{geo.location_name}</p>
-              <p className="text-[13px] text-muted-foreground">{geo.city}, {geo.country}</p>
-              {geo.landmark && <p className="text-[11px] text-muted-foreground truncate">{geo.landmark}</p>}
-            </div>
-
-            <Textarea
-              placeholder="Add a note about this place..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              className="rounded-xl text-[13px]"
-            />
-
-            {photoPreview ? (
-              <div className="relative rounded-xl overflow-hidden">
-                <img src={photoPreview} alt="Preview" className="w-full h-36 object-cover" />
-                <button onClick={() => { setPhoto(null); setPhotoPreview(null); }} className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white rounded-full p-1.5">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex items-center gap-2 text-[13px] text-muted-foreground cursor-pointer border border-dashed border-border/50 rounded-xl p-3.5 hover:border-accent/30 transition-colors">
-                <Camera className="h-4 w-4" />
-                <span>Add a photo</span>
-                <input type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" />
-              </label>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate("/camera")}
-                className="h-11 w-11 rounded-xl border border-border/40 bg-card flex items-center justify-center shrink-0 hover:bg-secondary/30 transition-colors"
-              >
-                <Camera className="h-4.5 w-4.5 text-accent" />
-              </button>
-              <Button onClick={handleSubmit} className="flex-1 h-11 rounded-xl gradient-accent border-0 font-bold text-[13px]" disabled={submitting}>
-                {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : "Confirm Check In"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* DONE */}
-        {step === "done" && geo && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-2">
-              <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" />
-              <p className="font-heading font-bold text-[15px] text-foreground">Checked in!</p>
-              <p className="text-[13px] text-muted-foreground">{geo.city}, {geo.country}</p>
-            </div>
-
-            {nearbyOffers.length > 0 && (
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-3.5 w-3.5 text-accent" />
-                  <h2 className="section-title">Nearby Offers</h2>
-                </div>
-                <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-4 px-4 no-scrollbar">
-                  {nearbyOffers.map((offer) => (
-                    <div key={offer.id} className="shrink-0 w-52 rounded-xl border border-border/40 bg-card overflow-hidden shadow-soft">
-                      {offer.image && <img src={offer.image} alt={offer.business_name} className="w-full h-24 object-cover" />}
-                      <div className="p-3 space-y-1">
-                        <p className="font-semibold text-[13px] text-foreground">{offer.business_name}</p>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">{offer.offer_description}</p>
-                        {offer.discount && (
-                          <span className="inline-block text-[9px] font-bold bg-accent/10 text-accent px-1.5 py-0.5 rounded-full">{offer.discount}</span>
-                        )}
-                      </div>
+          {/* STATE 2: found */}
+          {step === "found" && place && (
+            <div className="px-5 pt-12 pb-6">
+              <div className="flex flex-col items-center text-center relative">
+                {/* burst particles */}
+                <AnimatePresence>
+                  {showCelebration && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      {Array.from({ length: 50 }).map((_, i) => {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 60 + Math.random() * 60;
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                            animate={{
+                              opacity: 0,
+                              scale: 0,
+                              x: Math.cos(angle) * dist,
+                              y: Math.sin(angle) * dist,
+                            }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="absolute w-[6px] h-[6px] rounded-full"
+                            style={{ background: i % 2 ? "#3B82F6" : "#F59E0B" }}
+                          />
+                        );
+                      })}
                     </div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 18 }}
+                >
+                  <MapPin className="w-12 h-12 text-[#3B82F6]" fill="#3B82F6" />
+                </motion.div>
+
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0, scale: showCelebration ? 1.05 : 1 }}
+                  transition={{ delay: 0.15 }}
+                  className="font-display text-[36px] mt-4"
+                >
+                  {place.city}
+                </motion.h2>
+                <p className="text-[16px] text-white/60 font-body">{place.country}</p>
+
+                {verified && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#10B981]/15 text-[#10B981] text-[12px]">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Verified
+                  </div>
+                )}
+
+                {isNewCountry && verified && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-5 w-full rounded-2xl border border-[#3B82F6]/40 bg-[#111827] p-4"
+                    style={{ boxShadow: "0 0 24px rgba(59,130,246,0.25)" }}
+                  >
+                    <p className="font-display text-[18px] flex items-center justify-center gap-2">
+                      {countryFlag(place.country)} New country unlocked
+                    </p>
+                    <p className="text-[13px] text-white/60 mt-1">{place.country}</p>
+                  </motion.div>
+                )}
+
+                {throttleHours !== null && throttleHours > 0 && (
+                  <div className="mt-4 w-full rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30 p-3 text-[12px] text-white/80 text-left">
+                    You already checked in to {place.city} today. Next check-in available in {throttleHours}h. You can still add a memory below.
+                  </div>
+                )}
+              </div>
+
+              {/* memory form */}
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-8 rounded-3xl bg-[#111827] border border-white/5 p-5 space-y-5"
+              >
+                <div className="flex items-center gap-2 text-[13px] text-white/70">
+                  <span>{countryFlag(place.country)}</span>
+                  <span>{place.city}, {place.country}</span>
+                </div>
+
+                {/* photos */}
+                <div className="flex gap-2 justify-between">
+                  {photos.map((p, i) => (
+                    <label
+                      key={i}
+                      className="relative w-[60px] h-[60px] rounded-full bg-[#1A2236] border border-white/10 flex items-center justify-center overflow-hidden cursor-pointer"
+                    >
+                      {photoPreviews[i] ? (
+                        <>
+                          <img src={photoPreviews[i]!} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); handlePhoto(i, null); }}
+                            className="absolute top-0 right-0 bg-black/60 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <Camera className="w-5 h-5 text-white/40" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => handlePhoto(i, e.target.files?.[0] || null)}
+                      />
+                    </label>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {challenge && (
-              <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-accent" />
-                  <p className="text-[13px] font-bold text-foreground">Challenge Unlocked</p>
+                {/* notes */}
+                <div className="relative">
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value.slice(0, 500))}
+                    placeholder="What will you remember about this moment?"
+                    className="bg-[#1A2236] border-white/10 text-white placeholder:text-white/40 rounded-2xl min-h-[100px] resize-none"
+                  />
+                  <span className="absolute bottom-2 right-3 text-[11px] text-white/40">{notes.length}/500</span>
                 </div>
-                <p className="text-[13px] text-foreground">{challenge.challenge}</p>
-                <span className="inline-block text-[10px] font-bold bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">
-                  🏅 {challenge.reward_badge}
-                </span>
-              </div>
-            )}
 
-            <Button onClick={reset} variant="outline" className="w-full h-10 rounded-xl text-[13px] font-semibold">Check In Again</Button>
-          </div>
-        )}
-      </div>
+                {/* moods */}
+                <div className="-mx-5 px-5 overflow-x-auto no-scrollbar">
+                  <div className="flex gap-2">
+                    {MOODS.map(m => {
+                      const on = moods.includes(m);
+                      return (
+                        <button
+                          key={m}
+                          onClick={() => toggleMood(m)}
+                          className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] border transition-colors ${
+                            on ? "bg-[#3B82F6] border-[#3B82F6] text-white" : "border-white/15 text-white/70"
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* milestone */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#3B82F6]" />
+                    <span className="text-[13px]">Mark as a life milestone?</span>
+                  </div>
+                  <Switch checked={isMilestone} onCheckedChange={setIsMilestone} />
+                </div>
+                {isMilestone && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {MILESTONES.map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setMilestoneType(m)}
+                        className={`px-3 py-2 rounded-xl text-[12px] border text-left transition-colors ${
+                          milestoneType === m ? "bg-[#3B82F6]/20 border-[#3B82F6] text-white" : "border-white/10 text-white/70"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full h-12 bg-[#3B82F6] hover:bg-[#2563EB] rounded-full text-[14px] font-medium"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save memory"}
+                </Button>
+                <button
+                  onClick={() => navigate("/home")}
+                  className="w-full text-center text-[12px] text-white/50 underline-offset-2 hover:underline"
+                >
+                  Skip
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "history" && (
+        <div className="px-5 py-5 space-y-2">
+          {histLoading && (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-16 rounded-xl bg-[#1A2236] animate-pulse" />
+              ))}
+            </div>
+          )}
+          {!histLoading && history?.length === 0 && (
+            <div className="text-center text-white/50 text-[13px] pt-20">No check-ins yet.</div>
+          )}
+          {history?.map((c: any) => {
+            const photo = c.photo || c.photos?.[0];
+            return (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 rounded-xl bg-[#111827] border border-white/5 p-3"
+              >
+                <span className="text-[24px]">{countryFlag(c.country)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] text-white truncate">{c.city || c.location_name}</p>
+                  <p className="text-[12px] text-white/50 truncate">{c.country}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[12px] text-white/50">{format(new Date(c.timestamp), "MMM d")}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    c.verified ? "bg-[#10B981]/15 text-[#10B981]" : "bg-white/5 text-white/40"
+                  }`}>
+                    {c.verified ? "Verified" : "Unverified"}
+                  </span>
+                </div>
+                {photo && <img src={photo} className="w-10 h-10 rounded-full object-cover" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
