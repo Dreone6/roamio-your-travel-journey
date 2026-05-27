@@ -188,6 +188,21 @@ export default function GlobePage() {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
+            onClick={() => setTrophyOpen(true)}
+            className="h-10 w-10 rounded-full flex items-center justify-center relative"
+            style={{ background: "#111827", border: "1px solid rgba(244,162,97,0.35)" }}
+            aria-label="Trophy shelf"
+            title="Trophy shelf"
+          >
+            <Trophy className="h-[18px] w-[18px]" style={{ color: "#F4A261", strokeWidth: 1.6 }} />
+            <span
+              className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full text-[9px] font-bold flex items-center justify-center"
+              style={{ background: "#F4A261", color: "#080D1A", border: "1.5px solid #080D1A" }}
+            >
+              8
+            </span>
+          </button>
+          <button
             onClick={() => navigate("/travel-history")}
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
@@ -196,6 +211,7 @@ export default function GlobePage() {
           >
             <ImageIcon className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
+
           <button
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
