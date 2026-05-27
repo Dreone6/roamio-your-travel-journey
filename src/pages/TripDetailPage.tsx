@@ -571,32 +571,60 @@ function PackingView({
 
 function MembersView({
   members,
-  tripId,
+  trip,
   isOwner,
+  onlineIds,
 }: {
   members: any[];
-  tripId: string;
+  trip: any;
   isOwner: boolean;
+  onlineIds: Set<string>;
 }) {
-  const inviteLink = `https://roavr.io/join/${tripId.slice(0, 8)}`;
+  const [code, setCode] = useState<string | null>(trip?.invite_code ?? null);
+  const atLimit = members.length >= 8;
+  const inviteLink = code ? `${window.location.origin}/join/${code}` : "";
+
+  const ensureCode = async (): Promise<string | null> => {
+    if (code) return code;
+    const newCode = Array.from({ length: 8 }, () =>
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32))
+    ).join("");
+    const { error } = await supabase
+      .from("trips")
+      .update({ invite_code: newCode, is_collaborative: true })
+      .eq("id", trip.id);
+    if (error) {
+      toast.error("Could not generate invite");
+      return null;
+    }
+    setCode(newCode);
+    return newCode;
+  };
 
   const copy = async () => {
-    await navigator.clipboard.writeText(inviteLink);
-    toast.success("Invite link copied");
+    if (atLimit) return;
+    const c = await ensureCode();
+    if (!c) return;
+    const link = `${window.location.origin}/join/${c}`;
+    await navigator.clipboard.writeText(link);
+    toast.success("Invite link copied.");
   };
 
   return (
     <div>
       <button
         onClick={copy}
-        className="mb-4 flex w-full items-center justify-between rounded-2xl px-4 py-3"
+        disabled={atLimit}
+        className="mb-4 flex w-full items-center justify-between rounded-2xl px-4 py-3 disabled:opacity-50"
         style={{ background: SURFACE, border: `1px dashed ${ACCENT}` }}
       >
         <div className="flex items-center gap-3">
           <UserPlus size={18} style={{ color: ACCENT }} strokeWidth={1.75} />
           <div className="text-left">
-            <p className="text-[13px] font-semibold text-white">Invite traveler</p>
-            <p className="text-[11px] text-white/50">{inviteLink}</p>
+            <p className="text-[13px] font-semibold text-white">
+              {atLimit ? `Trip is full (${members.length}/8 members)` : "Invite traveler"}
+            </p>
+            <p className="text-[11px] text-white/50">{inviteLink || "Tap to generate a link"}</p>
           </div>
         </div>
         <Copy size={16} className="text-white/60" strokeWidth={1.75} />
@@ -609,11 +637,16 @@ function MembersView({
             className="flex items-center gap-3 rounded-xl p-3"
             style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
           >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold text-white"
-              style={{ background: ELEVATED }}
-            >
-              <MapPin size={14} strokeWidth={1.75} />
+            <div className="relative">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold text-white"
+                style={{ background: ELEVATED }}
+              >
+                <MapPin size={14} strokeWidth={1.75} />
+              </div>
+              {onlineIds.has(m.user_id) && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#080D1A]" />
+              )}
             </div>
             <div className="flex-1">
               <p className="text-[13px] text-white">Member</p>
