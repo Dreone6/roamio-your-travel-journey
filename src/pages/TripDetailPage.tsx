@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import TripMap from "@/components/trips/TripMap";
 import FlightStatusCard from "@/components/flight/FlightStatusCard";
+import ItemVotes from "@/components/trips/ItemVotes";
+import { useTripCollab } from "@/hooks/useTripCollab";
 
 const ACCENT = "#3B82F6";
 const SURFACE = "#111827";
@@ -114,6 +116,13 @@ export default function TripDetailPage() {
 
   const trip = tripQ.data;
   const items = itemsQ.data ?? [];
+  const members = membersQ.data ?? [];
+  const { presence, flashes, setEditing } = useTripCollab(id, user?.id);
+  const onlineIds = new Set(presence.map((p) => p.user_id));
+  const editingByItem = new Map<string, string>(); // item_id -> user_id
+  presence.forEach((p) => {
+    if (p.editing_item_id && p.user_id !== user?.id) editingByItem.set(p.editing_item_id, p.user_id);
+  });
 
   const days = useMemo(() => {
     const map = new Map<number, any[]>();
