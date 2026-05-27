@@ -319,6 +319,25 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes, year
         }
         globeImageUrl="https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg"
         bumpImageUrl="https://unpkg.com/three-globe@2.31.0/example/img/earth-topology.png"
+        // country polygons — visited highlight
+        polygonsData={countries}
+        polygonCapColor={(f: any) => {
+          const code = (f.properties?.ISO_A2 || f.properties?.iso_a2 || "").toUpperCase();
+          if (mode === "explore") {
+            // pseudo-density: visited countries bright, others dim
+            return visitedSet.has(code) ? "rgba(59,130,246,0.55)" : "rgba(45,106,79,0.15)";
+          }
+          return visitedSet.has(code) ? "rgba(59,130,246,0.45)" : "rgba(26,46,26,0.35)";
+        }}
+        polygonSideColor={(f: any) => {
+          const code = (f.properties?.ISO_A2 || f.properties?.iso_a2 || "").toUpperCase();
+          return visitedSet.has(code) ? "rgba(59,130,246,0.25)" : "rgba(26,46,26,0.15)";
+        }}
+        polygonStrokeColor={() => "rgba(255,255,255,0.06)"}
+        polygonAltitude={(f: any) => {
+          const code = (f.properties?.ISO_A2 || f.properties?.iso_a2 || "").toUpperCase();
+          return visitedSet.has(code) ? 0.012 : 0.006;
+        }}
         // arcs
         arcsData={arcData}
         arcColor={() => ["rgba(59,130,246,0)", "rgba(59,130,246,0.6)", "rgba(59,130,246,0)"]}
@@ -327,6 +346,7 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes, year
         arcDashGap={0.2}
         arcDashAnimateTime={3000}
         arcAltitudeAutoScale={0.35}
+
         // flag pins as HTML elements
         htmlElementsData={flagData}
         htmlLat={(d: any) => d.lat}
