@@ -78,7 +78,7 @@ export default function SideDrawer({ open, onClose }: Props) {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="font-sora text-base font-semibold leading-tight">{name}</p>
+                <p className="font-display text-base font-semibold leading-tight">{name}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{homeCity}</p>
               </div>
             </div>
@@ -97,7 +97,7 @@ export default function SideDrawer({ open, onClose }: Props) {
                   onClick={() => go(s.path)}
                   className="flex flex-col items-center rounded-lg py-2 hover:bg-muted/30"
                 >
-                  <span className="font-sora text-lg font-semibold">{s.value}</span>
+                  <span className="font-display text-lg font-semibold">{s.value}</span>
                   <span className="text-[11px] text-muted-foreground">{s.label}</span>
                 </button>
               ))}

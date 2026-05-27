@@ -42,7 +42,7 @@ export default function ShellTopBar({ onMenuClick }: Props) {
           {isTopLevel ? <Menu size={22} strokeWidth={1.75} /> : <ChevronLeft size={24} strokeWidth={1.75} />}
         </button>
 
-        <h1 className="font-sora text-[17px] font-semibold tracking-tight text-foreground">
+        <h1 className="font-display text-[17px] font-semibold tracking-tight text-foreground">
           {title}
         </h1>
 
