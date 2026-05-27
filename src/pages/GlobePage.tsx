@@ -73,6 +73,10 @@ export default function GlobePage() {
   const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
   const [trophyOpen, setTrophyOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState<number>(currentYear);
+  const worldPct = ((STATS.countries / 195) * 100).toFixed(1);
+
 
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
@@ -301,6 +305,8 @@ export default function GlobePage() {
                   pins={globePins}
                   arcs={globeArcs}
                   milestoneCodes={["it", "jp", "za"]}
+                  yearFilter={year}
+                  mode={activeTab === "explore" ? "explore" : "mine"}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
 
@@ -313,6 +319,22 @@ export default function GlobePage() {
               />
             )}
           </div>
+
+          {/* World % chip — bottom-left */}
+          <div
+            className="absolute bottom-3 left-3 z-20 rounded-full text-[11px] font-semibold"
+            style={{
+              background: "rgba(59,130,246,0.15)",
+              border: "1px solid rgba(59,130,246,0.4)",
+              color: "#FFFFFF",
+              padding: "6px 12px",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            You've explored {worldPct}% of the world
+          </div>
+
+
 
           {/* Recenter — bottom-right */}
           <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
@@ -336,6 +358,25 @@ export default function GlobePage() {
           </div>
         </div>
       </div>
+
+      {/* Year scrubber */}
+      <div className="px-5 pt-3">
+        <div className="rounded-full px-4 py-2.5 flex items-center gap-3" style={{ background: "#111827", border: "1px solid #1E2A3F" }}>
+          <span className="text-[11px] text-[#94A3B8] shrink-0">{currentYear - 9}</span>
+          <input
+            type="range"
+            min={currentYear - 9}
+            max={currentYear}
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value, 10))}
+            className="flex-1 accent-[#3B82F6]"
+          />
+          <span className="text-[11px] text-white font-semibold shrink-0 tabular-nums">{year}</span>
+        </div>
+        <p className="text-[11px] text-[#94A3B8] mt-1.5 text-center">Showing your world in {year}</p>
+      </div>
+
+
 
       {/* Content below */}
       <div className="px-5 pt-5">
