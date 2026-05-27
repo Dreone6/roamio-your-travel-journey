@@ -18,6 +18,7 @@ import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
 import TripPlannerPage from "@/pages/TripPlannerPage";
 import TripDetailPage from "@/pages/TripDetailPage";
+import JoinTripPage from "@/pages/JoinTripPage";
 import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/trips/new" element={<ProtectedRoute><TripPlannerPage /></ProtectedRoute>} />
             <Route path="/trips/:id" element={<ProtectedRoute><TripDetailPage /></ProtectedRoute>} />
+            <Route path="/join/:invite_code" element={<JoinTripPage />} />
             
             
             <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />

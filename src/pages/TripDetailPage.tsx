@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import TripMap from "@/components/trips/TripMap";
 import FlightStatusCard from "@/components/flight/FlightStatusCard";
+import ItemVotes from "@/components/trips/ItemVotes";
+import { useTripCollab } from "@/hooks/useTripCollab";
 
 const ACCENT = "#3B82F6";
 const SURFACE = "#111827";
@@ -114,6 +116,13 @@ export default function TripDetailPage() {
 
   const trip = tripQ.data;
   const items = itemsQ.data ?? [];
+  const members = membersQ.data ?? [];
+  const { presence, flashes, setEditing } = useTripCollab(id, user?.id);
+  const onlineIds = new Set(presence.map((p) => p.user_id));
+  const editingByItem = new Map<string, string>(); // item_id -> user_id
+  presence.forEach((p) => {
+    if (p.editing_item_id && p.user_id !== user?.id) editingByItem.set(p.editing_item_id, p.user_id);
+  });
 
   const days = useMemo(() => {
     const map = new Map<number, any[]>();
@@ -210,6 +219,29 @@ export default function TripDetailPage() {
       <div className="px-5 pt-5">
         {tab === "itinerary" && (
           <div className="space-y-6">
+            {members.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                {members.slice(0, 8).map((m: any) => {
+                  const online = onlineIds.has(m.user_id);
+                  return (
+                    <div key={m.id} className="relative">
+                      <div
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                        style={{ background: ELEVATED, border: `1px solid ${BORDER}` }}
+                      >
+                        {(m.user_id || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      {online && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#080D1A]" />
+                      )}
+                    </div>
+                  );
+                })}
+                <span className="ml-1 text-[11px] text-white/40">
+                  {presence.length} online
+                </span>
+              </div>
+            )}
             {days.length === 0 && (
               <p className="text-center text-[13px] text-white/50">No itinerary items yet.</p>
             )}
@@ -237,14 +269,24 @@ export default function TripDetailPage() {
                     {dayItems.map((it) => {
                       const color = TYPE_COLORS[it.type] ?? ACCENT;
                       const isOpen = expandedTips.has(it.id);
+                      const flash = flashes[it.id];
+                      const editingBy = editingByItem.get(it.id);
                       return (
                         <article
                           key={it.id}
-                          className="rounded-2xl p-3 transition-opacity"
+                          className="rounded-2xl p-3 transition-colors"
                           style={{
-                            background: SURFACE,
-                            border: `1px solid ${BORDER}`,
+                            background:
+                              flash === "insert"
+                                ? "rgba(16,185,129,0.10)"
+                                : flash === "update"
+                                ? "rgba(245,158,11,0.10)"
+                                : SURFACE,
+                            border: editingBy
+                              ? `1px dashed #F59E0B`
+                              : `1px solid ${BORDER}`,
                             opacity: it.completed ? 0.5 : 1,
+                            transition: "background 800ms ease-out, border 200ms ease-out",
                           }}
                         >
                           <div className="flex items-start gap-3">
@@ -290,6 +332,11 @@ export default function TripDetailPage() {
                               >
                                 {it.activity}
                               </p>
+                              {editingBy && (
+                                <p className="mt-0.5 text-[11px] text-[#F59E0B]">
+                                  {editingBy.slice(0, 6)} is editing…
+                                </p>
+                              )}
                               {it.location && (
                                 <p className="text-[12px] text-white/50">{it.location}</p>
                               )}
@@ -316,6 +363,14 @@ export default function TripDetailPage() {
                               )}
                               {isOpen && (it.tips || it.notes) && (
                                 <p className="mt-2 text-[12px] text-white/60">{it.tips || it.notes}</p>
+                              )}
+                              {user && members.length > 0 && (
+                                <ItemVotes
+                                  itemId={it.id}
+                                  tripId={id!}
+                                  userId={user.id}
+                                  memberCount={members.length}
+                                />
                               )}
                             </div>
                           </div>
@@ -346,8 +401,9 @@ export default function TripDetailPage() {
         {tab === "members" && (
           <MembersView
             members={membersQ.data ?? []}
-            tripId={id!}
+            trip={trip}
             isOwner={trip.user_id === user?.id}
+            onlineIds={onlineIds}
           />
         )}
 
@@ -515,32 +571,60 @@ function PackingView({
 
 function MembersView({
   members,
-  tripId,
+  trip,
   isOwner,
+  onlineIds,
 }: {
   members: any[];
-  tripId: string;
+  trip: any;
   isOwner: boolean;
+  onlineIds: Set<string>;
 }) {
-  const inviteLink = `https://roavr.io/join/${tripId.slice(0, 8)}`;
+  const [code, setCode] = useState<string | null>(trip?.invite_code ?? null);
+  const atLimit = members.length >= 8;
+  const inviteLink = code ? `${window.location.origin}/join/${code}` : "";
+
+  const ensureCode = async (): Promise<string | null> => {
+    if (code) return code;
+    const newCode = Array.from({ length: 8 }, () =>
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32))
+    ).join("");
+    const { error } = await supabase
+      .from("trips")
+      .update({ invite_code: newCode, is_collaborative: true })
+      .eq("id", trip.id);
+    if (error) {
+      toast.error("Could not generate invite");
+      return null;
+    }
+    setCode(newCode);
+    return newCode;
+  };
 
   const copy = async () => {
-    await navigator.clipboard.writeText(inviteLink);
-    toast.success("Invite link copied");
+    if (atLimit) return;
+    const c = await ensureCode();
+    if (!c) return;
+    const link = `${window.location.origin}/join/${c}`;
+    await navigator.clipboard.writeText(link);
+    toast.success("Invite link copied.");
   };
 
   return (
     <div>
       <button
         onClick={copy}
-        className="mb-4 flex w-full items-center justify-between rounded-2xl px-4 py-3"
+        disabled={atLimit}
+        className="mb-4 flex w-full items-center justify-between rounded-2xl px-4 py-3 disabled:opacity-50"
         style={{ background: SURFACE, border: `1px dashed ${ACCENT}` }}
       >
         <div className="flex items-center gap-3">
           <UserPlus size={18} style={{ color: ACCENT }} strokeWidth={1.75} />
           <div className="text-left">
-            <p className="text-[13px] font-semibold text-white">Invite traveler</p>
-            <p className="text-[11px] text-white/50">{inviteLink}</p>
+            <p className="text-[13px] font-semibold text-white">
+              {atLimit ? `Trip is full (${members.length}/8 members)` : "Invite traveler"}
+            </p>
+            <p className="text-[11px] text-white/50">{inviteLink || "Tap to generate a link"}</p>
           </div>
         </div>
         <Copy size={16} className="text-white/60" strokeWidth={1.75} />
@@ -553,11 +637,16 @@ function MembersView({
             className="flex items-center gap-3 rounded-xl p-3"
             style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
           >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold text-white"
-              style={{ background: ELEVATED }}
-            >
-              <MapPin size={14} strokeWidth={1.75} />
+            <div className="relative">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold text-white"
+                style={{ background: ELEVATED }}
+              >
+                <MapPin size={14} strokeWidth={1.75} />
+              </div>
+              {onlineIds.has(m.user_id) && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#080D1A]" />
+              )}
             </div>
             <div className="flex-1">
               <p className="text-[13px] text-white">Member</p>
