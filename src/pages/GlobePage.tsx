@@ -73,6 +73,10 @@ export default function GlobePage() {
   const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
   const [trophyOpen, setTrophyOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState<number>(currentYear);
+  const worldPct = ((STATS.countries / 195) * 100).toFixed(1);
+
 
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
