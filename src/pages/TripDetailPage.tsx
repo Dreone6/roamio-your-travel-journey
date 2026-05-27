@@ -401,8 +401,9 @@ export default function TripDetailPage() {
         {tab === "members" && (
           <MembersView
             members={membersQ.data ?? []}
-            tripId={id!}
+            trip={trip}
             isOwner={trip.user_id === user?.id}
+            onlineIds={onlineIds}
           />
         )}
 
