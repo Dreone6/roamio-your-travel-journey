@@ -359,6 +359,25 @@ export default function GlobePage() {
         </div>
       </div>
 
+      {/* Year scrubber */}
+      <div className="px-5 pt-3">
+        <div className="rounded-full px-4 py-2.5 flex items-center gap-3" style={{ background: "#111827", border: "1px solid #1E2A3F" }}>
+          <span className="text-[11px] text-[#94A3B8] shrink-0">{currentYear - 9}</span>
+          <input
+            type="range"
+            min={currentYear - 9}
+            max={currentYear}
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value, 10))}
+            className="flex-1 accent-[#3B82F6]"
+          />
+          <span className="text-[11px] text-white font-semibold shrink-0 tabular-nums">{year}</span>
+        </div>
+        <p className="text-[11px] text-[#94A3B8] mt-1.5 text-center">Showing your world in {year}</p>
+      </div>
+
+
+
       {/* Content below */}
       <div className="px-5 pt-5">
         {activeTab === "mine" && (
