@@ -219,6 +219,29 @@ export default function TripDetailPage() {
       <div className="px-5 pt-5">
         {tab === "itinerary" && (
           <div className="space-y-6">
+            {members.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                {members.slice(0, 8).map((m: any) => {
+                  const online = onlineIds.has(m.user_id);
+                  return (
+                    <div key={m.id} className="relative">
+                      <div
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                        style={{ background: ELEVATED, border: `1px solid ${BORDER}` }}
+                      >
+                        {(m.user_id || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      {online && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#080D1A]" />
+                      )}
+                    </div>
+                  );
+                })}
+                <span className="ml-1 text-[11px] text-white/40">
+                  {presence.length} online
+                </span>
+              </div>
+            )}
             {days.length === 0 && (
               <p className="text-center text-[13px] text-white/50">No itinerary items yet.</p>
             )}
@@ -246,14 +269,24 @@ export default function TripDetailPage() {
                     {dayItems.map((it) => {
                       const color = TYPE_COLORS[it.type] ?? ACCENT;
                       const isOpen = expandedTips.has(it.id);
+                      const flash = flashes[it.id];
+                      const editingBy = editingByItem.get(it.id);
                       return (
                         <article
                           key={it.id}
-                          className="rounded-2xl p-3 transition-opacity"
+                          className="rounded-2xl p-3 transition-colors"
                           style={{
-                            background: SURFACE,
-                            border: `1px solid ${BORDER}`,
+                            background:
+                              flash === "insert"
+                                ? "rgba(16,185,129,0.10)"
+                                : flash === "update"
+                                ? "rgba(245,158,11,0.10)"
+                                : SURFACE,
+                            border: editingBy
+                              ? `1px dashed #F59E0B`
+                              : `1px solid ${BORDER}`,
                             opacity: it.completed ? 0.5 : 1,
+                            transition: "background 800ms ease-out, border 200ms ease-out",
                           }}
                         >
                           <div className="flex items-start gap-3">
