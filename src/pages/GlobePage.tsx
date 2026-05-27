@@ -335,15 +335,6 @@ export default function GlobePage() {
           </div>
 
 
-              </Suspense>
-            ) : (
-              <FlatMapView
-                key={recenterKey}
-                pins={flatPins}
-                onPinClick={(pin) => handlePinClick({ id: pin.id, lat: pin.lat, lng: pin.lng })}
-              />
-            )}
-          </div>
 
           {/* Recenter — bottom-right */}
           <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
