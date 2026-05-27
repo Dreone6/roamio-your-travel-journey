@@ -12,7 +12,7 @@ import {
 } from "@/data";
 import type { MapPin, Visibility } from "@/data/types";
 
-const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
+const InteractiveGlobe = lazy(() => import("@/components/globe/FlagGlobe"));
 
 type Tab = "mine" | "followers" | "explore";
 type ViewMode = "globe" | "map";
