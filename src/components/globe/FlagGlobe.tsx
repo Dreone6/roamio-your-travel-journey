@@ -153,8 +153,10 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
       ...c,
       count: counts.get(c.code) ?? 1,
       recent: c.code === recentCode,
+      milestone: milestoneSet.has(c.code),
     }));
-  }, [pins]);
+  }, [pins, milestoneSet]);
+
 
   // arc data mapped for react-globe.gl
   const arcData = useMemo(
