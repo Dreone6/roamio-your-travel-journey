@@ -18,6 +18,7 @@ import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
 import TripPlannerPage from "@/pages/TripPlannerPage";
 import TripDetailPage from "@/pages/TripDetailPage";
+import JoinTripPage from "@/pages/JoinTripPage";
 import AdminPanel from "@/pages/AdminPanel";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SettingsPage from "@/pages/SettingsPage";
