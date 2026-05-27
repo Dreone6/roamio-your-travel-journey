@@ -68,7 +68,7 @@ function nearestCountry(lat: number, lng: number): CountryDef {
   return best;
 }
 
-type FlagDatum = CountryDef & { count: number; recent: boolean };
+type FlagDatum = CountryDef & { count: number; recent: boolean; milestone: boolean };
 
 interface Props {
   pins: FlagGlobePin[];
