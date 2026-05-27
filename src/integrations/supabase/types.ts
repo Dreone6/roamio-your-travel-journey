@@ -18,8 +18,10 @@ export type Database = {
         Row: {
           badge_image: string | null
           badge_name: string
+          badge_slug: string | null
           category: string | null
           created_at: string
+          description: string | null
           earned_date: string
           id: string
           user_id: string
@@ -27,8 +29,10 @@ export type Database = {
         Insert: {
           badge_image?: string | null
           badge_name: string
+          badge_slug?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           earned_date?: string
           id?: string
           user_id: string
@@ -36,8 +40,10 @@ export type Database = {
         Update: {
           badge_image?: string | null
           badge_name?: string
+          badge_slug?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           earned_date?: string
           id?: string
           user_id?: string
@@ -148,37 +154,61 @@ export type Database = {
       }
       check_ins: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           id: string
+          is_milestone: boolean
           latitude: number | null
           location_name: string
           longitude: number | null
+          milestone_type: string | null
+          mood_tags: string[]
           notes: string | null
           photo: string | null
+          photos: string[]
           timestamp: string
           user_id: string
+          verification_metadata: Json
+          verified: boolean
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           location_name: string
           longitude?: number | null
+          milestone_type?: string | null
+          mood_tags?: string[]
           notes?: string | null
           photo?: string | null
+          photos?: string[]
           timestamp?: string
           user_id: string
+          verification_metadata?: Json
+          verified?: boolean
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           location_name?: string
           longitude?: number | null
+          milestone_type?: string | null
+          mood_tags?: string[]
           notes?: string | null
           photo?: string | null
+          photos?: string[]
           timestamp?: string
           user_id?: string
+          verification_metadata?: Json
+          verified?: boolean
         }
         Relationships: []
       }
@@ -297,6 +327,45 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_alerts: {
+        Row: {
+          active: boolean
+          alert_types: string[] | null
+          created_at: string
+          departure_date: string | null
+          destination: string | null
+          flight_number: string
+          id: string
+          last_status: Json | null
+          origin: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          alert_types?: string[] | null
+          created_at?: string
+          departure_date?: string | null
+          destination?: string | null
+          flight_number: string
+          id?: string
+          last_status?: Json | null
+          origin?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          alert_types?: string[] | null
+          created_at?: string
+          departure_date?: string | null
+          destination?: string | null
+          flight_number?: string
+          id?: string
+          last_status?: Json | null
+          origin?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -321,48 +390,87 @@ export type Database = {
         }
         Relationships: []
       }
+      itinerary_item_votes: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          trip_id: string
+          user_id: string
+          vote: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          trip_id: string
+          user_id: string
+          vote: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          trip_id?: string
+          user_id?: string
+          vote?: string
+        }
+        Relationships: []
+      }
       itinerary_items: {
         Row: {
           activity: string
+          completed: boolean
           created_at: string
           day_number: number
           description: string | null
           estimated_cost: number | null
           id: string
+          latitude: number | null
           location: string | null
+          longitude: number | null
           notes: string | null
           time: string | null
           time_block: string | null
+          tips: string | null
           trip_id: string
           type: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
         }
         Insert: {
           activity: string
+          completed?: boolean
           created_at?: string
           day_number: number
           description?: string | null
           estimated_cost?: number | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           time?: string | null
           time_block?: string | null
+          tips?: string | null
           trip_id: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
         }
         Update: {
           activity?: string
+          completed?: boolean
           created_at?: string
           day_number?: number
           description?: string | null
           estimated_cost?: number | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           time?: string | null
           time_block?: string | null
+          tips?: string | null
           trip_id?: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id?: string
@@ -575,6 +683,8 @@ export type Database = {
       }
       offer_interactions: {
         Row: {
+          claim_code: string | null
+          claim_expires_at: string | null
           created_at: string
           id: string
           interaction_type: string
@@ -582,6 +692,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          claim_code?: string | null
+          claim_expires_at?: string | null
           created_at?: string
           id?: string
           interaction_type?: string
@@ -589,6 +701,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          claim_code?: string | null
+          claim_expires_at?: string | null
           created_at?: string
           id?: string
           interaction_type?: string
@@ -680,6 +794,12 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          monthly_claim_target: number
+          monthly_revenue_target: number
+          monthly_view_target: number
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
         }
         Insert: {
           active?: boolean
@@ -693,6 +813,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monthly_claim_target?: number
+          monthly_revenue_target?: number
+          monthly_view_target?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
         }
         Update: {
           active?: boolean
@@ -706,6 +832,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monthly_claim_target?: number
+          monthly_revenue_target?: number
+          monthly_view_target?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
         }
         Relationships: []
       }
@@ -716,8 +848,10 @@ export type Database = {
           created_at: string
           date_visited: string | null
           id: string
+          is_milestone: boolean
           latitude: number | null
           longitude: number | null
+          milestone_type: string | null
           photos_count: number
           trip_id: string | null
           user_id: string
@@ -728,8 +862,10 @@ export type Database = {
           created_at?: string
           date_visited?: string | null
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
+          milestone_type?: string | null
           photos_count?: number
           trip_id?: string | null
           user_id: string
@@ -740,8 +876,10 @@ export type Database = {
           created_at?: string
           date_visited?: string | null
           id?: string
+          is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
+          milestone_type?: string | null
           photos_count?: number
           trip_id?: string | null
           user_id?: string
@@ -764,16 +902,19 @@ export type Database = {
           home_city: string | null
           id: string
           interests: string[] | null
+          is_private: boolean
           member_since: string
           name: string | null
           onboarding_completed: boolean
           profile_photo: string | null
           referral_code: string | null
+          total_checkins: number
           total_cities_visited: number
           total_countries_visited: number
           total_trips: number
           travel_style: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           bio?: string | null
@@ -782,16 +923,19 @@ export type Database = {
           home_city?: string | null
           id: string
           interests?: string[] | null
+          is_private?: boolean
           member_since?: string
           name?: string | null
           onboarding_completed?: boolean
           profile_photo?: string | null
           referral_code?: string | null
+          total_checkins?: number
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
           travel_style?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           bio?: string | null
@@ -800,16 +944,19 @@ export type Database = {
           home_city?: string | null
           id?: string
           interests?: string[] | null
+          is_private?: boolean
           member_since?: string
           name?: string | null
           onboarding_completed?: boolean
           profile_photo?: string | null
           referral_code?: string | null
+          total_checkins?: number
           total_cities_visited?: number
           total_countries_visited?: number
           total_trips?: number
           travel_style?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -1087,6 +1234,38 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_members: {
+        Row: {
+          id: string
+          joined_at: string
+          role: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          role?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          role?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_shares: {
         Row: {
           created_at: string
@@ -1119,13 +1298,17 @@ export type Database = {
       }
       trips: {
         Row: {
+          ai_generated: boolean
           budget: number | null
+          cover_photo: string | null
           created_at: string
           destination: string
           dietary: string | null
           end_date: string | null
           id: string
           interests: string[] | null
+          invite_code: string | null
+          is_collaborative: boolean
           pace: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
@@ -1136,13 +1319,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_generated?: boolean
           budget?: number | null
+          cover_photo?: string | null
           created_at?: string
           destination: string
           dietary?: string | null
           end_date?: string | null
           id?: string
           interests?: string[] | null
+          invite_code?: string | null
+          is_collaborative?: boolean
           pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
@@ -1153,13 +1340,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_generated?: boolean
           budget?: number | null
+          cover_photo?: string | null
           created_at?: string
           destination?: string
           dietary?: string | null
           end_date?: string | null
           id?: string
           interests?: string[] | null
+          invite_code?: string | null
+          is_collaborative?: boolean
           pace?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
@@ -1201,6 +1392,27 @@ export type Database = {
           relationship?: string | null
           share_live_location?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }
@@ -1255,11 +1467,46 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          referral_code: string | null
+          referred_by: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      find_trip_by_invite: {
+        Args: { _code: string }
+        Returns: {
+          destination: string
+          id: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
