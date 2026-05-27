@@ -145,6 +145,82 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes, year
     };
   }, [size.w, size.h]);
 
+  // ---- Country polygons (GeoJSON) ----
+  const [countries, setCountries] = useState<any[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+      .then(r => r.json())
+      .then(j => { if (!cancelled) setCountries(j.features || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const visitedSet = useMemo(() => new Set(VISITED.map(v => v.code.toUpperCase())), []);
+
+  // ---- Stars background (500 points on sphere) ----
+  useEffect(() => {
+    const g = globeRef.current;
+    if (!g || !size.w) return;
+    const scene = g.scene();
+    const positions: number[] = [];
+    const sizes: number[] = [];
+    const opacities: number[] = [];
+    for (let i = 0; i < 500; i++) {
+      const r = 200;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = 2 * Math.PI * Math.random();
+      positions.push(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+      );
+      sizes.push(0.3 + Math.random() * 1.2);
+      opacities.push(0.2 + Math.random() * 0.6);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xffffff, size: 1.0, transparent: true, opacity: 0.6, sizeAttenuation: true,
+    });
+    const points = new THREE.Points(geo, mat);
+    points.name = "roavr-stars";
+    scene.add(points);
+    return () => { scene.remove(points); geo.dispose(); mat.dispose(); };
+  }, [size.w, size.h]);
+
+  // ---- Idle drift to most visited region after 30s ----
+  useEffect(() => {
+    const g = globeRef.current;
+    if (!g) return;
+    let timer: number | null = null;
+    const reset = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        // pick highest-count country
+        const counts = new Map<string, number>();
+        pins.forEach(p => {
+          const c = nearestCountry(p.lat, p.lng);
+          counts.set(c.code, (counts.get(c.code) ?? 0) + 1);
+        });
+        let topCode = VISITED[0].code; let topN = 0;
+        counts.forEach((n, code) => { if (n > topN) { topN = n; topCode = code; } });
+        const c = VISITED.find(v => v.code === topCode) || VISITED[0];
+        g.pointOfView({ lat: c.lat, lng: c.lng, altitude: 2.0 }, 3000);
+      }, 30000);
+    };
+    const dom = g.renderer().domElement;
+    dom.addEventListener("pointerdown", reset);
+    dom.addEventListener("wheel", reset, { passive: true });
+    reset();
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      dom.removeEventListener("pointerdown", reset);
+      dom.removeEventListener("wheel", reset);
+    };
+  }, [pins]);
+
+
   // build flag data: 1 entry per visited country, with count of pins in that country
   const flagData: FlagDatum[] = useMemo(() => {
     const counts = new Map<string, number>();
