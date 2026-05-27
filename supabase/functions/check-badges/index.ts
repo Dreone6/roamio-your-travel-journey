@@ -7,90 +7,92 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const BADGE_DEFINITIONS = [
-  { name: "First Check In", category: "milestones", check: "check_ins", threshold: 1, image: "📍" },
-  { name: "Globetrotter", category: "milestones", check: "countries", threshold: 5, image: "🌍" },
-  { name: "Wanderer", category: "milestones", check: "cities", threshold: 10, image: "🧭" },
-  { name: "Foodie Explorer", category: "challenges", check: "food_challenges", threshold: 3, image: "🍜" },
-  { name: "Streak Keeper", category: "streaks", check: "streak_days", threshold: 30, image: "🔥" },
+type BadgeDef = {
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  emoji: string;
+  test: (s: Stats) => boolean;
+};
+
+type Stats = {
+  total_checkins: number;
+  countries_visited: number;
+  cities_visited: number;
+  total_landmarks: number;
+  total_trophies: number;
+  offers_claimed: number;
+  checkins_with_photos: number;
+};
+
+const BADGES: BadgeDef[] = [
+  { slug: "first-step", name: "First Step", description: "You logged your first check-in.", category: "milestone", emoji: "📍", test: s => s.total_checkins >= 1 },
+  { slug: "globetrotter-5", name: "Globetrotter", description: "Visited 5 countries.", category: "countries", emoji: "🌍", test: s => s.countries_visited >= 5 },
+  { slug: "world-citizen-15", name: "World Citizen", description: "Visited 15 countries.", category: "countries", emoji: "🌐", test: s => s.countries_visited >= 15 },
+  { slug: "explorer-25", name: "Explorer", description: "Visited 25 countries.", category: "countries", emoji: "🧭", test: s => s.countries_visited >= 25 },
+  { slug: "city-hopper-10", name: "City Hopper", description: "Visited 10 cities.", category: "cities", emoji: "🏙", test: s => s.cities_visited >= 10 },
+  { slug: "urban-legend-50", name: "Urban Legend", description: "Visited 50 cities.", category: "cities", emoji: "🌆", test: s => s.cities_visited >= 50 },
+  { slug: "landmark-hunter-3", name: "Landmark Hunter", description: "Unlocked 3 landmarks.", category: "landmarks", emoji: "🏛", test: s => s.total_landmarks >= 3 },
+  { slug: "landmark-master-10", name: "Landmark Master", description: "Unlocked 10 landmarks.", category: "landmarks", emoji: "🗽", test: s => s.total_landmarks >= 10 },
+  { slug: "trophy-collector", name: "Trophy Collector", description: "Earned 5 trophies.", category: "trophy", emoji: "🏆", test: s => s.total_trophies >= 5 },
+  { slug: "deal-seeker", name: "Deal Seeker", description: "Claimed your first partner offer.", category: "milestone", emoji: "🎟", test: s => s.offers_claimed >= 1 },
+  { slug: "memory-maker", name: "Memory Maker", description: "10 check-ins with photos.", category: "milestone", emoji: "📸", test: s => s.checkins_with_photos >= 10 },
 ];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
   try {
     const { user_id } = await req.json();
     if (!user_id) throw new Error("user_id required");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    // Fetch user stats
-    const [checkInsRes, placesRes, challengesRes, badgesRes] = await Promise.all([
-      supabase.from("check_ins").select("id, timestamp").eq("user_id", user_id),
-      supabase.from("places_visited").select("id, country, city").eq("user_id", user_id),
-      supabase.from("challenges").select("id, status, challenge_text").eq("user_id", user_id).eq("status", "completed"),
-      supabase.from("badges").select("badge_name").eq("user_id", user_id),
+    const [places, checks, badgesExisting, offers] = await Promise.all([
+      supabase.from("places_visited").select("country,city,is_milestone").eq("user_id", user_id),
+      supabase.from("check_ins").select("id,photo,photos").eq("user_id", user_id),
+      supabase.from("badges").select("badge_slug").eq("user_id", user_id),
+      supabase.from("offer_interactions").select("id").eq("user_id", user_id).eq("interaction_type", "claim"),
     ]);
 
-    const checkInCount = checkInsRes.data?.length || 0;
-    const countries = new Set(placesRes.data?.map((p: any) => p.country) || []).size;
-    const cities = new Set(placesRes.data?.map((p: any) => `${p.city}-${p.country}`) || []).size;
-    const foodChallenges = challengesRes.data?.filter((c: any) =>
-      c.challenge_text?.toLowerCase().includes("food") ||
-      c.challenge_text?.toLowerCase().includes("restaurant") ||
-      c.challenge_text?.toLowerCase().includes("eat") ||
-      c.challenge_text?.toLowerCase().includes("cuisine")
-    ).length || 0;
+    const countries = new Set((places.data || []).map((p: any) => p.country)).size;
+    const cities = new Set((places.data || []).map((p: any) => `${p.city}-${p.country}`)).size;
+    const landmarks = (places.data || []).filter((p: any) => p.is_milestone).length;
+    const total_checkins = checks.data?.length || 0;
+    const checkins_with_photos = (checks.data || []).filter((c: any) => c.photo || (c.photos && c.photos.length > 0)).length;
+    const offers_claimed = offers.data?.length || 0;
 
-    // Calculate streak (consecutive days)
-    let streakDays = 0;
-    if (checkInsRes.data && checkInsRes.data.length > 0) {
-      const dates = new Set(
-        checkInsRes.data.map((c: any) => new Date(c.timestamp).toISOString().split("T")[0])
-      );
-      const sorted = [...dates].sort().reverse();
-      const today = new Date().toISOString().split("T")[0];
-      let checkDate = today;
-      for (const d of sorted) {
-        if (d === checkDate) {
-          streakDays++;
-          const prev = new Date(checkDate);
-          prev.setDate(prev.getDate() - 1);
-          checkDate = prev.toISOString().split("T")[0];
-        } else if (d < checkDate) {
-          break;
-        }
-      }
-    }
+    const owned = new Set((badgesExisting.data || []).map((b: any) => b.badge_slug).filter(Boolean));
 
-    const existingBadges = new Set(badgesRes.data?.map((b: any) => b.badge_name) || []);
-
-    const stats: Record<string, number> = {
-      check_ins: checkInCount,
-      countries,
-      cities,
-      food_challenges: foodChallenges,
-      streak_days: streakDays,
+    // First pass: count current trophies (badges) excluding pending new ones for the trophy-collector check
+    let trophies = owned.size;
+    const stats: Stats = {
+      total_checkins, countries_visited: countries, cities_visited: cities,
+      total_landmarks: landmarks, total_trophies: trophies,
+      offers_claimed, checkins_with_photos,
     };
 
-    const awarded: string[] = [];
-    for (const badge of BADGE_DEFINITIONS) {
-      if (existingBadges.has(badge.name)) continue;
-      if (stats[badge.check] >= badge.threshold) {
-        await supabase.from("badges").insert({
-          user_id,
-          badge_name: badge.name,
-          badge_image: badge.image,
-          category: badge.category,
-          earned_date: new Date().toISOString().split("T")[0],
-        });
-        awarded.push(badge.name);
+    const newly: any[] = [];
+    for (const b of BADGES) {
+      if (owned.has(b.slug)) continue;
+      // re-evaluate trophy count each iteration so trophy-collector triggers when threshold met
+      stats.total_trophies = trophies;
+      if (!b.test(stats)) continue;
+      const { error } = await supabase.from("badges").insert({
+        user_id, badge_slug: b.slug, badge_name: b.name, description: b.description,
+        category: b.category, badge_image: b.emoji,
+        earned_date: new Date().toISOString().split("T")[0],
+      });
+      if (!error) {
+        owned.add(b.slug); trophies += 1;
+        newly.push({ slug: b.slug, name: b.name, description: b.description, category: b.category, emoji: b.emoji });
       }
     }
 
-    return new Response(JSON.stringify({ awarded, stats }), {
+    return new Response(JSON.stringify({ newly_awarded: newly, stats }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
