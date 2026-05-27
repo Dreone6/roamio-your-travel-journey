@@ -363,45 +363,57 @@ export type Database = {
       itinerary_items: {
         Row: {
           activity: string
+          completed: boolean
           created_at: string
           day_number: number
           description: string | null
           estimated_cost: number | null
           id: string
+          latitude: number | null
           location: string | null
+          longitude: number | null
           notes: string | null
           time: string | null
           time_block: string | null
+          tips: string | null
           trip_id: string
           type: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
         }
         Insert: {
           activity: string
+          completed?: boolean
           created_at?: string
           day_number: number
           description?: string | null
           estimated_cost?: number | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           time?: string | null
           time_block?: string | null
+          tips?: string | null
           trip_id: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id: string
         }
         Update: {
           activity?: string
+          completed?: boolean
           created_at?: string
           day_number?: number
           description?: string | null
           estimated_cost?: number | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           time?: string | null
           time_block?: string | null
+          tips?: string | null
           trip_id?: string
           type?: Database["public"]["Enums"]["itinerary_type"]
           user_id?: string
@@ -1208,7 +1220,9 @@ export type Database = {
       }
       trips: {
         Row: {
+          ai_generated: boolean
           budget: number | null
+          cover_photo: string | null
           created_at: string
           destination: string
           dietary: string | null
@@ -1225,7 +1239,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_generated?: boolean
           budget?: number | null
+          cover_photo?: string | null
           created_at?: string
           destination: string
           dietary?: string | null
@@ -1242,7 +1258,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_generated?: boolean
           budget?: number | null
+          cover_photo?: string | null
           created_at?: string
           destination?: string
           dietary?: string | null
