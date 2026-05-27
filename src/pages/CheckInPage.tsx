@@ -42,6 +42,8 @@ export default function CheckInPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { checkBadges } = useBadges();
+
 
   const [tab, setTab] = useState<"new" | "history">("new");
   const [step, setStep] = useState<Step>("detecting");
