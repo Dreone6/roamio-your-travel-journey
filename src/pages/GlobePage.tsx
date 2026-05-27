@@ -72,6 +72,8 @@ export default function GlobePage() {
   const [contextPin, setContextPin] = useState<MapPin | null>(null);
   const [contextOpen, setContextOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
+  const [trophyOpen, setTrophyOpen] = useState(false);
+
 
   useEffect(() => { ensureLocationPermission().catch(() => {}); }, []);
 
