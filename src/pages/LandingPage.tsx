@@ -1,18 +1,64 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   ArrowRight, Check, Crown, Zap, Sparkles, Globe, MapPin,
   Camera, Shield, MessageCircle, Users, Map, Compass, Star,
   ChevronRight, Play, Heart, Lock, Eye, Navigation, Trophy,
+  Loader2, Copy,
 } from "lucide-react";
 import roavrLogo from "@/assets/roavr-logo.png";
 import miloMascot from "@/assets/roavr-pin.png";
 import { PLANS } from "@/services/subscriptions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+function genReferralCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function useWaitlistForm(source: "user" | "partner") {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [code, setCode] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    setLoading(true);
+    const referral_code = genReferralCode();
+    const { error } = await supabase
+      .from("waitlist")
+      .insert({ email: email.toLowerCase().trim(), source, referral_code });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message.toLowerCase().includes("duplicate") ? "You're already on the list." : "Something went wrong. Try again.");
+      return;
+    }
+    setCode(referral_code);
+    toast.success(source === "partner" ? "Application received." : "You're on the list!");
+  };
+  return { email, setEmail, loading, code, submit };
+}
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const userForm = useWaitlistForm("user");
+  const partnerForm = useWaitlistForm("partner");
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  const copyCode = (c: string) => {
+    navigator.clipboard.writeText(c);
+    toast.success("Referral code copied");
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
