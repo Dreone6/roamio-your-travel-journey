@@ -26,6 +26,7 @@ const ICON_MAP: Record<string, any> = {
   map_viewed: Eye,
   new_follower: UserPlus,
   trip_invite: Plane,
+  flight_alert: Plane,
 };
 
 export default function NotificationsPage() {
@@ -117,7 +118,7 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${n.read ? "" : "bg-accent/5"}`}
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors border-l-2 ${n.read ? "border-transparent" : "border-[#F59E0B] bg-accent/5"}`}
                 >
                   <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${n.read ? "bg-secondary" : "bg-accent/10"}`}>
                     <Icon className={`h-4 w-4 ${n.read ? "text-muted-foreground" : "text-accent"}`} />
