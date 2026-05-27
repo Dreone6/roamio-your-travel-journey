@@ -300,8 +300,10 @@ export default function GlobePage() {
                   key={recenterKey}
                   pins={globePins}
                   arcs={globeArcs}
+                  milestoneCodes={["it", "jp", "za"]}
                   onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
                 />
+
               </Suspense>
             ) : (
               <FlatMapView
