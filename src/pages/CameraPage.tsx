@@ -90,7 +90,7 @@ export default function CameraPage() {
         async (pos) => {
           try {
             const { data } = await supabase.functions.invoke("reverse-geocode", {
-              body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+              body: { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
             });
             setDetectedCity(data?.city || "Positano");
           } catch {
