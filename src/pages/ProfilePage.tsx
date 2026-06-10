@@ -224,6 +224,11 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      {/* 4b. SAFEPASS — personal safety lives on profile, not feed */}
+      <div className="px-5 mt-5">
+        <SafePassCard />
+      </div>
+
       {/* 5. HIGHLIGHTS ───────────────────────────── */}
       <div className="mt-7">
         <div className="px-5 flex items-center justify-between mb-3">
