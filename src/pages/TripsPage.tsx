@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, ChevronRight, Sparkles, Plane, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import NewTripForm from "@/components/trip/NewTripForm";
 import ItineraryView from "@/components/trip/ItineraryView";
 import BookingImportSheet from "@/components/bookings/BookingImportSheet";
+import NearbySection from "@/components/trips/NearbySection";
 
 type ViewState = "list" | "new" | "view";
 type TabKey = "upcoming" | "past" | "drafts";
@@ -44,6 +45,8 @@ const CANON_PAST: Trip = {
 export default function TripsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const focusNearby = searchParams.get("nearby") === "1";
   const [view, setView] = useState<ViewState>("list");
   const [tab, setTab] = useState<TabKey>("upcoming");
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -51,6 +54,15 @@ export default function TripsPage() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [itineraryItems, setItineraryItems] = useState<any[]>([]);
   const [importOpen, setImportOpen] = useState(false);
+
+  useEffect(() => {
+    if (focusNearby) {
+      // Smooth-scroll to the nearby section after render
+      setTimeout(() => {
+        document.getElementById("nearby-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
+    }
+  }, [focusNearby]);
 
   useEffect(() => {
     if (user) loadTrips();
