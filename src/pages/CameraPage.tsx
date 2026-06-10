@@ -417,6 +417,11 @@ function EditScreen({
           }}
         />
 
+        {/* Geo filter overlay */}
+        {geoFilter && <GeoFilterOverlay filter={geoFilter} />}
+
+
+
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 px-5 pt-12 flex items-center justify-between">
           <button onClick={onRetake} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
