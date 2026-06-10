@@ -1,118 +1,82 @@
-# Roavr Travel Command Center
+# Build Plan — Home Stories, Camera Filters, SafePass, Nearby
 
-Add 8 feature modules into the existing Roavr app without touching the current navigation, design system, or core flows. All new screens follow the established Playfair/Plus Jakarta typography, Deep Royal Blue accents, dark-immersive cards, and Milo branding.
+Four coordinated changes wired to Cloud where the tables already exist.
 
-## Scope summary
+## 1. 24h Stories row on Home
 
-| Module | Entry point | New screens / components |
-|---|---|---|
-| 1. Smart Booking Import | Trips page → "Import booking" | `BookingImportSheet`, `BookingsList`, `ManualBookingForm` |
-| 2. Shareable Itinerary | Trip detail → Share button | `ShareItinerarySheet`, public `/i/:token` view |
-| 3. Travel Stats & Globe Tracking | Globe + Profile | `TravelStatsDashboard` (extends `GlobeStatsBar`) |
-| 4. Anywhere / Surprise Me | Trips → "Surprise Me" CTA (already exists) | `SurpriseMePage` (multi-step wizard + AI suggestions) |
-| 5. Get Around Planner | Itinerary item → "How do I get there?" | `GetAroundSheet` |
-| 6. Offline Trip Mode | Trip detail → "Save offline" (Pro) | `OfflineTripToggle`, IndexedDB cache |
-| 7. Activities & Experiences | Discover page tabs | `ExperienceCard`, expanded categories |
-| 8. SafePass Enhancements | SafePass page | `TrustedContactsList`, `LiveLocationToggle` |
+**Location:** Top of `src/pages/HomePage.tsx`, immediately under the greeting/header, above existing modules.
 
-## Database (one migration)
+**Component:** new `src/components/home/StoriesRow.tsx`
+- Horizontal scroller, 72px circular avatars with gradient ring (blue → coral) for unseen, muted ring for seen.
+- First tile = **Your Story** with `+` overlay → routes to `/camera`. If user has an active story, shows their thumbnail with the gradient ring; tap opens viewer.
+- Followers' tiles next, ordered by `created_at desc`.
+- Click → fullscreen viewer (`StoryViewer` modal) with tap-right/left navigation, 5s autoplay per slide, progress bars at top, location chip, "View pin on Globe" CTA.
 
-```sql
--- Bookings imported into trips
-create table public.bookings (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  trip_id uuid,
-  type text not null check (type in ('flight','hotel','car','tour','restaurant','transfer','train','bus','event')),
-  provider text,
-  confirmation_code text,
-  title text not null,
-  start_at timestamptz,
-  end_at timestamptz,
-  location text,
-  details jsonb default '{}'::jsonb,
-  source text not null default 'manual', -- manual | email | forward
-  created_at timestamptz default now()
-);
+**Data:** Query `public.stories` filtered to `expires_at > now()` and (own story OR `user_id IN (followed users)`). Group by user for the row. Join `profiles` for name/avatar.
 
--- Public share tokens for itineraries
-create table public.trip_shares (
-  id uuid primary key default gen_random_uuid(),
-  trip_id uuid not null,
-  user_id uuid not null,
-  token text unique not null default encode(gen_random_bytes(12),'hex'),
-  visibility text not null default 'private', -- public | followers | private | encrypted
-  expires_at timestamptz,
-  created_at timestamptz default now()
-);
+**24h → permanent pin (existing spec):** Already handled by `convert-stories-to-memories` edge function. On story view exit, if `expires_at` has passed since open, refresh the row.
 
--- Trusted contacts for SafePass
-create table public.trusted_contacts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  name text not null,
-  phone text,
-  email text,
-  relationship text,
-  share_live_location boolean default false,
-  created_at timestamptz default now()
-);
+## 2. Camera geo-filters (Snapchat-style)
 
--- Live location pings
-create table public.live_locations (
-  user_id uuid primary key,
-  latitude double precision,
-  longitude double precision,
-  updated_at timestamptz default now(),
-  active boolean default false
-);
-```
+**Files:**
+- `src/pages/CameraPage.tsx` — wire filter carousel below viewport
+- new `src/components/camera/GeoFilterCarousel.tsx`
+- new `src/lib/geoFilters.ts` — curated pack + AI fallback resolver
+- new edge function `supabase/functions/generate-geo-filter/index.ts` — Lovable AI image gen, returns transparent PNG URL
 
-All tables get RLS: owners can CRUD their own rows; `trip_shares` with visibility=public readable by anyone via token.
+**Curated pack (15 cities/landmarks):** Rome (Colosseum stamp), Paris (Eiffel silhouette), NYC (skyline), Bali (palm/sun), Positano (cliff houses), Tokyo (torii), London (Big Ben), Barcelona, Reykjavik, Cape Town, Marrakech, Bangkok, Rio, Sydney, Santorini. Each is an SVG/PNG overlay in `src/assets/geofilters/`.
 
-## Implementation notes
+**Flow on camera open:**
+1. Request location (`ensureLocationPermission`).
+2. Reverse-geocode via existing `reverse-geocode` edge function → city/country.
+3. `resolveGeoFilters(lat,lng,city)`:
+   - Match curated by city name → return up to 5 curated frames.
+   - If `<3` matches, call `generate-geo-filter` for an AI-themed frame (cached by city key in localStorage 24h).
+4. Render carousel: swipe to apply overlay on captured photo (composited on confirm screen — keep live viewport clean per Roavr spec).
 
-- **Booking import**: UI only for now. "Forward booking email" shows the user a unique address `bookings+<userid>@roavr.app` (placeholder). "Manual add" opens a typed form that writes to `bookings`. Trip detail merges bookings into the timeline alongside `itinerary_items`.
-- **Shareable itinerary**: New route `/i/:token` renders a clean read-only itinerary using existing `ItineraryView` styles. Share sheet generates token + copy link / native share.
-- **Travel stats**: New `TravelStatsDashboard.tsx` aggregates from `places_visited`, `check_ins`, `memories`, `trips`, `badges`. Adds miles (haversine between visits), continents, streaks (consecutive months with a trip), heritage sites (static list cross-referenced with cities), favorites (most-visited).
-- **Surprise Me**: Wizard reusing `NewTripForm` step style. Calls Lovable AI (`google/gemini-2.5-flash`) with a structured prompt → returns 3 destinations with cost/safety/vibe. New edge function `surprise-destinations`.
-- **Get Around**: Static modes list with placeholder ETA/cost. Button added to `ItineraryView` rows and `PinDetailSheet`.
-- **Offline mode**: Toggle that serializes trip + bookings + map pins to IndexedDB via `idb-keyval`. Pro-gated with soft nudge (uses `useSubscription`).
-- **Discover expansion**: Add category tabs (Tours, Activities, Restaurants, Nightlife, Guides, Hotels, Transfers, Events, Hidden Gems, Creator Picks) with mock data + affiliate-ready card.
-- **SafePass**: `TrustedContactsList` CRUD + `LiveLocationToggle` that updates `live_locations` (uses existing `ensureLocationPermission`).
+## 3. Move SafePass off feed/trip screens
 
-## Files
+**Remove `SafePassCard` from:**
+- `HomePage.tsx`
+- any active-trip detail (audit `TripsPage.tsx` + `PlanPage.tsx`)
 
-**New**
-- `src/components/bookings/BookingImportSheet.tsx`
-- `src/components/bookings/ManualBookingForm.tsx`
-- `src/components/bookings/BookingsList.tsx`
-- `src/components/trip/ShareItinerarySheet.tsx`
-- `src/components/trip/GetAroundSheet.tsx`
-- `src/components/trip/OfflineTripToggle.tsx`
-- `src/components/globe/TravelStatsDashboard.tsx`
-- `src/components/safety/TrustedContactsList.tsx`
-- `src/components/safety/LiveLocationToggle.tsx`
-- `src/components/discover/ExperienceCard.tsx`
-- `src/pages/SurpriseMePage.tsx`
-- `src/pages/SharedItineraryPage.tsx` (route `/i/:token`)
-- `src/lib/offlineCache.ts`
-- `src/lib/travelStats.ts`
-- `supabase/functions/surprise-destinations/index.ts`
-- one migration for the 4 tables above
+**Add to `ProfilePage.tsx`:** "Travel Safety" section above settings list, using the existing `<SafePassCard variant="compact" />`. Tap → `/safety`.
 
-**Edited**
-- `src/App.tsx` (routes for `/surprise`, `/i/:token`)
-- `src/pages/TripsPage.tsx` (Import booking + wire Surprise Me)
-- `src/components/trip/ItineraryView.tsx` (Share button, Get Around, Offline toggle, bookings rows)
-- `src/pages/GlobePage.tsx` (TravelStatsDashboard)
-- `src/pages/ProfilePage.tsx` (mini stats)
-- `src/pages/DiscoverPage.tsx` (category tabs + experience cards)
-- `src/pages/SafePassPage.tsx` (trusted contacts + live location)
+## 4. Nearby section (stays / activities / local specials)
 
-## Out of scope (placeholders only)
+**Compact strip on Home** — new `src/components/home/NearbyStrip.tsx`
+- Horizontal scroller, 3 chip-filters (All / Stays / Eat & Drink / Activities).
+- Cards 220×140: image, name, distance, deal badge.
+- 6 items max, "See all" → `/trips` with `?nearby=1`.
 
-- Real email parsing / IMAP — UI scaffolds the address but no inbox runs.
-- Real affiliate booking — cards include CTA but link to `#`.
-- Real offline map tiles — only metadata is cached; map needs network.
-- Real-time live-location streaming to contacts — writes to table; sharing UI noted as "coming soon".
+**Full section in Trips** — new `src/components/trips/NearbySection.tsx`, embedded in `TripsPage.tsx` under active trip.
+- Tabbed (Stays / Activities / Local specials), distance slider 1-25 mi, sorted by distance.
+
+**Data:** Use existing `public.partner_offers` table + `public.nearby_offers(lat,lng,radius_miles)` RPC (already in DB). Falls back to seeded mock rows if RPC returns empty. Category split derived from `partner_offers.category`.
+
+**Seed:** insert ~20 demo partner_offers across stay/food/experience around Positano (matches canonical "latest pin Positano 2h ago") so the strip is populated for the demo user.
+
+## Technical notes
+
+- All new components follow brand tokens (Sora/DM Sans, `#3B82F6` accent, no glassmorphism outside camera).
+- Stories ring uses linear-gradient(135deg, #3B82F6, #F4A261) only when unseen.
+- AI geo-filter edge function uses Lovable AI Gateway (`google/gemini-3-flash-image-preview`) — no extra secret.
+- All edge functions include CORS; story viewer/nearby strip use Realtime subscription on `stories` and `partner_offers` so the home feed updates live.
+- No schema changes required — leveraging existing `stories`, `profiles`, `follows`, `partner_offers`, `nearby_offers()`.
+
+## Files added/edited
+
+Added:
+- `src/components/home/StoriesRow.tsx`, `StoryViewer.tsx`
+- `src/components/home/NearbyStrip.tsx`
+- `src/components/trips/NearbySection.tsx`
+- `src/components/camera/GeoFilterCarousel.tsx`
+- `src/lib/geoFilters.ts`
+- `src/assets/geofilters/*.svg` (15 frames)
+- `supabase/functions/generate-geo-filter/index.ts`
+
+Edited:
+- `src/pages/HomePage.tsx` (add Stories + Nearby, remove SafePass)
+- `src/pages/CameraPage.tsx` (filter carousel + apply on confirm)
+- `src/pages/ProfilePage.tsx` (add SafePass)
+- `src/pages/TripsPage.tsx` (NearbySection)
