@@ -711,6 +711,9 @@ function PublishSheet({
 }) {
   const [vis, setVis] = useState<Visibility>("private");
   const [posting, setPosting] = useState(false);
+  const isVideo = !!pickedFile?.type.startsWith("video/");
+  const maxDuration = isVideo ? 60 : 30;
+  const [duration, setDuration] = useState<number>(isVideo ? 15 : 5);
 
   const post = async (savePrivate: boolean) => {
     if (!userId) {
@@ -733,7 +736,7 @@ function PublishSheet({
       const { error } = await supabase.from("memories").insert({
         user_id: userId,
         media_url: mediaUrl,
-        media_type: "photo",
+        media_type: isVideo ? "video" : "photo",
         visibility,
         pinned_to_globe: true,
         latitude: location?.latitude ?? null,
@@ -741,6 +744,20 @@ function PublishSheet({
         source: "camera",
       });
       if (error) throw error;
+
+      // Also publish as a 24h story when shared with followers/public
+      if (visibility !== "private") {
+        await supabase.from("stories").insert({
+          user_id: userId,
+          media_url: mediaUrl,
+          media_type: isVideo ? "video" : "photo",
+          visibility,
+          duration_seconds: duration,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+          auto_save_to_globe: true,
+        });
+      }
       toast.success("Pinned to your World globe");
       onPosted();
     } catch (e: any) {
