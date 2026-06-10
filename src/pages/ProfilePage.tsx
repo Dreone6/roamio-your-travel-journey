@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import roavrPin from "@/assets/roavr-pin.png";
 import { CURRENT_USER, MOCK_TRIPS, MOCK_BADGES, MOCK_MEMORIES } from "@/data";
+import SafePassCard from "@/components/safety/SafePassCard";
 
 // CANONICAL DATA — must match every other screen
 const CANON = {
