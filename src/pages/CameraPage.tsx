@@ -260,6 +260,15 @@ export default function CameraPage() {
         )}
       </div>
 
+      {/* Geo filters (Snapchat-style) — only in Photo mode */}
+      {mode === "Photo" && (
+        <GeoFilterCarousel
+          city={detectedCity}
+          selectedId={selectedGeoFilter?.id ?? null}
+          onSelect={setSelectedGeoFilter}
+        />
+      )}
+
       {/* Mode selector — text only */}
       <div className="flex items-center justify-center gap-8 pb-3">
         {MODES.map((m) => {
