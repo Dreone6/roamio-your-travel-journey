@@ -8,8 +8,10 @@ import {
   Eye, Loader2, CheckCircle2, Plus, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ensurePhotoPermission } from "@/lib/permissions";
+import { ensurePhotoPermission, ensureLocationPermission } from "@/lib/permissions";
 import { geotagPhoto, type PhotoLocation } from "@/lib/exif";
+import GeoFilterCarousel, { GeoFilterOverlay } from "@/components/camera/GeoFilterCarousel";
+import type { GeoFilter } from "@/lib/geoFilters";
 
 // ─────────────────────────── DATA ───────────────────────────
 
