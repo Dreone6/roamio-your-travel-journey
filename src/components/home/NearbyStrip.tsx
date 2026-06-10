@@ -15,21 +15,21 @@ interface Offer {
 }
 
 const CATEGORY_LABEL: Record<string, { tag: string; bg: string }> = {
-  stay:        { tag: "STAY",  bg: "#8B5CF6" },
-  food:        { tag: "EATS",  bg: "#F59E0B" },
-  experience:  { tag: "TOUR",  bg: "#10B981" },
-  activity:    { tag: "TOUR",  bg: "#10B981" },
-  nightlife:   { tag: "NIGHT", bg: "#EC4899" },
-  shopping:    { tag: "SHOP",  bg: "#3B82F6" },
-  wellness:    { tag: "SPA",   bg: "#06B6D4" },
-  other:       { tag: "DEAL",  bg: "#3B82F6" },
+  lodging:    { tag: "STAY",  bg: "#8B5CF6" },
+  stay:       { tag: "STAY",  bg: "#8B5CF6" },
+  food:       { tag: "EATS",  bg: "#F59E0B" },
+  activity:   { tag: "TOUR",  bg: "#10B981" },
+  experience: { tag: "TOUR",  bg: "#10B981" },
+  transport:  { tag: "RIDE",  bg: "#06B6D4" },
+  shopping:   { tag: "SHOP",  bg: "#3B82F6" },
+  other:      { tag: "DEAL",  bg: "#EC4899" },
 };
 
 const FILTERS = [
   { id: "all", label: "All" },
-  { id: "stay", label: "Stays" },
+  { id: "lodging", label: "Stays" },
   { id: "food", label: "Eat & Drink" },
-  { id: "experience", label: "Activities" },
+  { id: "activity", label: "Activities" },
 ] as const;
 type FilterId = typeof FILTERS[number]["id"];
 

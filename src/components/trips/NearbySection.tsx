@@ -14,15 +14,15 @@ interface Offer {
 }
 
 const TABS = [
-  { id: "stay", label: "Stays", match: (c: string) => c === "stay" },
+  { id: "stay", label: "Stays", match: (c: string) => c === "lodging" || c === "stay" },
   { id: "activity", label: "Activities", match: (c: string) => c === "experience" || c === "activity" },
-  { id: "deal", label: "Local Specials", match: (c: string) => ["food","nightlife","shopping","wellness","other"].includes(c) },
+  { id: "deal", label: "Local Specials", match: (c: string) => ["food","shopping","other","transport","nightlife","wellness"].includes(c) },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
 const CAT_BG: Record<string, string> = {
-  stay: "#8B5CF6", food: "#F59E0B", experience: "#10B981", activity: "#10B981",
-  nightlife: "#EC4899", shopping: "#3B82F6", wellness: "#06B6D4", other: "#3B82F6",
+  lodging: "#8B5CF6", stay: "#8B5CF6", food: "#F59E0B", experience: "#10B981", activity: "#10B981",
+  shopping: "#3B82F6", transport: "#06B6D4", other: "#EC4899",
 };
 
 // Positano (latest pin)
