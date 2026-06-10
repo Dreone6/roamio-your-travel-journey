@@ -67,6 +67,8 @@ export default function CameraPage() {
   const [pickedFile, setPickedFile] = useState<File | null>(null);
   const [pickedPreview, setPickedPreview] = useState<string | null>(null);
   const [autoLocation, setAutoLocation] = useState<PhotoLocation | null>(null);
+  const [detectedCity, setDetectedCity] = useState<string | null>(null);
+  const [selectedGeoFilter, setSelectedGeoFilter] = useState<GeoFilter | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
@@ -75,6 +77,31 @@ export default function CameraPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  // Reverse-geocode on mount so geo filters know which city we're in
+  useEffect(() => {
+    (async () => {
+      const ok = await ensureLocationPermission();
+      if (!ok) {
+        setDetectedCity("Positano"); // canonical fallback
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const { data } = await supabase.functions.invoke("reverse-geocode", {
+              body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            });
+            setDetectedCity(data?.city || "Positano");
+          } catch {
+            setDetectedCity("Positano");
+          }
+        },
+        () => setDetectedCity("Positano"),
+        { timeout: 8000, maximumAge: 5 * 60e3 }
+      );
+    })();
+  }, []);
 
   const reset = () => {
     setEditing(false);
