@@ -323,12 +323,14 @@ function EditScreen({
   onSave,
   onPostMoment,
   location,
+  geoFilter,
 }: {
   previewUrl: string;
   onRetake: () => void;
   onSave: () => void;
   onPostMoment: () => void;
   location: PhotoLocation | null;
+  geoFilter?: GeoFilter | null;
 }) {
   const { user } = useAuth();
   const [tab, setTab] = useState<TabId>("frames");
