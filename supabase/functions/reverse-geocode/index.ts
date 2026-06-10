@@ -10,7 +10,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { latitude, longitude, generate_challenge } = await req.json();
+    const body = await req.json();
+    const latitude = typeof body.latitude === "number" ? body.latitude : body.lat;
+    const longitude = typeof body.longitude === "number" ? body.longitude : body.lng;
+    const generate_challenge = body.generate_challenge;
 
     if (typeof latitude !== "number" || typeof longitude !== "number") {
       return new Response(JSON.stringify({ error: "latitude and longitude are required" }), {
