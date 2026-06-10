@@ -1,0 +1,1 @@
+ALTER TABLE public.stories ADD COLUMN IF NOT EXISTS duration_seconds integer NOT NULL DEFAULT 5 CHECK (duration_seconds BETWEEN 1 AND 60);
