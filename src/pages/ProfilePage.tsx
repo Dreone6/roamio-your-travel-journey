@@ -230,6 +230,27 @@ export default function ProfilePage() {
         <SafePassCard />
       </div>
 
+      {/* 4c. YOUR WORLD — moved here from Home */}
+      <div className="px-5 mt-5">
+        <button
+          onClick={() => navigate("/globe")}
+          className="w-full text-left rounded-[24px] p-5 active:scale-[0.99] transition-transform"
+          style={{ background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
+        >
+          <div className="flex items-center gap-2">
+            <GlobeIcon className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+            <h3 className="flex-1 text-white" style={{ fontSize: 16, fontWeight: 600 }}>Your World</h3>
+            <ChevronRight className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+          </div>
+          <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+            {CANON.countries} countries · {CANON.cities} cities · {CANON.memories} memories
+          </p>
+          <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12 }}>
+            Latest Pin: Positano, Italy · 2h ago
+          </p>
+        </button>
+      </div>
+
       {/* 5. HIGHLIGHTS ───────────────────────────── */}
       <div className="mt-7">
         <div className="px-5 flex items-center justify-between mb-3">
