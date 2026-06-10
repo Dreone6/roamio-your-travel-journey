@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import roavrPin from "@/assets/roavr-pin.png";
 import { CURRENT_USER, MOCK_TRIPS, MOCK_BADGES, MOCK_MEMORIES } from "@/data";
+import SafePassCard from "@/components/safety/SafePassCard";
 
 // CANONICAL DATA — must match every other screen
 const CANON = {
@@ -222,6 +223,11 @@ export default function ProfilePage() {
         >
           <Share2 className="h-5 w-5" strokeWidth={1.5} />
         </button>
+      </div>
+
+      {/* 4b. SAFEPASS — personal safety lives on profile, not feed */}
+      <div className="px-5 mt-5">
+        <SafePassCard />
       </div>
 
       {/* 5. HIGHLIGHTS ───────────────────────────── */}

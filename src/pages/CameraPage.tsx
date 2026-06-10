@@ -8,8 +8,10 @@ import {
   Eye, Loader2, CheckCircle2, Plus, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ensurePhotoPermission } from "@/lib/permissions";
+import { ensurePhotoPermission, ensureLocationPermission } from "@/lib/permissions";
 import { geotagPhoto, type PhotoLocation } from "@/lib/exif";
+import GeoFilterCarousel, { GeoFilterOverlay } from "@/components/camera/GeoFilterCarousel";
+import type { GeoFilter } from "@/lib/geoFilters";
 
 // ─────────────────────────── DATA ───────────────────────────
 
@@ -65,6 +67,8 @@ export default function CameraPage() {
   const [pickedFile, setPickedFile] = useState<File | null>(null);
   const [pickedPreview, setPickedPreview] = useState<string | null>(null);
   const [autoLocation, setAutoLocation] = useState<PhotoLocation | null>(null);
+  const [detectedCity, setDetectedCity] = useState<string | null>(null);
+  const [selectedGeoFilter, setSelectedGeoFilter] = useState<GeoFilter | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
@@ -73,6 +77,31 @@ export default function CameraPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  // Reverse-geocode on mount so geo filters know which city we're in
+  useEffect(() => {
+    (async () => {
+      const ok = await ensureLocationPermission();
+      if (!ok) {
+        setDetectedCity("Positano"); // canonical fallback
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const { data } = await supabase.functions.invoke("reverse-geocode", {
+              body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            });
+            setDetectedCity(data?.city || "Positano");
+          } catch {
+            setDetectedCity("Positano");
+          }
+        },
+        () => setDetectedCity("Positano"),
+        { timeout: 8000, maximumAge: 5 * 60e3 }
+      );
+    })();
+  }, []);
 
   const reset = () => {
     setEditing(false);
@@ -129,6 +158,7 @@ export default function CameraPage() {
         onSave={() => { toast.success("Saved privately to your globe"); reset(); navigate("/globe"); }}
         onPostMoment={() => setPublishOpen(true)}
         location={autoLocation}
+        geoFilter={selectedGeoFilter}
       />
     );
   }
@@ -231,6 +261,15 @@ export default function CameraPage() {
         )}
       </div>
 
+      {/* Geo filters (Snapchat-style) — only in Photo mode */}
+      {mode === "Photo" && (
+        <GeoFilterCarousel
+          city={detectedCity}
+          selectedId={selectedGeoFilter?.id ?? null}
+          onSelect={setSelectedGeoFilter}
+        />
+      )}
+
       {/* Mode selector — text only */}
       <div className="flex items-center justify-center gap-8 pb-3">
         {MODES.map((m) => {
@@ -284,12 +323,14 @@ function EditScreen({
   onSave,
   onPostMoment,
   location,
+  geoFilter,
 }: {
   previewUrl: string;
   onRetake: () => void;
   onSave: () => void;
   onPostMoment: () => void;
   location: PhotoLocation | null;
+  geoFilter?: GeoFilter | null;
 }) {
   const { user } = useAuth();
   const [tab, setTab] = useState<TabId>("frames");
@@ -375,6 +416,11 @@ function EditScreen({
             filter: `brightness(${1 + adjust.brightness / 200}) contrast(${1 + adjust.contrast / 200}) saturate(${1 + adjust.saturation / 200}) hue-rotate(${adjust.warmth / 5}deg)`,
           }}
         />
+
+        {/* Geo filter overlay */}
+        {geoFilter && <GeoFilterOverlay filter={geoFilter} />}
+
+
 
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 px-5 pt-12 flex items-center justify-between">
