@@ -158,6 +158,7 @@ export default function CameraPage() {
         onSave={() => { toast.success("Saved privately to your globe"); reset(); navigate("/globe"); }}
         onPostMoment={() => setPublishOpen(true)}
         location={autoLocation}
+        geoFilter={selectedGeoFilter}
       />
     );
   }
