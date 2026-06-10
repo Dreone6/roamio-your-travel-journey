@@ -332,6 +332,11 @@ export default function TripsPage() {
           </div>
         )}
       </section>
+
+      {/* === NEARBY (stays / activities / local specials) === */}
+      <div id="nearby-section">
+        <NearbySection />
+      </div>
     </div>
   );
 }
