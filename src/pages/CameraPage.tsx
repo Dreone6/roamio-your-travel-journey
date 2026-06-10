@@ -831,6 +831,29 @@ function PublishSheet({
           {vis === "private" ? "Only you can see it" : vis === "followers" ? "Your followers see it for 24h" : "Anyone on Roavr can see it for 24h"}
         </p>
 
+        {/* Story duration */}
+        {vis !== "private" && (
+          <div className="mt-5">
+            <div className="flex items-baseline justify-between">
+              <p style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+                {isVideo ? "Clip length" : "Show photo for"}
+              </p>
+              <p className="text-white" style={{ fontSize: 13, fontWeight: 600 }}>{duration}s</p>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={maxDuration}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full mt-2 accent-[#3B82F6]"
+            />
+            <p style={{ color: "#4B5563", fontSize: 11 }}>
+              Up to {maxDuration}s · {isVideo ? "videos & clips max 60s" : "photos max 30s"}
+            </p>
+          </div>
+        )}
+
         {/* What happens */}
         <div className="mt-5 space-y-3">
           <StatusRow icon="📍" text="Pinned to your World globe — permanently" />
