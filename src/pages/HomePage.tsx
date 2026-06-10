@@ -1,33 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import StoriesRow from "@/components/home/StoriesRow";
 import NearbyStrip from "@/components/home/NearbyStrip";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles, Globe,
-  MessageCircle, Bell, Search, ChevronRight, Mic,
+  Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip,
 } from "lucide-react";
+import { toast } from "sonner";
 import roavrLogo from "@/assets/roavr-logo.png";
 
-// Canonical data — locked
 const CANON = {
-  countries: 27,
-  cities: 64,
-  memories: 342,
-  followers: 1200,
-  following: 318,
-  latestPin: "Positano, Italy · 2h ago",
   unread: 3,
   hasNotifications: true,
 };
-
-const LATEST_THUMBS = [
-  "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=120&q=80",
-  "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=120&q=80",
-  "https://images.unsplash.com/photo-1493558103817-58b2924bce98?w=120&q=80",
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=120&q=80",
-];
 
 const CALIFORNIA_IMG =
   "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=1200&q=80&auto=format&fit=crop";
@@ -37,6 +23,8 @@ export default function HomePage() {
   const navigate = useNavigate();
   const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Andre";
   const [aiInput, setAiInput] = useState("");
+  const imageInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -48,6 +36,13 @@ export default function HomePage() {
   const handleAsk = () => {
     if (!aiInput.trim()) return;
     navigate(`/trips?ask=${encodeURIComponent(aiInput)}`);
+  };
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    toast.success(`${files.length} file${files.length > 1 ? "s" : ""} ready — opening capture`);
+    navigate("/camera");
   };
 
   return (
@@ -137,36 +132,34 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* YOUR WORLD */}
-      <section className="px-5 pt-4">
-        <button
-          onClick={() => navigate("/globe")}
-          className="w-full text-left rounded-[24px] p-5 active:scale-[0.99] transition-transform"
-          style={{ background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
-        >
-          <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
-            <h3 className="flex-1 text-white" style={{ fontSize: 16, fontWeight: 600 }}>Your World</h3>
-            <ChevronRight className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+          {/* Upload row */}
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => navigate("/camera")}
+              className="flex-1 flex items-center justify-center gap-1.5 text-white active:scale-[0.98] transition-transform"
+              style={{ background: "#3B82F6", borderRadius: 12, height: 44, fontSize: 13, fontWeight: 600 }}
+            >
+              <Camera className="h-4 w-4" strokeWidth={1.5} /> Capture
+            </button>
+            <button
+              onClick={() => imageInput.current?.click()}
+              className="flex-1 flex items-center justify-center gap-1.5 text-white active:scale-[0.98] transition-transform"
+              style={{ background: "#1A2236", border: "1px solid #1E2A3F", borderRadius: 12, height: 44, fontSize: 13, fontWeight: 600 }}
+            >
+              <ImageIcon className="h-4 w-4" strokeWidth={1.5} /> Image
+            </button>
+            <button
+              onClick={() => fileInput.current?.click()}
+              className="flex-1 flex items-center justify-center gap-1.5 text-white active:scale-[0.98] transition-transform"
+              style={{ background: "#1A2236", border: "1px solid #1E2A3F", borderRadius: 12, height: 44, fontSize: 13, fontWeight: 600 }}
+            >
+              <Paperclip className="h-4 w-4" strokeWidth={1.5} /> File
+            </button>
+            <input ref={imageInput} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFiles} />
+            <input ref={fileInput} type="file" multiple className="hidden" onChange={handleFiles} />
           </div>
-          <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
-            {CANON.countries} countries · {CANON.cities} cities · {CANON.memories} memories
-          </p>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex">
-              {LATEST_THUMBS.map((t, i) => (
-                <img key={i} src={t} alt="" className="h-6 w-6 rounded-full object-cover"
-                  style={{ border: "1.5px solid #FFFFFF", marginLeft: i === 0 ? 0 : -8 }} />
-              ))}
-            </div>
-            <p className="flex-1 truncate" style={{ color: "#94A3B8", fontSize: 12 }}>
-              Latest Pin: {CANON.latestPin}
-            </p>
-          </div>
-        </button>
+        </div>
       </section>
 
       {/* RECENT TRIP — California */}
@@ -193,7 +186,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* NEARBY STRIP (live) */}
+      {/* NEARBY STRIP (deals) */}
       <NearbyStrip />
     </div>
   );

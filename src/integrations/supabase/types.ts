@@ -1079,6 +1079,7 @@ export type Database = {
           auto_save_to_globe: boolean
           caption: string | null
           created_at: string
+          duration_seconds: number
           expires_at: string
           filter_name: string | null
           id: string
@@ -1096,6 +1097,7 @@ export type Database = {
           auto_save_to_globe?: boolean
           caption?: string | null
           created_at?: string
+          duration_seconds?: number
           expires_at?: string
           filter_name?: string | null
           id?: string
@@ -1113,6 +1115,7 @@ export type Database = {
           auto_save_to_globe?: boolean
           caption?: string | null
           created_at?: string
+          duration_seconds?: number
           expires_at?: string
           filter_name?: string | null
           id?: string

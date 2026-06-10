@@ -711,6 +711,9 @@ function PublishSheet({
 }) {
   const [vis, setVis] = useState<Visibility>("private");
   const [posting, setPosting] = useState(false);
+  const isVideo = !!pickedFile?.type.startsWith("video/");
+  const maxDuration = isVideo ? 60 : 30;
+  const [duration, setDuration] = useState<number>(isVideo ? 15 : 5);
 
   const post = async (savePrivate: boolean) => {
     if (!userId) {
@@ -733,7 +736,7 @@ function PublishSheet({
       const { error } = await supabase.from("memories").insert({
         user_id: userId,
         media_url: mediaUrl,
-        media_type: "photo",
+        media_type: isVideo ? "video" : "photo",
         visibility,
         pinned_to_globe: true,
         latitude: location?.latitude ?? null,
@@ -741,6 +744,20 @@ function PublishSheet({
         source: "camera",
       });
       if (error) throw error;
+
+      // Also publish as a 24h story when shared with followers/public
+      if (visibility !== "private") {
+        await supabase.from("stories").insert({
+          user_id: userId,
+          media_url: mediaUrl,
+          media_type: isVideo ? "video" : "photo",
+          visibility,
+          duration_seconds: duration,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+          auto_save_to_globe: true,
+        });
+      }
       toast.success("Pinned to your World globe");
       onPosted();
     } catch (e: any) {
@@ -813,6 +830,29 @@ function PublishSheet({
         <p className="mt-2" style={{ color: "#4B5563", fontSize: 12 }}>
           {vis === "private" ? "Only you can see it" : vis === "followers" ? "Your followers see it for 24h" : "Anyone on Roavr can see it for 24h"}
         </p>
+
+        {/* Story duration */}
+        {vis !== "private" && (
+          <div className="mt-5">
+            <div className="flex items-baseline justify-between">
+              <p style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
+                {isVideo ? "Clip length" : "Show photo for"}
+              </p>
+              <p className="text-white" style={{ fontSize: 13, fontWeight: 600 }}>{duration}s</p>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={maxDuration}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full mt-2 accent-[#3B82F6]"
+            />
+            <p style={{ color: "#4B5563", fontSize: 11 }}>
+              Up to {maxDuration}s · {isVideo ? "videos & clips max 60s" : "photos max 30s"}
+            </p>
+          </div>
+        )}
 
         {/* What happens */}
         <div className="mt-5 space-y-3">
