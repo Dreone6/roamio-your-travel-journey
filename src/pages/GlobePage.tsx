@@ -208,7 +208,7 @@ export default function GlobePage() {
             )}
           </button>
           <button
-            onClick={() => navigate("/travel-history")}
+            onClick={() => navigate("/build-world")}
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Sync from Photos"
@@ -335,7 +335,7 @@ export default function GlobePage() {
               </p>
               <div className="mt-5 flex flex-col gap-2 w-full max-w-[260px]">
                 <button
-                  onClick={() => navigate("/travel-history")}
+                  onClick={() => navigate("/build-world")}
                   className="rounded-full font-semibold text-white text-[14px] flex items-center justify-center gap-2"
                   style={{ background: "#3B82F6", height: 52 }}
                 >
