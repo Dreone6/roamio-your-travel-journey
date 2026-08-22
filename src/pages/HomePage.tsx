@@ -1,30 +1,50 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import StoriesRow from "@/components/home/StoriesRow";
 import NearbyStrip from "@/components/home/NearbyStrip";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip,
+  Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip, Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import roavrLogo from "@/assets/roavr-logo.png";
 
-const CANON = {
-  unread: 3,
-  hasNotifications: true,
-};
-
-const CALIFORNIA_IMG =
-  "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=1200&q=80&auto=format&fit=crop";
-
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Andre";
+  const identity = useTravelIdentity();
+  const displayName = (identity.name || user?.email?.split("@")[0] || "Traveler").split(" ")[0];
   const [aiInput, setAiInput] = useState("");
+  const [unread, setUnread] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", user.id);
+      if (cancelled || !data?.length) return;
+      let count = 0;
+      for (const p of data) {
+        const q = supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", p.conversation_id)
+          .neq("sender_id", user.id);
+        const { count: c } = await (p.last_read_at ? q.gt("created_at", p.last_read_at) : q);
+        count += c ?? 0;
+      }
+      if (!cancelled) setUnread(count);
+    })().catch(() => { /* non-critical */ });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -32,6 +52,7 @@ export default function HomePage() {
     if (h < 18) return "Good afternoon";
     return "Good evening";
   };
+
 
   const handleAsk = () => {
     if (!aiInput.trim()) return;
@@ -61,7 +82,7 @@ export default function HomePage() {
               style={{ background: "#111827" }}
             >
               <Bell className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
-              {CANON.hasNotifications && (
+              {identity.unreadNotifications > 0 && (
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#EF4444" }} />
               )}
             </button>
@@ -72,12 +93,12 @@ export default function HomePage() {
               style={{ background: "#111827" }}
             >
               <MessageCircle className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
-              {CANON.unread > 0 && (
+              {unread > 0 && (
                 <span
                   className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
                   style={{ background: "#EF4444", boxShadow: "0 0 0 2px #080D1A" }}
                 >
-                  {CANON.unread}
+                  {unread > 9 ? "9+" : unread}
                 </span>
               )}
             </button>
@@ -162,29 +183,60 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* RECENT TRIP — California */}
+      {/* RECENT TRIP — real data, or an invitation to plan one */}
       <section className="px-5 pt-4">
-        <button
-          onClick={() => navigate("/trips")}
-          className="relative w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
-          style={{ height: 160, borderRadius: 24 }}
-        >
-          <img src={CALIFORNIA_IMG} alt="Trip to California" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080D1A 0%, rgba(8,13,26,0.85) 25%, rgba(8,13,26,0) 60%)" }} />
-          <div className="absolute top-3 left-3">
-            <span className="inline-flex items-center rounded-full text-white" style={{ background: "rgba(0,0,0,0.5)", padding: "4px 10px", fontSize: 12 }}>
-              ✈️ RECENT TRIP
-            </span>
-          </div>
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-            <div className="min-w-0">
-              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Trip to California</p>
-              <p className="mt-0.5" style={{ color: "#94A3B8", fontSize: 12 }}>California · May 7</p>
+        {identity.recentTrip ? (
+          <button
+            onClick={() => navigate(`/trips?trip=${identity.recentTrip!.id}`)}
+            className="relative w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
+            style={{ height: 160, borderRadius: 24, background: "#111827" }}
+          >
+            {identity.recentTrip.coverPhoto && (
+              <img
+                src={identity.recentTrip.coverPhoto}
+                alt={identity.recentTrip.title}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080D1A 0%, rgba(8,13,26,0.85) 25%, rgba(8,13,26,0) 60%)" }} />
+            <div className="absolute top-3 left-3">
+              <span className="inline-flex items-center rounded-full text-white" style={{ background: "rgba(0,0,0,0.5)", padding: "4px 10px", fontSize: 12 }}>
+                ✈️ RECENT TRIP
+              </span>
             </div>
-            <span className="shrink-0" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Open Trip →</span>
-          </div>
-        </button>
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div className="min-w-0">
+                <p className="text-white truncate" style={{ fontSize: 16, fontWeight: 600 }}>{identity.recentTrip.title}</p>
+                <p className="mt-0.5 truncate" style={{ color: "#94A3B8", fontSize: 12 }}>
+                  {identity.recentTrip.destination}
+                  {identity.recentTrip.startDate
+                    ? ` · ${new Date(identity.recentTrip.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    : ` · ${identity.recentTrip.status}`}
+                </p>
+              </div>
+              <span className="shrink-0" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Open Trip →</span>
+            </div>
+          </button>
+        ) : identity.loading ? (
+          <div className="w-full animate-pulse" style={{ height: 160, borderRadius: 24, background: "#111827" }} />
+        ) : (
+          <button
+            onClick={() => navigate("/trips")}
+            className="w-full text-left p-5 active:scale-[0.99] transition-transform"
+            style={{ borderRadius: 24, background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Compass className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>No trips yet</p>
+            </div>
+            <p className="mt-2" style={{ color: "#94A3B8", fontSize: 14 }}>
+              Plan your first trip and it'll show up here.
+            </p>
+            <span className="inline-block mt-3" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Plan a trip →</span>
+          </button>
+        )}
       </section>
+
 
       {/* NEARBY STRIP (deals) */}
       <NearbyStrip />
