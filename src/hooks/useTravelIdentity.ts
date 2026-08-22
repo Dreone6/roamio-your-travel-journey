@@ -142,7 +142,7 @@ export function useTravelIdentity(): TravelIdentity {
           lng: p.longitude,
           label: [p.city, p.country].filter(Boolean).join(", ") || "Visited",
           category: "visit",
-          visibility: "private",
+          visibility: (p.visibility as IdentityPin["visibility"]) ?? "private",
           createdAt: p.date_visited ?? new Date(0).toISOString(),
           country: p.country,
           city: p.city,
