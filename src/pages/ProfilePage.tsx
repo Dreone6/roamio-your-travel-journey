@@ -115,6 +115,17 @@ export default function ProfilePage() {
 
   const hasCover = highlights[0]?.img;
 
+  // One point per city, straight from the canonical travel identity layer.
+  const worldPoints = useMemo(
+    () => identity.world.places
+      .filter((p) => p.lat !== 0 || p.lng !== 0)
+      .map((p, i) => ({
+        key: p.key, lat: p.lat, lng: p.lng, label: p.city,
+        weight: p.visitCount, recent: i === 0, milestone: p.isMilestone,
+      })),
+    [identity.world.places]
+  );
+
   return (
     <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
       {/* 1. HERO ──────────────────────────────────────── */}
