@@ -102,7 +102,7 @@ export async function buildDiscoveredTrips(
       startDate,
       endDate,
       dateUnknown,
-      importKey: makeImportKey(c.lat, c.lng, startDate, !dateUnknown),
+      importKey: makeImportKey(c.lat, c.lng, startDate, endDate, !dateUnknown),
       memoryCount: c.media.length,
       thumbnails: c.media.map((m) => m.previewUrl).filter(Boolean).slice(0, 3) as string[],
       selected: true,
@@ -132,7 +132,13 @@ export function mergeTrips(trips: DiscoveredTrip[], ids: string[]): DiscoveredTr
     dateUnknown: targets.every((t) => t.dateUnknown),
     mediaIds: targets.flatMap((t) => t.mediaIds),
   };
-  merged.importKey = makeImportKey(merged.latitude, merged.longitude, startDate, !merged.dateUnknown);
+  merged.importKey = makeImportKey(
+    merged.latitude,
+    merged.longitude,
+    startDate,
+    merged.endDate,
+    !merged.dateUnknown
+  );
 
   const rest = trips.filter((t) => !ids.includes(t.id));
   return [merged, ...rest].sort((a, b) => b.startDate.localeCompare(a.startDate));
