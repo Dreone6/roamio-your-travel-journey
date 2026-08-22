@@ -560,10 +560,16 @@ function ReviewStep({
           paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)",
         }}
       >
+        {demoMode && (
+          <p className="text-[11px] uppercase mb-3 text-center" style={{ color: "#F4A261", letterSpacing: "0.1em" }}>
+            Demo preview — nothing is saved to your account
+          </p>
+        )}
         <PrimaryButton onClick={onAdd} disabled={saving || stats.trips === 0}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {saving ? "Adding…" : `Add to My World (${stats.trips})`}
+          {saving ? "Adding…" : demoMode ? `Preview My World (${stats.trips})` : `Add to My World (${stats.trips})`}
         </PrimaryButton>
+
       </div>
     </div>
   );
