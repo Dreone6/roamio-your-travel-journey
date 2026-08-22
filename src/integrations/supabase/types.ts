@@ -847,42 +847,54 @@ export type Database = {
           country: string
           created_at: string
           date_visited: string | null
+          end_date: string | null
           id: string
+          import_key: string | null
           is_milestone: boolean
           latitude: number | null
           longitude: number | null
           milestone_type: string | null
           photos_count: number
+          source: string
           trip_id: string | null
           user_id: string
+          visibility: string
         }
         Insert: {
           city: string
           country: string
           created_at?: string
           date_visited?: string | null
+          end_date?: string | null
           id?: string
+          import_key?: string | null
           is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
           milestone_type?: string | null
           photos_count?: number
+          source?: string
           trip_id?: string | null
           user_id: string
+          visibility?: string
         }
         Update: {
           city?: string
           country?: string
           created_at?: string
           date_visited?: string | null
+          end_date?: string | null
           id?: string
+          import_key?: string | null
           is_milestone?: boolean
           latitude?: number | null
           longitude?: number | null
           milestone_type?: string | null
           photos_count?: number
+          source?: string
           trip_id?: string | null
           user_id?: string
+          visibility?: string
         }
         Relationships: [
           {
