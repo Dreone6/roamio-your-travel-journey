@@ -35,10 +35,13 @@ export interface GeotaggedMedia {
   latitude: number;
   longitude: number;
   takenAt: string;
+  /** False when the capture date had to be guessed (no EXIF timestamp). */
+  takenAtKnown: boolean;
   previewUrl?: string;
   city?: string;
   country?: string;
 }
+
 
 export interface NormalizedPlace {
   city: string;
