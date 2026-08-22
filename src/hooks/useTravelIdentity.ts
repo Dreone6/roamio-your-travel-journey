@@ -9,6 +9,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { aggregateWorld, fetchVisits, EMPTY_WORLD, type World } from "@/lib/world/visits";
 
 export type PinCategory = "memory" | "checkin" | "visit";
 
@@ -182,9 +183,12 @@ export function useTravelIdentity(): TravelIdentity {
         bio: profile?.bio ?? null,
         homeCity: profile?.home_city ?? null,
         avatar: profile?.profile_photo ?? null,
-        countries: countrySet.size,
-        cities: citySet.size,
-        memories: memories.length,
+        countries: world.summary.countries,
+        cities: world.summary.cities,
+        visits: world.summary.visits,
+        world,
+        // Visit-level photo counts plus captured memory records.
+        memories: world.summary.memories + memories.length,
         trips: trips.length,
         completedTrips: trips.filter((t) => t.status === "completed").length,
         checkIns: checkins.length,
@@ -204,7 +208,7 @@ export function useTravelIdentity(): TravelIdentity {
               status: recent.status,
             }
           : null,
-        countryList: [...countrySet],
+        countryList: world.countries.map((c) => c.country),
         isEmpty: pins.length === 0 && memories.length === 0 && trips.length === 0,
       });
     })().catch(() => {
