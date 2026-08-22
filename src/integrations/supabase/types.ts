@@ -1522,6 +1522,10 @@ export type Database = {
           title: string
         }[]
       }
+      follows_accepted: {
+        Args: { _follower: string; _following: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1529,6 +1533,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_blocked_between: { Args: { _a: string; _b: string }; Returns: boolean }
       nearby_offers: {
         Args: { lat: number; lng: number; radius_miles?: number }
         Returns: {
@@ -1555,6 +1560,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      profile_is_private: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
