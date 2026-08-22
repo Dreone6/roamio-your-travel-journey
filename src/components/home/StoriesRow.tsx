@@ -79,8 +79,7 @@ export default function StoriesRow() {
         });
       }
 
-      // Always include the demo buckets so the row feels alive
-      const merged = [...liveBuckets, ...DEMO_BUCKETS.filter(d => !liveBuckets.some(l => l.userId === d.userId))];
+      const merged = [...liveBuckets];
       // Sort: self first, then unseen, then by latest story
       merged.sort((a, b) => {
         if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
