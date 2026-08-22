@@ -35,10 +35,13 @@ export interface GeotaggedMedia {
   latitude: number;
   longitude: number;
   takenAt: string;
+  /** False when the capture date had to be guessed (no EXIF timestamp). */
+  takenAtKnown: boolean;
   previewUrl?: string;
   city?: string;
   country?: string;
 }
+
 
 export interface NormalizedPlace {
   city: string;
@@ -59,7 +62,15 @@ export interface DiscoveredTrip {
   selected: boolean;
   visibility: Visibility;
   mediaIds: string[];
+  /**
+   * Stable fingerprint of this visit (coarse location + date window).
+   * Used for duplicate-import protection — never derived from filenames.
+   */
+  importKey: string;
+  /** True when no photo in the cluster had a usable capture date. */
+  dateUnknown: boolean;
 }
+
 
 export interface ScanCounters {
   photos: number;

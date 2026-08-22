@@ -1,8 +1,18 @@
 /**
  * Trip clustering — geotagged media -> probable trips.
  * A trip = photos within ~120km of each other, with no gap larger than 5 days.
+ *
+ * Photos without a usable capture date are grouped by location only (the time
+ * rule is skipped for them), so they still land in the right city instead of
+ * inventing a bogus "today" trip.
+ *
+ * Each cluster gets a stable `importKey` fingerprint:
+ *   loc:<lat 1dp>,<lng 1dp>|<YYYY-MM>          for dated clusters
+ *   loc:<lat 1dp>,<lng 1dp>|undated            for undated clusters
+ * Re-importing the same photos therefore updates the same visit, while a
+ * genuine second trip to the same city in another month is a separate row.
  */
-import { haversineKm, normalizeLocation } from "./geocode";
+import { haversineKm, normalizeLocation, prewarmLocations } from "./geocode";
 import type { DiscoveredTrip, GeotaggedMedia } from "./types";
 
 const RADIUS_KM = 120;
@@ -22,6 +32,8 @@ export function clusterMedia(media: GeotaggedMedia[]): RawCluster[] {
     const match = clusters.find((c) => {
       if (haversineKm(c.lat, c.lng, m.latitude, m.longitude) > RADIUS_KM) return false;
       const last = c.media[c.media.length - 1];
+      // Undated items join purely on location.
+      if (!m.takenAtKnown || !last.takenAtKnown) return true;
       const gap = Math.abs(new Date(m.takenAt).getTime() - new Date(last.takenAt).getTime());
       return gap <= MAX_GAP_DAYS * 86400000;
     });
@@ -38,11 +50,22 @@ export function clusterMedia(media: GeotaggedMedia[]): RawCluster[] {
   return clusters;
 }
 
+function makeImportKey(lat: number, lng: number, startISO: string, dated: boolean): string {
+  const loc = `${lat.toFixed(1)},${lng.toFixed(1)}`;
+  return `loc:${loc}|${dated ? startISO.slice(0, 7) : "undated"}`;
+}
+
 export async function buildDiscoveredTrips(
   media: GeotaggedMedia[],
   onProgress?: (done: number, total: number) => void
 ): Promise<DiscoveredTrip[]> {
   const clusters = clusterMedia(media);
+
+  // One reverse-geocode request per distinct cluster location, batched.
+  await prewarmLocations(
+    clusters.filter((c) => !c.media.some((m) => m.city && m.country)).map((c) => ({ lat: c.lat, lng: c.lng }))
+  );
+
   const trips: DiscoveredTrip[] = [];
 
   for (let i = 0; i < clusters.length; i++) {
@@ -52,15 +75,21 @@ export async function buildDiscoveredTrips(
       ? { city: known.city!, country: known.country! }
       : await normalizeLocation(c.lat, c.lng);
 
-    const dates = c.media.map((m) => m.takenAt).sort();
+    const dated = c.media.filter((m) => m.takenAtKnown).map((m) => m.takenAt).sort();
+    const dateUnknown = dated.length === 0;
+    const startDate = dateUnknown ? c.media[0].takenAt : dated[0];
+    const endDate = dateUnknown ? c.media[0].takenAt : dated[dated.length - 1];
+
     trips.push({
       id: `trip-${i}-${Math.round(c.lat * 100)}-${Math.round(c.lng * 100)}`,
       city: place.city,
       country: place.country,
       latitude: c.lat,
       longitude: c.lng,
-      startDate: dates[0],
-      endDate: dates[dates.length - 1],
+      startDate,
+      endDate,
+      dateUnknown,
+      importKey: makeImportKey(c.lat, c.lng, startDate, !dateUnknown),
       memoryCount: c.media.length,
       thumbnails: c.media.map((m) => m.previewUrl).filter(Boolean).slice(0, 3) as string[],
       selected: true,
@@ -77,17 +106,20 @@ export function mergeTrips(trips: DiscoveredTrip[], ids: string[]): DiscoveredTr
   const targets = trips.filter((t) => ids.includes(t.id));
   if (targets.length < 2) return trips;
 
+  const startDate = targets.map((t) => t.startDate).sort()[0];
   const merged: DiscoveredTrip = {
     ...targets[0],
     id: targets[0].id,
     memoryCount: targets.reduce((s, t) => s + t.memoryCount, 0),
     thumbnails: targets.flatMap((t) => t.thumbnails).slice(0, 3),
-    startDate: targets.map((t) => t.startDate).sort()[0],
+    startDate,
     endDate: targets.map((t) => t.endDate).sort().reverse()[0],
     latitude: targets.reduce((s, t) => s + t.latitude, 0) / targets.length,
     longitude: targets.reduce((s, t) => s + t.longitude, 0) / targets.length,
+    dateUnknown: targets.every((t) => t.dateUnknown),
     mediaIds: targets.flatMap((t) => t.mediaIds),
   };
+  merged.importKey = makeImportKey(merged.latitude, merged.longitude, startDate, !merged.dateUnknown);
 
   const rest = trips.filter((t) => !ids.includes(t.id));
   return [merged, ...rest].sort((a, b) => b.startDate.localeCompare(a.startDate));

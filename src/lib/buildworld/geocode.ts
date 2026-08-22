@@ -54,7 +54,13 @@ function offlineLookup(lat: number, lng: number): NormalizedPlace {
   return { city: `${lat.toFixed(2)}, ${lng.toFixed(2)}`, country: "Unknown" };
 }
 
+/**
+ * Cache is keyed to ~11km precision, so hundreds of photos taken across one
+ * city collapse to a single reverse-geocode request. In-flight requests are
+ * deduplicated too, so concurrent callers never double-fire.
+ */
 const cache = new Map<string, NormalizedPlace>();
+const inflight = new Map<string, Promise<NormalizedPlace>>();
 const key = (lat: number, lng: number) => `${lat.toFixed(1)},${lng.toFixed(1)}`;
 
 export async function normalizeLocation(lat: number, lng: number): Promise<NormalizedPlace> {
@@ -62,17 +68,51 @@ export async function normalizeLocation(lat: number, lng: number): Promise<Norma
   const hit = cache.get(k);
   if (hit) return hit;
 
-  let place: NormalizedPlace;
-  try {
-    const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-      body: { latitude: lat, longitude: lng },
-    });
-    if (error || !data?.country) throw new Error("geocode failed");
-    place = { city: data.city || data.location_name || "Unknown", country: data.country };
-  } catch {
-    place = offlineLookup(lat, lng);
-  }
+  const pending = inflight.get(k);
+  if (pending) return pending;
 
-  cache.set(k, place);
-  return place;
+  const task = (async (): Promise<NormalizedPlace> => {
+    let place: NormalizedPlace;
+    try {
+      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+        body: { latitude: lat, longitude: lng },
+      });
+      if (error || !data?.country) throw new Error("geocode failed");
+      place = { city: data.city || data.location_name || "Unknown", country: data.country };
+    } catch {
+      place = offlineLookup(lat, lng);
+    }
+    cache.set(k, place);
+    inflight.delete(k);
+    return place;
+  })();
+
+  inflight.set(k, task);
+  return task;
 }
+
+/**
+ * Resolve a batch of coordinates up front with bounded concurrency, so a big
+ * import never fires hundreds of simultaneous requests at the edge function.
+ */
+export async function prewarmLocations(
+  coords: { lat: number; lng: number }[],
+  concurrency = 4
+): Promise<void> {
+  const unique = new Map<string, { lat: number; lng: number }>();
+  coords.forEach((c) => {
+    const k = key(c.lat, c.lng);
+    if (!cache.has(k)) unique.set(k, c);
+  });
+
+  const queue = [...unique.values()];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    let next = queue.pop();
+    while (next) {
+      await normalizeLocation(next.lat, next.lng);
+      next = queue.pop();
+    }
+  });
+  await Promise.all(workers);
+}
+

@@ -57,19 +57,40 @@ export default function BuildWorldPage() {
   }, []);
 
   const handleAdd = async () => {
-    if (!user) return;
     const selected = trips.filter((t) => t.selected);
     if (selected.length === 0) {
       toast.info("Select at least one place to add");
       return;
     }
+
+    // Demo runs are a preview only — nothing is written to the real account,
+    // so demo places can never become part of a genuine travel identity.
+    if (demoMode) {
+      const s = summarize(trips);
+      setSaved({ countries: s.countries, cities: s.cities, memories: s.memories });
+      setStep("reveal");
+      return;
+    }
+
+    if (!user) {
+      toast.error("You need to be signed in to save places");
+      return;
+    }
+
     setSaving(true);
     try {
-      const res = await saveDiscoveredTrips(user.id, trips, { demo: demoMode });
+      const res = await saveDiscoveredTrips(user.id, trips);
       setSaved({ countries: res.countries, cities: res.cities, memories: res.memories });
+      if (res.duplicates > 0) {
+        toast.info(`${res.duplicates} ${res.duplicates === 1 ? "place was" : "places were"} already in your world`, {
+          description: "They were updated instead of duplicated.",
+        });
+      }
       setStep("reveal");
-    } catch {
-      toast.error("Couldn't add those places", { description: "Please try again." });
+    } catch (e) {
+      toast.error("Couldn't add those places", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
     } finally {
       setSaving(false);
     }
@@ -100,9 +121,9 @@ export default function BuildWorldPage() {
       )}
       {step === "scan" && <ScanStep demoMode={demoMode} onComplete={handleScanComplete} onCancel={() => setStep("privacy")} />}
       {step === "review" && (
-        <ReviewStep trips={trips} setTrips={setTrips} saving={saving} onAdd={handleAdd} />
+        <ReviewStep trips={trips} setTrips={setTrips} saving={saving} onAdd={handleAdd} demoMode={demoMode} />
       )}
-      {step === "reveal" && <RevealStep trips={trips} stats={saved} />}
+      {step === "reveal" && <RevealStep trips={trips} stats={saved} demoMode={demoMode} />}
     </div>
   );
 }
@@ -223,8 +244,9 @@ function PrivacyStep({
         <div className="flex-1">
           <p className="text-white" style={{ fontSize: 14, fontWeight: 600 }}>Demo scan</p>
           <p className="text-[12px] mt-0.5 leading-snug" style={{ color: MUTED }}>
-            Preview the full experience with a sample travel history. Clearly marked as demo data.
+            Preview the full experience with a sample travel history. Nothing is saved to your account.
           </p>
+
         </div>
         <Switch checked={demoMode} onCheckedChange={setDemoMode} />
       </div>
@@ -251,9 +273,25 @@ function ScanStep({
     setStarted(true);
     setPhase(0);
 
-    const { geotagged } = await extractMetadata(items, (scanned, _total, found) => {
-      setCounters((c) => ({ ...c, photos: scanned, locations: found }));
+    const { geotagged, scanned, truncated, undated } = await extractMetadata(items, (s, _total, found) => {
+      setCounters((c) => ({ ...c, photos: s, locations: found }));
     });
+
+    if (truncated > 0) {
+      toast.info(`Scanning the first ${scanned} photos`, {
+        description: `${truncated} more were left out of this run. You can import them next.`,
+      });
+    }
+    if (geotagged.length > 0 && geotagged.length < scanned) {
+      toast.info(`${scanned - geotagged.length} of ${scanned} photos had no location data`, {
+        description: "Those were skipped.",
+      });
+    }
+    if (undated > 0) {
+      toast.info(`${undated} ${undated === 1 ? "photo has" : "photos have"} no capture date`, {
+        description: "They were grouped by location — you can edit the details before saving.",
+      });
+    }
 
     setPhase(1);
     await wait(320);
@@ -261,7 +299,7 @@ function ScanStep({
 
     const discovered = await buildDiscoveredTrips(geotagged);
     setCounters({
-      photos: items.length,
+      photos: scanned,
       locations: geotagged.length,
       cities: new Set(discovered.map((t) => `${t.city}|${t.country}`)).size,
       countries: new Set(discovered.map((t) => t.country)).size,
@@ -276,14 +314,22 @@ function ScanStep({
     if (startedRef.current) return;
     startedRef.current = true;
     if (demoMode) {
-      demoSource.pickMedia().then(run);
+      demoSource.pickMedia().then(run).catch(() => {
+        toast.error("Demo scan failed");
+        onCancel();
+      });
     }
-  }, [demoMode, run]);
+  }, [demoMode, run, onCancel]);
 
   const pick = async () => {
-    const items = await browserFileSource.pickMedia();
-    if (items.length === 0) { toast.info("No photos selected"); return; }
-    run(items);
+    try {
+      const items = await browserFileSource.pickMedia();
+      if (items.length === 0) { toast.info("No photos selected"); return; }
+      await run(items);
+    } catch {
+      toast.error("Couldn't read those photos", { description: "Please try a different selection." });
+      onCancel();
+    }
   };
 
   if (!demoMode && !started) {
@@ -350,12 +396,13 @@ function ScanStep({
 /* ----------------------------------- 4 ------------------------------------ */
 
 function ReviewStep({
-  trips, setTrips, saving, onAdd,
+  trips, setTrips, saving, onAdd, demoMode,
 }: {
   trips: DiscoveredTrip[];
   setTrips: (t: DiscoveredTrip[]) => void;
   saving: boolean;
   onAdd: () => void;
+  demoMode: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [mergeSel, setMergeSel] = useState<string[]>([]);
@@ -514,10 +561,16 @@ function ReviewStep({
           paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)",
         }}
       >
+        {demoMode && (
+          <p className="text-[11px] uppercase mb-3 text-center" style={{ color: "#F4A261", letterSpacing: "0.1em" }}>
+            Demo preview — nothing is saved to your account
+          </p>
+        )}
         <PrimaryButton onClick={onAdd} disabled={saving || stats.trips === 0}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {saving ? "Adding…" : `Add to My World (${stats.trips})`}
+          {saving ? "Adding…" : demoMode ? `Preview My World (${stats.trips})` : `Add to My World (${stats.trips})`}
         </PrimaryButton>
+
       </div>
     </div>
   );
@@ -534,8 +587,8 @@ function IconAction({ Icon, label, onClick }: { Icon: typeof Pencil; label: stri
 /* ----------------------------------- 5 ------------------------------------ */
 
 function RevealStep({
-  trips, stats,
-}: { trips: DiscoveredTrip[]; stats: { countries: number; cities: number; memories: number } }) {
+  trips, stats, demoMode,
+}: { trips: DiscoveredTrip[]; stats: { countries: number; cities: number; memories: number }; demoMode: boolean }) {
   const navigate = useNavigate();
   const [revealed, setRevealed] = useState(0);
   const [showCopy, setShowCopy] = useState(false);
@@ -580,8 +633,11 @@ function RevealStep({
           Your world is bigger than you remembered.
         </h1>
         <p className="mt-2 text-[14px]" style={{ color: MUTED }}>
-          This is everywhere your story has taken you.
+          {demoMode
+            ? "This is a demo preview. None of these places were saved to your account."
+            : "This is everywhere your story has taken you."}
         </p>
+
 
         <div className="mt-7 flex items-end justify-between">
           {[
