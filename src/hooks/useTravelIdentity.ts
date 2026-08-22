@@ -37,6 +37,10 @@ export interface TravelIdentity {
   avatar: string | null;
   countries: number;
   cities: number;
+  /** Distinct visits (rows in the canonical visit store). */
+  visits: number;
+  /** Full aggregated world — places, country collection, summary. */
+  world: World;
   memories: number;
   trips: number;
   completedTrips: number;
