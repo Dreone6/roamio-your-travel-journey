@@ -183,29 +183,60 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* RECENT TRIP — California */}
+      {/* RECENT TRIP — real data, or an invitation to plan one */}
       <section className="px-5 pt-4">
-        <button
-          onClick={() => navigate("/trips")}
-          className="relative w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
-          style={{ height: 160, borderRadius: 24 }}
-        >
-          <img src={CALIFORNIA_IMG} alt="Trip to California" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080D1A 0%, rgba(8,13,26,0.85) 25%, rgba(8,13,26,0) 60%)" }} />
-          <div className="absolute top-3 left-3">
-            <span className="inline-flex items-center rounded-full text-white" style={{ background: "rgba(0,0,0,0.5)", padding: "4px 10px", fontSize: 12 }}>
-              ✈️ RECENT TRIP
-            </span>
-          </div>
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-            <div className="min-w-0">
-              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Trip to California</p>
-              <p className="mt-0.5" style={{ color: "#94A3B8", fontSize: 12 }}>California · May 7</p>
+        {identity.recentTrip ? (
+          <button
+            onClick={() => navigate(`/trips?trip=${identity.recentTrip!.id}`)}
+            className="relative w-full overflow-hidden text-left active:scale-[0.99] transition-transform"
+            style={{ height: 160, borderRadius: 24, background: "#111827" }}
+          >
+            {identity.recentTrip.coverPhoto && (
+              <img
+                src={identity.recentTrip.coverPhoto}
+                alt={identity.recentTrip.title}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #080D1A 0%, rgba(8,13,26,0.85) 25%, rgba(8,13,26,0) 60%)" }} />
+            <div className="absolute top-3 left-3">
+              <span className="inline-flex items-center rounded-full text-white" style={{ background: "rgba(0,0,0,0.5)", padding: "4px 10px", fontSize: 12 }}>
+                ✈️ RECENT TRIP
+              </span>
             </div>
-            <span className="shrink-0" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Open Trip →</span>
-          </div>
-        </button>
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div className="min-w-0">
+                <p className="text-white truncate" style={{ fontSize: 16, fontWeight: 600 }}>{identity.recentTrip.title}</p>
+                <p className="mt-0.5 truncate" style={{ color: "#94A3B8", fontSize: 12 }}>
+                  {identity.recentTrip.destination}
+                  {identity.recentTrip.startDate
+                    ? ` · ${new Date(identity.recentTrip.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    : ` · ${identity.recentTrip.status}`}
+                </p>
+              </div>
+              <span className="shrink-0" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Open Trip →</span>
+            </div>
+          </button>
+        ) : identity.loading ? (
+          <div className="w-full animate-pulse" style={{ height: 160, borderRadius: 24, background: "#111827" }} />
+        ) : (
+          <button
+            onClick={() => navigate("/trips")}
+            className="w-full text-left p-5 active:scale-[0.99] transition-transform"
+            style={{ borderRadius: 24, background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Compass className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>No trips yet</p>
+            </div>
+            <p className="mt-2" style={{ color: "#94A3B8", fontSize: 14 }}>
+              Plan your first trip and it'll show up here.
+            </p>
+            <span className="inline-block mt-3" style={{ color: "#3B82F6", fontSize: 14, fontWeight: 600 }}>Plan a trip →</span>
+          </button>
+        )}
       </section>
+
 
       {/* NEARBY STRIP (deals) */}
       <NearbyStrip />
