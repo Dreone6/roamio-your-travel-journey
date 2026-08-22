@@ -12,6 +12,7 @@ import { Camera, Share2, ListTree, MapPin } from "lucide-react";
 import { flagEmoji } from "@/lib/world/countries";
 import { formatVisitDate, type CityPlace } from "@/lib/world/visits";
 import { toast } from "sonner";
+import PeopleWhoKnowPlace from "@/components/social/PeopleWhoKnowPlace";
 
 interface Props {
   place: CityPlace | null;
@@ -82,6 +83,12 @@ export default function PlaceDetailSheet({
               {place.memories} {place.memories === 1 ? "memory" : "memories"} from this place
             </p>
           )}
+
+          {/* Who else genuinely knows this place — authorised visits only. */}
+          <div className="mt-5">
+            <PeopleWhoKnowPlace city={place.city} country={place.country} />
+          </div>
+
 
           <div className="mt-5 flex gap-2">
             <button

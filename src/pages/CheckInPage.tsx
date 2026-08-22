@@ -34,6 +34,8 @@ export default function CheckInPage() {
   const [lng, setLng] = useState(0);
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [note, setNote] = useState("");
+  // A check-in stays private unless the traveller deliberately shares it.
+  const [shareCheckIn, setShareCheckIn] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -83,6 +85,7 @@ export default function CheckInPage() {
       }
       const { error: checkInErr } = await supabase.from("check_ins").insert({
         user_id: user.id, location_name: geo.location_name, latitude: lat, longitude: lng, notes: note || null, photo: photoUrl,
+        visibility: shareCheckIn ? "followers" : "private",
       });
       if (checkInErr) throw checkInErr;
       const { data: existing } = await supabase.from("places_visited").select("id").eq("user_id", user.id).eq("city", geo.city).eq("country", geo.country).limit(1);
@@ -194,6 +197,21 @@ export default function CheckInPage() {
                 <input type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" />
               </label>
             )}
+
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-card p-3.5 cursor-pointer">
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-foreground">Share with followers</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Off keeps this check-in private to you.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={shareCheckIn}
+                onChange={(e) => setShareCheckIn(e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-[#3B82F6]"
+              />
+            </label>
 
             <div className="flex gap-2">
               <button

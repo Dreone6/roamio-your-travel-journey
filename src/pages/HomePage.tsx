@@ -5,6 +5,7 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import StoriesRow from "@/components/home/StoriesRow";
 import NearbyStrip from "@/components/home/NearbyStrip";
+import TravelFeed from "@/components/home/TravelFeed";
 import { useNavigate } from "react-router-dom";
 import {
   Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip, Compass,
@@ -264,6 +265,9 @@ export default function HomePage() {
         )}
       </section>
 
+
+      {/* TRAVEL FEED — people you follow, ranked by travel relevance */}
+      <TravelFeed />
 
       {/* NEARBY STRIP (deals) */}
       <NearbyStrip />

@@ -109,12 +109,12 @@ export default function TravelerProfilePage() {
     return null;
   }
 
-  const message = async () => {
+  const message = async (draft?: string) => {
     if (!user || !targetId || messaging) return;
     setMessaging(true);
     const id = await startConversation(user.id, targetId);
     setMessaging(false);
-    if (id) navigate(`/messages/${id}`);
+    if (id) navigate(draft ? `/messages/${id}?draft=${encodeURIComponent(draft)}` : `/messages/${id}`);
     else toast.error("Couldn't open a conversation");
   };
 
@@ -193,7 +193,7 @@ export default function TravelerProfilePage() {
               {followLabel}
             </button>
             <button
-              onClick={message}
+              onClick={() => message()}
               disabled={messaging}
               className="rounded-full flex items-center justify-center text-white"
               style={{ background: "#1A2236", border: "1px solid #1E2A3F", height: 52, width: 52 }}
@@ -290,7 +290,7 @@ export default function TravelerProfilePage() {
             {starters.map((s) => (
               <button
                 key={s.id}
-                onClick={message}
+                onClick={() => message(s.text)}
                 disabled={messaging}
                 className="w-full text-left rounded-2xl px-4 py-3.5 flex items-center gap-3 disabled:opacity-60"
                 style={{ background: "#111827", border: "1px solid #1E2A3F" }}

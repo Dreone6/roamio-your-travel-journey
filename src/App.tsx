@@ -11,6 +11,7 @@ import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import TripsPage from "@/pages/TripsPage";
 import DiscoverPage from "@/pages/DiscoverPage";
+import ExplorePage from "@/pages/ExplorePage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -24,7 +25,6 @@ import NewMessagePage from "@/pages/NewMessagePage";
 import CameraPage from "@/pages/CameraPage";
 import StoriesPage from "@/pages/StoriesPage";
 import NotificationsPage from "@/pages/NotificationsPage";
-import SocialFeedPage from "@/pages/SocialFeedPage";
 import NotFound from "@/pages/NotFound";
 import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
 import SafePassPage from "@/pages/SafePassPage";
@@ -61,13 +61,15 @@ const App = () => (
             <Route path="/camera" element={<ProtectedRoute><CameraPage /></ProtectedRoute>} />
             <Route path="/stories" element={<ProtectedRoute><StoriesPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
+            {/* The real, ranked travel feed lives on Home. */}
+            <Route path="/feed" element={<Navigate to="/home" replace />} />
             <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
             <Route path="/build-world" element={<ProtectedRoute><BuildWorldPage /></ProtectedRoute>} />
             <Route path="/travel-history" element={<Navigate to="/build-world" replace />} />
             <Route path="/passport" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
             <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
             <Route path="/u/:handle" element={<ProtectedRoute><TravelerProfilePage /></ProtectedRoute>} />
+            <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />

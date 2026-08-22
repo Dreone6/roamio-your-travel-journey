@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
   MessageCircle, Lock, Timer, Eye, EyeOff, AlertTriangle, Smartphone, Image,
@@ -39,6 +39,7 @@ export default function ConversationPage() {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [otherUser, setOtherUser] = useState<{ id: string; name: string; photo: string | null }>({ id: "", name: "Traveler", photo: null });
@@ -53,6 +54,17 @@ export default function ConversationPage() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
+
+  // A conversation can be opened with a suggested opening line (e.g. from a
+  // feed card or a place expert). It is only ever a draft — never auto-sent.
+  useEffect(() => {
+    const draft = searchParams.get("draft");
+    if (!draft) return;
+    setInput((cur) => cur || draft);
+    const next = new URLSearchParams(searchParams);
+    next.delete("draft");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (user && id) {
