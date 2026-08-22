@@ -83,6 +83,12 @@ export default function PlaceDetailSheet({
             </p>
           )}
 
+          {/* Who else genuinely knows this place — authorised visits only. */}
+          <div className="mt-5">
+            <PeopleWhoKnowPlace city={place.city} country={place.country} />
+          </div>
+
+
           <div className="mt-5 flex gap-2">
             <button
               onClick={() => onViewVisits?.(place)}
