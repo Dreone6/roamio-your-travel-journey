@@ -82,7 +82,7 @@ export default function HomePage() {
               style={{ background: "#111827" }}
             >
               <Bell className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
-              {CANON.hasNotifications && (
+              {identity.unreadNotifications > 0 && (
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#EF4444" }} />
               )}
             </button>
