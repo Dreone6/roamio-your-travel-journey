@@ -59,7 +59,15 @@ export interface DiscoveredTrip {
   selected: boolean;
   visibility: Visibility;
   mediaIds: string[];
+  /**
+   * Stable fingerprint of this visit (coarse location + date window).
+   * Used for duplicate-import protection — never derived from filenames.
+   */
+  importKey: string;
+  /** True when no photo in the cluster had a usable capture date. */
+  dateUnknown: boolean;
 }
+
 
 export interface ScanCounters {
   photos: number;
