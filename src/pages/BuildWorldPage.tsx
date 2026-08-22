@@ -632,8 +632,11 @@ function RevealStep({
           Your world is bigger than you remembered.
         </h1>
         <p className="mt-2 text-[14px]" style={{ color: MUTED }}>
-          This is everywhere your story has taken you.
+          {demoMode
+            ? "This is a demo preview. None of these places were saved to your account."
+            : "This is everywhere your story has taken you."}
         </p>
+
 
         <div className="mt-7 flex items-end justify-between">
           {[
