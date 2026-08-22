@@ -580,8 +580,8 @@ function IconAction({ Icon, label, onClick }: { Icon: typeof Pencil; label: stri
 /* ----------------------------------- 5 ------------------------------------ */
 
 function RevealStep({
-  trips, stats,
-}: { trips: DiscoveredTrip[]; stats: { countries: number; cities: number; memories: number } }) {
+  trips, stats, demoMode,
+}: { trips: DiscoveredTrip[]; stats: { countries: number; cities: number; memories: number }; demoMode: boolean }) {
   const navigate = useNavigate();
   const [revealed, setRevealed] = useState(0);
   const [showCopy, setShowCopy] = useState(false);
