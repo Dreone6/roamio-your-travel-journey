@@ -395,12 +395,13 @@ function ScanStep({
 /* ----------------------------------- 4 ------------------------------------ */
 
 function ReviewStep({
-  trips, setTrips, saving, onAdd,
+  trips, setTrips, saving, onAdd, demoMode,
 }: {
   trips: DiscoveredTrip[];
   setTrips: (t: DiscoveredTrip[]) => void;
   saving: boolean;
   onAdd: () => void;
+  demoMode: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [mergeSel, setMergeSel] = useState<string[]>([]);
