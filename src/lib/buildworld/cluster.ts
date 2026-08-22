@@ -50,9 +50,22 @@ export function clusterMedia(media: GeotaggedMedia[]): RawCluster[] {
   return clusters;
 }
 
-function makeImportKey(lat: number, lng: number, startISO: string, dated: boolean): string {
+/**
+ * Fingerprint of one clustered visit. The window is the cluster's actual
+ * start..end day, not the calendar month, so two separate trips to the same
+ * city in the same month (split by the 5-day gap rule) stay distinct rows
+ * while a re-import of the same photos reproduces the same key.
+ */
+function makeImportKey(
+  lat: number,
+  lng: number,
+  startISO: string,
+  endISO: string,
+  dated: boolean
+): string {
   const loc = `${lat.toFixed(1)},${lng.toFixed(1)}`;
-  return `loc:${loc}|${dated ? startISO.slice(0, 7) : "undated"}`;
+  if (!dated) return `loc:${loc}|undated`;
+  return `loc:${loc}|${startISO.slice(0, 10)}..${endISO.slice(0, 10)}`;
 }
 
 export async function buildDiscoveredTrips(
