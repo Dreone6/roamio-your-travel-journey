@@ -93,12 +93,12 @@ export default function HomePage() {
               style={{ background: "#111827" }}
             >
               <MessageCircle className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
-              {CANON.unread > 0 && (
+              {unread > 0 && (
                 <span
                   className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
                   style={{ background: "#EF4444", boxShadow: "0 0 0 2px #080D1A" }}
                 >
-                  {CANON.unread}
+                  {unread > 9 ? "9+" : unread}
                 </span>
               )}
             </button>
