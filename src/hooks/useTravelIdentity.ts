@@ -99,19 +99,19 @@ export function useTravelIdentity(): TravelIdentity {
     (async () => {
       const uid = user.id;
       const [
-        profileRes, placesRes, checkinsRes, memoriesRes,
+        profileRes, visits, checkinsRes, memoriesRes,
         tripsRes, badgesRes, followersRes, followingRes, notifRes,
       ] = await Promise.all([
         supabase.from("profiles").select("name, username, bio, home_city, profile_photo").eq("id", uid).maybeSingle(),
-        // `source = 'demo'` rows are demo-only fixtures and never count
-        // towards a real traveller's identity.
-        supabase.from("places_visited").select("id, country, city, latitude, longitude, date_visited, end_date, visibility, source, photos_count").eq("user_id", uid).neq("source", "demo"),
+        // Canonical visit store. `source = 'demo'` rows are fixtures and are
+        // filtered out inside fetchVisits.
+        fetchVisits(uid),
         supabase.from("check_ins").select("id, location_name, city, country, latitude, longitude, timestamp, notes, photo").eq("user_id", uid),
         supabase.from("memories").select("id, media_url, caption, location_name, latitude, longitude, pinned_to_globe, visibility, created_at, trip_id").eq("user_id", uid),
         supabase.from("trips").select("id, title, destination, status, cover_photo, start_date, created_at").eq("user_id", uid).order("created_at", { ascending: false }),
         supabase.from("badges").select("id").eq("user_id", uid),
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", uid),
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", uid),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", uid).eq("status", "accepted"),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", uid).eq("status", "accepted"),
         supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("read", false),
       ]);
 
