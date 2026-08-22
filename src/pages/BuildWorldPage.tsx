@@ -121,9 +121,9 @@ export default function BuildWorldPage() {
       )}
       {step === "scan" && <ScanStep demoMode={demoMode} onComplete={handleScanComplete} onCancel={() => setStep("privacy")} />}
       {step === "review" && (
-        <ReviewStep trips={trips} setTrips={setTrips} saving={saving} onAdd={handleAdd} />
+        <ReviewStep trips={trips} setTrips={setTrips} saving={saving} onAdd={handleAdd} demoMode={demoMode} />
       )}
-      {step === "reveal" && <RevealStep trips={trips} stats={saved} />}
+      {step === "reveal" && <RevealStep trips={trips} stats={saved} demoMode={demoMode} />}
     </div>
   );
 }
