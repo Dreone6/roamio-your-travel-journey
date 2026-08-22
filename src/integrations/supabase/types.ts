@@ -1514,6 +1514,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      conversation_created_by: {
+        Args: { _conversation: string }
+        Returns: string
+      }
+      conversation_has_block: {
+        Args: { _conversation: string; _user: string }
+        Returns: boolean
+      }
       find_trip_by_invite: {
         Args: { _code: string }
         Returns: {
@@ -1534,6 +1542,10 @@ export type Database = {
         Returns: boolean
       }
       is_blocked_between: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_conversation_participant: {
+        Args: { _conversation: string; _user: string }
+        Returns: boolean
+      }
       nearby_offers: {
         Args: { lat: number; lng: number; radius_miles?: number }
         Returns: {
