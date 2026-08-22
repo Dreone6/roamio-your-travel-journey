@@ -29,54 +29,8 @@ interface Bucket {
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=128&q=80";
 
-// Demo bucket so the row is never empty for the canonical demo
-const DEMO_BUCKETS: Bucket[] = [
-  {
-    userId: "demo-mia",
-    name: "Mia",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&q=80",
-    isSelf: false,
-    unseen: true,
-    stories: [{
-      id: "demo-s1", user_id: "demo-mia",
-      media_url: "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=900&q=80",
-      caption: "Sunset in Positano 🌅", location_name: "Positano, Italy",
-      latitude: 40.628, longitude: 14.485,
-      created_at: new Date(Date.now() - 2 * 3600e3).toISOString(),
-      expires_at: new Date(Date.now() + 22 * 3600e3).toISOString(),
-    }],
-  },
-  {
-    userId: "demo-leo",
-    name: "Leo",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=128&q=80",
-    isSelf: false,
-    unseen: true,
-    stories: [{
-      id: "demo-s2", user_id: "demo-leo",
-      media_url: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=900&q=80",
-      caption: "Paris nights ✨", location_name: "Paris, France",
-      latitude: 48.857, longitude: 2.353,
-      created_at: new Date(Date.now() - 5 * 3600e3).toISOString(),
-      expires_at: new Date(Date.now() + 19 * 3600e3).toISOString(),
-    }],
-  },
-  {
-    userId: "demo-ana",
-    name: "Ana",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=128&q=80",
-    isSelf: false,
-    unseen: false,
-    stories: [{
-      id: "demo-s3", user_id: "demo-ana",
-      media_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&q=80",
-      caption: "Beach day", location_name: "Bali, Indonesia",
-      latitude: -8.41, longitude: 115.19,
-      created_at: new Date(Date.now() - 10 * 3600e3).toISOString(),
-      expires_at: new Date(Date.now() + 14 * 3600e3).toISOString(),
-    }],
-  },
-];
+
+
 
 export default function StoriesRow() {
   const { user } = useAuth();
