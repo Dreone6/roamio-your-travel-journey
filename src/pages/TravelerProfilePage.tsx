@@ -193,7 +193,7 @@ export default function TravelerProfilePage() {
               {followLabel}
             </button>
             <button
-              onClick={message}
+              onClick={() => message()}
               disabled={messaging}
               className="rounded-full flex items-center justify-center text-white"
               style={{ background: "#1A2236", border: "1px solid #1E2A3F", height: 52, width: 52 }}
