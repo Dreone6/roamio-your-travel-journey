@@ -244,8 +244,9 @@ function PrivacyStep({
         <div className="flex-1">
           <p className="text-white" style={{ fontSize: 14, fontWeight: 600 }}>Demo scan</p>
           <p className="text-[12px] mt-0.5 leading-snug" style={{ color: MUTED }}>
-            Preview the full experience with a sample travel history. Clearly marked as demo data.
+            Preview the full experience with a sample travel history. Nothing is saved to your account.
           </p>
+
         </div>
         <Switch checked={demoMode} onCheckedChange={setDemoMode} />
       </div>
