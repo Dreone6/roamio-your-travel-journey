@@ -183,8 +183,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* BUILD MY WORLD — shown while the user has no travel data yet */}
+      {!identity.loading && identity.isEmpty && (
+        <section className="px-5 pt-4">
+          <button
+            onClick={() => navigate("/build-world")}
+            className="w-full text-left p-5 active:scale-[0.99] transition-transform"
+            style={{
+              borderRadius: 24,
+              background: "linear-gradient(135deg, rgba(59,130,246,0.18) 0%, #111827 65%)",
+              border: "1px solid rgba(59,130,246,0.25)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+              <p className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Build My World</p>
+            </div>
+            <p className="mt-2" style={{ color: "#94A3B8", fontSize: 13, lineHeight: 1.4 }}>
+              Turn the places you've been into a living map of your life — from the photos you already have.
+            </p>
+            <span className="inline-block mt-3" style={{ color: "#3B82F6", fontSize: 13, fontWeight: 600 }}>
+              Start now →
+            </span>
+          </button>
+        </section>
+      )}
+
       {/* RECENT TRIP — real data, or an invitation to plan one */}
       <section className="px-5 pt-4">
+
         {identity.recentTrip ? (
           <button
             onClick={() => navigate(`/trips?trip=${identity.recentTrip!.id}`)}
