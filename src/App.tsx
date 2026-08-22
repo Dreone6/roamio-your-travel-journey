@@ -11,6 +11,7 @@ import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import TripsPage from "@/pages/TripsPage";
 import DiscoverPage from "@/pages/DiscoverPage";
+import ExplorePage from "@/pages/ExplorePage";
 import GlobePage from "@/pages/GlobePage";
 import CheckInPage from "@/pages/CheckInPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/passport" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
             <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
             <Route path="/u/:handle" element={<ProtectedRoute><TravelerProfilePage /></ProtectedRoute>} />
+            <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
