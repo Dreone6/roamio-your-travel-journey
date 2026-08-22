@@ -9,6 +9,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { aggregateWorld, fetchVisits, EMPTY_WORLD, type World } from "@/lib/world/visits";
 
 export type PinCategory = "memory" | "checkin" | "visit";
 
@@ -36,6 +37,10 @@ export interface TravelIdentity {
   avatar: string | null;
   countries: number;
   cities: number;
+  /** Distinct visits (rows in the canonical visit store). */
+  visits: number;
+  /** Full aggregated world — places, country collection, summary. */
+  world: World;
   memories: number;
   trips: number;
   completedTrips: number;
@@ -68,6 +73,8 @@ const EMPTY: Omit<TravelIdentity, "refresh"> = {
   avatar: null,
   countries: 0,
   cities: 0,
+  visits: 0,
+  world: EMPTY_WORLD,
   memories: 0,
   trips: 0,
   completedTrips: 0,
@@ -99,42 +106,34 @@ export function useTravelIdentity(): TravelIdentity {
     (async () => {
       const uid = user.id;
       const [
-        profileRes, placesRes, checkinsRes, memoriesRes,
+        profileRes, visits, checkinsRes, memoriesRes,
         tripsRes, badgesRes, followersRes, followingRes, notifRes,
       ] = await Promise.all([
         supabase.from("profiles").select("name, username, bio, home_city, profile_photo").eq("id", uid).maybeSingle(),
-        // `source = 'demo'` rows are demo-only fixtures and never count
-        // towards a real traveller's identity.
-        supabase.from("places_visited").select("id, country, city, latitude, longitude, date_visited, end_date, visibility, source, photos_count").eq("user_id", uid).neq("source", "demo"),
+        // Canonical visit store. `source = 'demo'` rows are fixtures and are
+        // filtered out inside fetchVisits.
+        fetchVisits(uid),
         supabase.from("check_ins").select("id, location_name, city, country, latitude, longitude, timestamp, notes, photo").eq("user_id", uid),
         supabase.from("memories").select("id, media_url, caption, location_name, latitude, longitude, pinned_to_globe, visibility, created_at, trip_id").eq("user_id", uid),
         supabase.from("trips").select("id, title, destination, status, cover_photo, start_date, created_at").eq("user_id", uid).order("created_at", { ascending: false }),
         supabase.from("badges").select("id").eq("user_id", uid),
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", uid),
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", uid),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", uid).eq("status", "accepted"),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", uid).eq("status", "accepted"),
         supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("read", false),
       ]);
 
       if (cancelled) return;
 
-      const places = placesRes.data ?? [];
       const checkins = checkinsRes.data ?? [];
       const memories = memoriesRes.data ?? [];
       const trips = tripsRes.data ?? [];
 
-      const countrySet = new Set<string>();
-      const citySet = new Set<string>();
-      places.forEach((p) => {
-        if (p.country) countrySet.add(p.country.trim());
-        if (p.city) citySet.add(`${p.city.trim()}|${p.country ?? ""}`);
-      });
-      checkins.forEach((c) => {
-        if (c.country) countrySet.add(c.country.trim());
-        if (c.city) citySet.add(`${c.city.trim()}|${c.country ?? ""}`);
-      });
+      // Countries/cities/visits all come from the canonical visit store so
+      // Home, Profile, World and Passport can never disagree.
+      const world = aggregateWorld(visits);
 
       const pins: IdentityPin[] = [];
-      places.forEach((p) => {
+      visits.forEach((p) => {
         if (p.latitude == null || p.longitude == null) return;
         pins.push({
           id: `place-${p.id}`,
@@ -142,8 +141,8 @@ export function useTravelIdentity(): TravelIdentity {
           lng: p.longitude,
           label: [p.city, p.country].filter(Boolean).join(", ") || "Visited",
           category: "visit",
-          visibility: (p.visibility as IdentityPin["visibility"]) ?? "private",
-          createdAt: p.date_visited ?? new Date(0).toISOString(),
+          visibility: p.visibility,
+          createdAt: p.startDate ?? new Date(0).toISOString(),
           country: p.country,
           city: p.city,
         });
@@ -190,9 +189,12 @@ export function useTravelIdentity(): TravelIdentity {
         bio: profile?.bio ?? null,
         homeCity: profile?.home_city ?? null,
         avatar: profile?.profile_photo ?? null,
-        countries: countrySet.size,
-        cities: citySet.size,
-        memories: memories.length,
+        countries: world.summary.countries,
+        cities: world.summary.cities,
+        visits: world.summary.visits,
+        world,
+        // Visit-level photo counts plus captured memory records.
+        memories: world.summary.memories + memories.length,
         trips: trips.length,
         completedTrips: trips.filter((t) => t.status === "completed").length,
         checkIns: checkins.length,
@@ -212,7 +214,7 @@ export function useTravelIdentity(): TravelIdentity {
               status: recent.status,
             }
           : null,
-        countryList: [...countrySet],
+        countryList: world.countries.map((c) => c.country),
         isEmpty: pins.length === 0 && memories.length === 0 && trips.length === 0,
       });
     })().catch(() => {

@@ -207,6 +207,8 @@ export default function ProfilePage() {
             { v: fmtNum(identity.followers), l: "Followers" },
             { v: fmtNum(identity.following), l: "Following" },
             { v: fmtNum(identity.countries), l: "Countries" },
+            { v: fmtNum(identity.cities), l: "Cities" },
+            { v: fmtNum(identity.visits), l: "Visits" },
           ].map(s => (
             <div key={s.l} className="flex-1">
               <p className="font-heading text-[20px] font-semibold text-white leading-none tracking-tight">{s.v}</p>
@@ -250,50 +252,66 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* 4b. SAFEPASS */}
-      <div className="px-5 mt-5">
+      {/* 4b. YOUR WORLD — the hero of the profile */}
+      <div className="mt-6">
+        <div className="px-5 flex items-baseline justify-between">
+          <h2 className="font-heading text-[20px] font-semibold text-white tracking-tight">Your World</h2>
+          {!identity.isEmpty && (
+            <button onClick={() => navigate("/globe")} className="text-[12px] font-semibold flex items-center gap-0.5" style={{ color: "#3B82F6" }}>
+              Open <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
+
+        <div
+          className="mt-3 mx-3 relative overflow-hidden"
+          style={{ height: 300, borderRadius: 24, background: "#080D1A", border: "1px solid #1E2A3F" }}
+        >
+          <Suspense fallback={<div className="h-full w-full animate-pulse" style={{ background: "#0A1628" }} />}>
+            <WorldGlobe points={worldPoints} compact interactive />
+          </Suspense>
+          <button
+            onClick={() => navigate("/globe")}
+            className="absolute inset-x-0 bottom-0 p-4 text-left"
+            style={{ background: "linear-gradient(to top, rgba(8,13,26,0.92), transparent)" }}
+          >
+            <p className="font-heading text-[16px] font-semibold text-white leading-tight">
+              {identity.isEmpty
+                ? "Nothing pinned yet"
+                : `${identity.countries} ${identity.countries === 1 ? "country" : "countries"} · ${identity.cities} ${identity.cities === 1 ? "city" : "cities"}`}
+            </p>
+            <p className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
+              {identity.isEmpty
+                ? "Build your world from your photo library"
+                : identity.latestPin ? `Latest place: ${identity.latestPin.label}` : "Tap to explore your globe"}
+            </p>
+          </button>
+        </div>
+
+        <div className="px-5 mt-3 flex gap-2">
+          <button
+            onClick={() => navigate("/passport")}
+            className="flex-1 inline-flex items-center justify-center gap-2 text-white active:scale-[0.99] transition-transform"
+            style={{ height: 48, borderRadius: 9999, background: "#1A2236", border: "1px solid #1E2A3F", fontSize: 14, fontWeight: 600 }}
+          >
+            <BookMarked className="h-4 w-4" strokeWidth={1.6} /> Travel Passport
+          </button>
+          <button
+            onClick={() => navigate("/build-world")}
+            className="flex-1 inline-flex items-center justify-center gap-2 text-white active:scale-[0.99] transition-transform"
+            style={{ height: 48, borderRadius: 9999, background: "#3B82F6", fontSize: 14, fontWeight: 600 }}
+          >
+            <Sparkles className="h-4 w-4" strokeWidth={1.6} />
+            {identity.isEmpty ? "Build My World" : "Add from photos"}
+          </button>
+        </div>
+      </div>
+
+      {/* 4c. SAFEPASS */}
+      <div className="px-5 mt-6">
         <SafePassCard />
       </div>
 
-      {/* 4c. YOUR WORLD */}
-      <div className="px-5 mt-5">
-        <button
-          onClick={() => navigate("/globe")}
-          className="w-full text-left rounded-[24px] p-5 active:scale-[0.99] transition-transform"
-          style={{ background: "#111827", boxShadow: "0px 2px 8px rgba(0,0,0,0.4)" }}
-        >
-          <div className="flex items-center gap-2">
-            <GlobeIcon className="h-5 w-5" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
-            <h3 className="flex-1 text-white" style={{ fontSize: 16, fontWeight: 600 }}>Your World</h3>
-            <ChevronRight className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
-          </div>
-          {identity.isEmpty ? (
-            <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12 }}>
-              Nothing pinned yet — build your world from your photo library.
-            </p>
-          ) : (
-            <>
-              <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12, letterSpacing: "0.2px" }}>
-                {identity.countries} countries · {identity.cities} cities · {identity.memories} memories
-              </p>
-              {identity.latestPin && (
-                <p className="mt-2" style={{ color: "#94A3B8", fontSize: 12 }}>
-                  Latest pin: {identity.latestPin.label}
-                </p>
-              )}
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={() => navigate("/build-world")}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white active:scale-[0.99] transition-transform"
-          style={{ height: 48, borderRadius: 9999, background: "#3B82F6", fontSize: 14, fontWeight: 600 }}
-        >
-          <Sparkles className="h-4 w-4" strokeWidth={1.6} />
-          {identity.isEmpty ? "Build My World" : "Add more from my photos"}
-        </button>
-      </div>
 
 
       {/* 5. HIGHLIGHTS */}

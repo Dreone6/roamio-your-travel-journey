@@ -31,6 +31,8 @@ import SafePassPage from "@/pages/SafePassPage";
 import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
 import BuildWorldPage from "@/pages/BuildWorldPage";
+import PassportPage from "@/pages/PassportPage";
+import TravelerProfilePage from "@/pages/TravelerProfilePage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
@@ -63,6 +65,9 @@ const App = () => (
             <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
             <Route path="/build-world" element={<ProtectedRoute><BuildWorldPage /></ProtectedRoute>} />
             <Route path="/travel-history" element={<Navigate to="/build-world" replace />} />
+            <Route path="/passport" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
+            <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
+            <Route path="/u/:handle" element={<ProtectedRoute><TravelerProfilePage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
