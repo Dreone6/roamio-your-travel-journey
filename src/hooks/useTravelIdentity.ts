@@ -117,24 +117,16 @@ export function useTravelIdentity(): TravelIdentity {
 
       if (cancelled) return;
 
-      const places = placesRes.data ?? [];
       const checkins = checkinsRes.data ?? [];
       const memories = memoriesRes.data ?? [];
       const trips = tripsRes.data ?? [];
 
-      const countrySet = new Set<string>();
-      const citySet = new Set<string>();
-      places.forEach((p) => {
-        if (p.country) countrySet.add(p.country.trim());
-        if (p.city) citySet.add(`${p.city.trim()}|${p.country ?? ""}`);
-      });
-      checkins.forEach((c) => {
-        if (c.country) countrySet.add(c.country.trim());
-        if (c.city) citySet.add(`${c.city.trim()}|${c.country ?? ""}`);
-      });
+      // Countries/cities/visits all come from the canonical visit store so
+      // Home, Profile, World and Passport can never disagree.
+      const world = aggregateWorld(visits);
 
       const pins: IdentityPin[] = [];
-      places.forEach((p) => {
+      visits.forEach((p) => {
         if (p.latitude == null || p.longitude == null) return;
         pins.push({
           id: `place-${p.id}`,
@@ -142,8 +134,8 @@ export function useTravelIdentity(): TravelIdentity {
           lng: p.longitude,
           label: [p.city, p.country].filter(Boolean).join(", ") || "Visited",
           category: "visit",
-          visibility: (p.visibility as IdentityPin["visibility"]) ?? "private",
-          createdAt: p.date_visited ?? new Date(0).toISOString(),
+          visibility: p.visibility,
+          createdAt: p.startDate ?? new Date(0).toISOString(),
           country: p.country,
           city: p.city,
         });
