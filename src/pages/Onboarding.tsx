@@ -64,8 +64,9 @@ export default function Onboarding() {
     if (!user) { navigate("/auth", { replace: true }); return; }
     setSaving(true);
     await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
-    navigate("/home", { replace: true });
+    navigate("/build-world", { replace: true });
   };
+
 
   const next = () => setStep(s => (s < 3 ? s + 1 : s));
 

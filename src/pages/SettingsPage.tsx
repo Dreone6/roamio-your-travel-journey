@@ -95,7 +95,7 @@ export default function SettingsPage() {
           icon: Camera,
           label: "Connected Sources",
           desc: "Photo library, bookings",
-          onClick: () => navigate("/travel-history"),
+          onClick: () => navigate("/build-world"),
         },
       ],
     },

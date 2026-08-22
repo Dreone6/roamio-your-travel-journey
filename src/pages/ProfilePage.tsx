@@ -5,7 +5,7 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import { toast } from "sonner";
 import {
   Pencil, MapPin, Globe as GlobeIcon, Share2, MessageCircle,
-  BadgeCheck, ChevronRight, Lock, Play, Plus,
+  BadgeCheck, ChevronRight, Lock, Play, Plus, Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -284,7 +284,17 @@ export default function ProfilePage() {
             </>
           )}
         </button>
+
+        <button
+          onClick={() => navigate("/build-world")}
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white active:scale-[0.99] transition-transform"
+          style={{ height: 48, borderRadius: 9999, background: "#3B82F6", fontSize: 14, fontWeight: 600 }}
+        >
+          <Sparkles className="h-4 w-4" strokeWidth={1.6} />
+          {identity.isEmpty ? "Build My World" : "Add more from my photos"}
+        </button>
       </div>
+
 
       {/* 5. HIGHLIGHTS */}
       <div className="mt-7">

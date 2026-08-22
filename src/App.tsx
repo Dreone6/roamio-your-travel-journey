@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,7 +30,7 @@ import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
 import SafePassPage from "@/pages/SafePassPage";
 import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
-import TravelHistoryPage from "@/pages/TravelHistoryPage";
+import BuildWorldPage from "@/pages/BuildWorldPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
@@ -61,7 +61,8 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
             <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
-            <Route path="/travel-history" element={<ProtectedRoute><TravelHistoryPage /></ProtectedRoute>} />
+            <Route path="/build-world" element={<ProtectedRoute><BuildWorldPage /></ProtectedRoute>} />
+            <Route path="/travel-history" element={<Navigate to="/build-world" replace />} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
