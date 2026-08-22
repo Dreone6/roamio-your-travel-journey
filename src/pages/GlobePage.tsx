@@ -1,25 +1,35 @@
+/**
+ * World — the hero screen.
+ *
+ * Every pin, number and list on this screen comes from the canonical visit
+ * store via `useTravelIdentity`. One point per city (never one per photo), so
+ * the globe stays cheap no matter how large a travel history gets.
+ */
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTravelIdentity, type IdentityPin } from "@/hooks/useTravelIdentity";
-import { Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Image as ImageIcon, Trophy, Camera, Users, Compass } from "lucide-react";
+import { useTravelIdentity } from "@/hooks/useTravelIdentity";
+import {
+  Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Image as ImageIcon,
+  Trophy, Camera, Users, Compass, BookMarked,
+} from "lucide-react";
 import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
-import PinDetailSheet from "@/components/globe/PinDetailSheet";
-import PinContextMenu from "@/components/globe/PinContextMenu";
+import PlaceDetailSheet from "@/components/world/PlaceDetailSheet";
 import TrophyShelfModal from "@/components/globe/TrophyShelfModal";
-import type { MapPin, Visibility } from "@/data/types";
+import type { CityPlace } from "@/lib/world/visits";
 
-const InteractiveGlobe = lazy(() => import("@/components/globe/FlagGlobe"));
+const WorldGlobe = lazy(() => import("@/components/globe/WorldGlobe"));
 
 type Tab = "mine" | "followers" | "explore";
 type ViewMode = "globe" | "map";
 
 interface FeedItem {
   id: string;
+  userId: string;
   name: string;
   avatar?: string | null;
   city: string;
@@ -27,35 +37,16 @@ interface FeedItem {
   when: string;
 }
 
-function toMapPin(p: IdentityPin): MapPin {
-  return {
-    id: p.id,
-    userId: "",
-    latitude: p.lat,
-    longitude: p.lng,
-    label: p.label,
-    description: p.description ?? undefined,
-    category: p.category === "visit" ? "memory" : p.category,
-    linkedId: p.id,
-    visibility: p.visibility,
-    createdAt: p.createdAt,
-    verifiedSource:
-      p.category === "checkin" ? "checkin" :
-      p.category === "memory" ? "capture" : "exif",
-    verifiedAt: p.createdAt,
-  } as MapPin;
-}
-
 export default function GlobePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const identity = useTravelIdentity();
+  const world = identity.world;
+
   const [activeTab, setActiveTab] = useState<Tab>("mine");
   const [viewMode, setViewMode] = useState<ViewMode>("globe");
-  const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
-  const [pinSheetOpen, setPinSheetOpen] = useState(false);
-  const [contextPin, setContextPin] = useState<MapPin | null>(null);
-  const [contextOpen, setContextOpen] = useState(false);
+  const [place, setPlace] = useState<CityPlace | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
   const [trophyOpen, setTrophyOpen] = useState(false);
   const [following, setFollowing] = useState<FeedItem[] | null>(null);
@@ -69,10 +60,11 @@ export default function GlobePage() {
     let cancelled = false;
     (async () => {
       const { data: follows } = await supabase
-        .from("user_follows").select("following_id").eq("follower_id", user.id);
+        .from("follows").select("following_id")
+        .eq("follower_id", user.id).eq("status", "accepted");
       const ids = (follows ?? []).map((f) => f.following_id);
 
-      const mapRows = async (rows: any[]) => {
+      const mapRows = async (rows: any[]): Promise<FeedItem[]> => {
         const userIds = [...new Set(rows.map((r) => r.user_id))];
         const { data: profiles } = userIds.length
           ? await supabase.from("profiles").select("id, name, profile_photo").in("id", userIds)
@@ -80,6 +72,7 @@ export default function GlobePage() {
         const byId = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p]));
         return rows.map((r) => ({
           id: r.id,
+          userId: r.user_id,
           name: byId[r.user_id]?.name || "Traveler",
           avatar: byId[r.user_id]?.profile_photo,
           city: r.location_name,
@@ -110,59 +103,45 @@ export default function GlobePage() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const allMyPins = useMemo(() => identity.pins.map(toMapPin), [identity.pins]);
-
-  const globePins = useMemo(() => {
-    const recentId = identity.pins[0]?.id;
-    return identity.pins.map((p) => ({
-      lat: p.lat,
-      lng: p.lng,
-      label: p.label,
-      category: p.category === "visit" ? "memory" : p.category,
-      thumbnail: p.thumbnail ?? null,
-      description: p.description ?? undefined,
-      recent: p.id === recentId,
-    }));
-  }, [identity.pins]);
-
-  const globeArcs = useMemo(() => {
-    const ordered = [...identity.pins].reverse().slice(0, 12);
-    const arcs: { from: { lat: number; lng: number }; to: { lat: number; lng: number } }[] = [];
-    for (let i = 0; i < ordered.length - 1; i++) {
-      arcs.push({
-        from: { lat: ordered[i].lat, lng: ordered[i].lng },
-        to: { lat: ordered[i + 1].lat, lng: ordered[i + 1].lng },
-      });
-    }
-    return arcs;
-  }, [identity.pins]);
-
-  const flatPins = useMemo(
-    () => identity.pins.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, label: p.label, description: p.description ?? undefined, category: p.category === "visit" ? "memory" : p.category })),
-    [identity.pins]
+  // One globe point per city — aggregated, never one per memory.
+  const globePoints = useMemo(
+    () => world.places
+      .filter((p) => p.lat !== 0 || p.lng !== 0)
+      .map((p, i) => ({
+        key: p.key,
+        lat: p.lat,
+        lng: p.lng,
+        label: p.city,
+        weight: p.visitCount,
+        recent: i === 0,
+        milestone: p.isMilestone,
+      })),
+    [world.places]
   );
 
-  const handlePinClick = useCallback((pinData: { id?: string; label?: string; lat?: number; lng?: number }) => {
-    const pin = allMyPins.find(p =>
-      (pinData.id && p.id === pinData.id) ||
-      (pinData.lat != null && pinData.lng != null && Math.abs(p.latitude - pinData.lat) < 0.01 && Math.abs(p.longitude - pinData.lng) < 0.01)
-    );
-    if (pin) { setSelectedPin(pin); setPinSheetOpen(true); }
-  }, [allMyPins]);
+  // Chronological trail between the cities of the travel history.
+  const globeArcs = useMemo(() => {
+    const ordered = [...world.places]
+      .filter((p) => p.lastVisit && (p.lat !== 0 || p.lng !== 0))
+      .sort((a, b) => (a.lastVisit ?? "").localeCompare(b.lastVisit ?? ""))
+      .slice(-25);
+    return ordered.slice(0, -1).map((p, i) => ({
+      startLat: p.lat, startLng: p.lng,
+      endLat: ordered[i + 1].lat, endLng: ordered[i + 1].lng,
+    }));
+  }, [world.places]);
 
-  const selectedPinLinked = useMemo(() => {
-    if (!selectedPin) return undefined;
-    const source = identity.pins.find((p) => p.id === selectedPin.id);
-    return {
-      photo: source?.thumbnail ?? undefined,
-      caption: source?.description ?? undefined,
-      tripTitle: undefined,
-      badgeName: undefined,
-      date: source?.createdAt ?? selectedPin.createdAt,
-      reactions: 0,
-      comments: 0,
-    };
-  }, [selectedPin, identity.pins]);
+  const flatPins = useMemo(
+    () => world.places.map((p) => ({
+      id: p.key, lat: p.lat, lng: p.lng, label: `${p.city}, ${p.country}`, category: "memory",
+    })),
+    [world.places]
+  );
+
+  const openPlace = useCallback((key: string) => {
+    const found = world.places.find((p) => p.key === key);
+    if (found) { setPlace(found); setSheetOpen(true); }
+  }, [world.places]);
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "mine", label: "My Globe" },
@@ -178,16 +157,23 @@ export default function GlobePage() {
     } catch { /* user dismissed */ }
   };
 
-  const latest = identity.latestPin;
-  const hasPins = identity.pins.length > 0;
+  const hasPlaces = world.places.length > 0;
+  const recentPlace = world.places[0];
+  const early = hasPlaces && world.places.length <= 3;
 
   return (
     <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
       {/* Header */}
       <div className="px-5 pt-12 pb-4 flex items-start justify-between">
         <div>
-          <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-none">World</h1>
-          <p className="text-[14px] text-[#94A3B8] mt-2">Your life, mapped by memories</p>
+          <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-none">Your World</h1>
+          <p className="text-[14px] text-[#94A3B8] mt-2">
+            {identity.loading
+              ? "…"
+              : hasPlaces
+                ? `${world.summary.countries} ${world.summary.countries === 1 ? "country" : "countries"} · ${world.summary.cities} ${world.summary.cities === 1 ? "city" : "cities"} · ${world.summary.visits} ${world.summary.visits === 1 ? "trip" : "trips"}`
+                : "Your life, mapped by memories"}
+          </p>
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
@@ -195,7 +181,6 @@ export default function GlobePage() {
             className="h-10 w-10 rounded-full flex items-center justify-center relative"
             style={{ background: "#111827", border: "1px solid rgba(244,162,97,0.35)" }}
             aria-label="Trophy shelf"
-            title="Trophy shelf"
           >
             <Trophy className="h-[18px] w-[18px]" style={{ color: "#F4A261", strokeWidth: 1.6 }} />
             {identity.badges > 0 && (
@@ -212,11 +197,9 @@ export default function GlobePage() {
             className="h-10 w-10 rounded-full flex items-center justify-center"
             style={{ background: "#111827", border: "1px solid #1E2A3F" }}
             aria-label="Sync from Photos"
-            title="Sync from Photos"
           >
             <ImageIcon className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
-
           <button
             onClick={handleShare}
             className="h-10 w-10 rounded-full flex items-center justify-center"
@@ -233,24 +216,6 @@ export default function GlobePage() {
           >
             <Settings className="h-[18px] w-[18px]" style={{ color: "#94A3B8", strokeWidth: 1.5 }} />
           </button>
-        </div>
-      </div>
-
-      {/* Stats Row — real account data */}
-      <div className="px-5 pb-5">
-        <div className="flex items-end justify-between">
-          {[
-            { v: identity.countries, l: "Countries" },
-            { v: identity.cities, l: "Cities" },
-            { v: identity.memories, l: "Memories" },
-          ].map(s => (
-            <div key={s.l} className="flex-1 text-center">
-              <p className="font-heading text-[32px] font-bold text-white leading-none tracking-tight">
-                {identity.loading ? "—" : s.v}
-              </p>
-              <p className="text-[12px] text-[#94A3B8] uppercase mt-2" style={{ letterSpacing: "0.08em" }}>{s.l}</p>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -277,26 +242,18 @@ export default function GlobePage() {
       <div className="px-3">
         <div
           className="relative overflow-hidden"
-          style={{
-            height: "55vh",
-            maxHeight: 560,
-            borderRadius: 24,
-            background: "#080D1A",
-            border: "1px solid #1E2A3F",
-          }}
+          style={{ height: "55vh", maxHeight: 560, borderRadius: 24, background: "#080D1A", border: "1px solid #1E2A3F" }}
         >
-          {/* Pin count chip — top-left */}
           <div
             className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full"
             style={{ background: "rgba(0,0,0,0.45)", padding: "4px 10px" }}
           >
             <img src={roavrPin} alt="" className="h-3 w-3" />
             <span className="text-[12px] text-white font-medium">
-              {identity.pins.length} {identity.pins.length === 1 ? "pin" : "pins"}
+              {world.places.length} {world.places.length === 1 ? "place" : "places"}
             </span>
           </div>
 
-          {/* The globe / map */}
           <div className="absolute inset-0">
             {viewMode === "globe" ? (
               <Suspense
@@ -306,25 +263,24 @@ export default function GlobePage() {
                   </div>
                 }
               >
-                <InteractiveGlobe
+                <WorldGlobe
                   key={recenterKey}
-                  pins={globePins}
+                  points={globePoints}
                   arcs={globeArcs}
-                  milestoneCodes={[]}
-                  onPinClick={(pin) => handlePinClick({ lat: pin.lat, lng: pin.lng, label: pin.label })}
+                  onPointClick={(p) => openPlace(p.key)}
                 />
               </Suspense>
             ) : (
               <FlatMapView
                 key={recenterKey}
                 pins={flatPins}
-                onPinClick={(pin) => handlePinClick({ id: pin.id, lat: pin.lat, lng: pin.lng })}
+                onPinClick={(pin) => openPlace(pin.id)}
               />
             )}
           </div>
 
           {/* Empty-globe invitation overlay */}
-          {!identity.loading && !hasPins && (
+          {!identity.loading && !hasPlaces && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-8 text-center"
               style={{ background: "linear-gradient(to top, rgba(8,13,26,0.92) 30%, rgba(8,13,26,0.35))" }}>
               <p className="font-heading text-[22px] font-bold text-white leading-tight">
@@ -352,7 +308,6 @@ export default function GlobePage() {
             </div>
           )}
 
-          {/* Recenter — bottom-right */}
           <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
             <button
               onClick={() => setRecenterKey(k => k + 1)}
@@ -378,43 +333,62 @@ export default function GlobePage() {
       {/* Content below */}
       <div className="px-5 pt-5">
         {activeTab === "mine" && (
-          !hasPins ? (
+          !hasPlaces ? (
             <div className="text-center py-4">
               <p className="text-[13px]" style={{ color: "#94A3B8" }}>
-                Pins you add stay private until you choose otherwise.
+                Places you add stay private until you choose otherwise.
               </p>
             </div>
-          ) : latest ? (
-            <div
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setContextPin(toMapPin(latest));
-                setContextOpen(true);
-              }}
-              onClick={() => { setSelectedPin(toMapPin(latest)); setPinSheetOpen(true); }}
-              className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer"
-              style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
-            >
-              <div
-                className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: "rgba(59,130,246,0.12)" }}
-              >
-                <img src={roavrPin} alt="" className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[16px] font-semibold text-white leading-tight truncate">{latest.label}</p>
-                <p className="text-[12px] text-[#94A3B8] mt-0.5">
-                  {timeAgo(latest.createdAt)} · Latest pin
+          ) : (
+            <div className="space-y-3">
+              {early && (
+                <p className="text-[13px] leading-relaxed" style={{ color: "#94A3B8" }}>
+                  {world.places.length === 1 ? "Your first place is on the map." : "Your world is taking shape."} Add
+                  more from your photo library and the map fills in itself.
                 </p>
-              </div>
-              {latest.thumbnail && (
-                <div
-                  className="h-10 w-10 rounded-lg shrink-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${latest.thumbnail})` }}
-                />
               )}
+
+              {recentPlace && (
+                <button
+                  onClick={() => { setPlace(recentPlace); setSheetOpen(true); }}
+                  className="w-full text-left rounded-2xl p-4 flex items-center gap-3"
+                  style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
+                >
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(59,130,246,0.12)" }}>
+                    <img src={roavrPin} alt="" className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[16px] font-semibold text-white leading-tight truncate">
+                      {recentPlace.city}, {recentPlace.country}
+                    </p>
+                    <p className="text-[12px] text-[#94A3B8] mt-0.5">
+                      Most recent place · {recentPlace.visitCount} {recentPlace.visitCount === 1 ? "visit" : "visits"}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "#4B5563" }} strokeWidth={1.5} />
+                </button>
+              )}
+
+              <button
+                onClick={() => navigate("/passport")}
+                className="w-full text-left rounded-2xl p-4 flex items-center gap-3"
+                style={{ background: "#111827", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
+              >
+                <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(244,162,97,0.12)" }}>
+                  <BookMarked className="h-5 w-5" style={{ color: "#F4A261" }} strokeWidth={1.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[16px] font-semibold text-white leading-tight">Travel Passport</p>
+                  <p className="text-[12px] text-[#94A3B8] mt-0.5">
+                    {world.summary.countries} {world.summary.countries === 1 ? "country" : "countries"} collected
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "#4B5563" }} strokeWidth={1.5} />
+              </button>
             </div>
-          ) : null
+          )
         )}
 
         {activeTab === "followers" && (
@@ -431,7 +405,12 @@ export default function GlobePage() {
           ) : (
             <div className="space-y-2">
               {following.map(a => (
-                <div key={a.id} className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: "#111827" }}>
+                <button
+                  key={a.id}
+                  onClick={() => navigate(`/u/${a.userId}`)}
+                  className="w-full text-left flex items-center gap-3 p-3 rounded-2xl"
+                  style={{ background: "#111827" }}
+                >
                   <div
                     className="h-8 w-8 rounded-full bg-cover bg-center shrink-0"
                     style={{ background: a.avatar ? `url(${a.avatar})` : "#1A2236", backgroundSize: "cover" }}
@@ -447,7 +426,7 @@ export default function GlobePage() {
                   {a.photo && (
                     <div className="h-10 w-10 rounded-lg shrink-0 bg-cover bg-center" style={{ backgroundImage: `url(${a.photo})` }} />
                   )}
-                </div>
+                </button>
               ))}
               <button
                 onClick={() => navigate("/feed")}
@@ -475,16 +454,18 @@ export default function GlobePage() {
             <div className="-mx-5 px-5 overflow-x-auto scrollbar-none">
               <div className="flex gap-3" style={{ width: "max-content" }}>
                 {explore.map(c => (
-                  <div
+                  <button
                     key={c.id}
+                    onClick={() => navigate(`/u/${c.userId}`)}
                     className="relative overflow-hidden bg-cover bg-center shrink-0"
                     style={{ width: 140, height: 160, borderRadius: 16, backgroundImage: `url(${c.photo})` }}
                   >
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%)" }} />
-                    <div className="absolute bottom-3 left-3 right-3">
+                    <div className="absolute bottom-3 left-3 right-3 text-left">
                       <p className="text-[12px] text-white font-semibold leading-tight">{c.city}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "#94A3B8" }}>{c.name}</p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -492,20 +473,13 @@ export default function GlobePage() {
         )}
       </div>
 
-      <PinDetailSheet
-        pin={selectedPin}
-        open={pinSheetOpen}
-        onOpenChange={setPinSheetOpen}
-        linkedData={selectedPinLinked}
-      />
-
-      <PinContextMenu
-        pin={contextPin}
-        open={contextOpen}
-        onOpenChange={setContextOpen}
-        onChangeVisibility={(v: Visibility) => { toast.success(`Pin set to ${v}`); }}
-        onDelete={() => toast.success("Pin deleted")}
-        onViewPhoto={() => { if (contextPin) { setSelectedPin(contextPin); setPinSheetOpen(true); } }}
+      <PlaceDetailSheet
+        place={place}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        owner
+        onViewVisits={() => { setSheetOpen(false); navigate("/passport"); }}
+        onAddMemory={() => { setSheetOpen(false); navigate("/camera"); }}
       />
 
       <TrophyShelfModal open={trophyOpen} onOpenChange={setTrophyOpen} />
