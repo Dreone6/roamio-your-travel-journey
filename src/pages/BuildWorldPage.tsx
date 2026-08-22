@@ -57,19 +57,40 @@ export default function BuildWorldPage() {
   }, []);
 
   const handleAdd = async () => {
-    if (!user) return;
     const selected = trips.filter((t) => t.selected);
     if (selected.length === 0) {
       toast.info("Select at least one place to add");
       return;
     }
+
+    // Demo runs are a preview only — nothing is written to the real account,
+    // so demo places can never become part of a genuine travel identity.
+    if (demoMode) {
+      const s = summarize(trips);
+      setSaved({ countries: s.countries, cities: s.cities, memories: s.memories });
+      setStep("reveal");
+      return;
+    }
+
+    if (!user) {
+      toast.error("You need to be signed in to save places");
+      return;
+    }
+
     setSaving(true);
     try {
-      const res = await saveDiscoveredTrips(user.id, trips, { demo: demoMode });
+      const res = await saveDiscoveredTrips(user.id, trips);
       setSaved({ countries: res.countries, cities: res.cities, memories: res.memories });
+      if (res.duplicates > 0) {
+        toast.info(`${res.duplicates} ${res.duplicates === 1 ? "place was" : "places were"} already in your world`, {
+          description: "They were updated instead of duplicated.",
+        });
+      }
       setStep("reveal");
-    } catch {
-      toast.error("Couldn't add those places", { description: "Please try again." });
+    } catch (e) {
+      toast.error("Couldn't add those places", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
     } finally {
       setSaving(false);
     }
