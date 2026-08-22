@@ -207,6 +207,8 @@ export default function ProfilePage() {
             { v: fmtNum(identity.followers), l: "Followers" },
             { v: fmtNum(identity.following), l: "Following" },
             { v: fmtNum(identity.countries), l: "Countries" },
+            { v: fmtNum(identity.cities), l: "Cities" },
+            { v: fmtNum(identity.visits), l: "Visits" },
           ].map(s => (
             <div key={s.l} className="flex-1">
               <p className="font-heading text-[20px] font-semibold text-white leading-none tracking-tight">{s.v}</p>
