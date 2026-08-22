@@ -12,6 +12,7 @@ import { Camera, Share2, ListTree, MapPin } from "lucide-react";
 import { flagEmoji } from "@/lib/world/countries";
 import { formatVisitDate, type CityPlace } from "@/lib/world/visits";
 import { toast } from "sonner";
+import PeopleWhoKnowPlace from "@/components/social/PeopleWhoKnowPlace";
 
 interface Props {
   place: CityPlace | null;
