@@ -57,6 +57,15 @@ describe("buildDiscoveredTrips", () => {
     expect(second.map((t) => t.importKey)).toEqual(first.map((t) => t.importKey));
   });
 
+  it("keeps two separate trips to the same city in the same month distinct", async () => {
+    const trips = await buildDiscoveredTrips([
+      media("a", 41.9028, 12.4964, "2024-05-01T10:00:00Z"),
+      media("b", 41.9028, 12.4964, "2024-05-20T10:00:00Z"),
+    ]);
+    expect(trips).toHaveLength(2);
+    expect(new Set(trips.map((t) => t.importKey)).size).toBe(2);
+  });
+
   it("marks clusters with no usable capture dates", async () => {
     const trips = await buildDiscoveredTrips([
       media("a", 48.8566, 2.3522, new Date().toISOString(), false),

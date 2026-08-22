@@ -7,10 +7,11 @@
  * inventing a bogus "today" trip.
  *
  * Each cluster gets a stable `importKey` fingerprint:
- *   loc:<lat 1dp>,<lng 1dp>|<YYYY-MM>          for dated clusters
- *   loc:<lat 1dp>,<lng 1dp>|undated            for undated clusters
- * Re-importing the same photos therefore updates the same visit, while a
- * genuine second trip to the same city in another month is a separate row.
+ *   loc:<lat 1dp>,<lng 1dp>|<YYYY-MM-DD>..<YYYY-MM-DD>   for dated clusters
+ *   loc:<lat 1dp>,<lng 1dp>|undated                      for undated clusters
+ * The window is the cluster's real start/end day, so re-importing the same
+ * photos updates the same visit while two separate trips to the same city —
+ * even within one month — remain distinct rows.
  */
 import { haversineKm, normalizeLocation, prewarmLocations } from "./geocode";
 import type { DiscoveredTrip, GeotaggedMedia } from "./types";
@@ -50,9 +51,22 @@ export function clusterMedia(media: GeotaggedMedia[]): RawCluster[] {
   return clusters;
 }
 
-function makeImportKey(lat: number, lng: number, startISO: string, dated: boolean): string {
+/**
+ * Fingerprint of one clustered visit. The window is the cluster's actual
+ * start..end day, not the calendar month, so two separate trips to the same
+ * city in the same month (split by the 5-day gap rule) stay distinct rows
+ * while a re-import of the same photos reproduces the same key.
+ */
+function makeImportKey(
+  lat: number,
+  lng: number,
+  startISO: string,
+  endISO: string,
+  dated: boolean
+): string {
   const loc = `${lat.toFixed(1)},${lng.toFixed(1)}`;
-  return `loc:${loc}|${dated ? startISO.slice(0, 7) : "undated"}`;
+  if (!dated) return `loc:${loc}|undated`;
+  return `loc:${loc}|${startISO.slice(0, 10)}..${endISO.slice(0, 10)}`;
 }
 
 export async function buildDiscoveredTrips(
@@ -89,7 +103,7 @@ export async function buildDiscoveredTrips(
       startDate,
       endDate,
       dateUnknown,
-      importKey: makeImportKey(c.lat, c.lng, startDate, !dateUnknown),
+      importKey: makeImportKey(c.lat, c.lng, startDate, endDate, !dateUnknown),
       memoryCount: c.media.length,
       thumbnails: c.media.map((m) => m.previewUrl).filter(Boolean).slice(0, 3) as string[],
       selected: true,
@@ -119,7 +133,13 @@ export function mergeTrips(trips: DiscoveredTrip[], ids: string[]): DiscoveredTr
     dateUnknown: targets.every((t) => t.dateUnknown),
     mediaIds: targets.flatMap((t) => t.mediaIds),
   };
-  merged.importKey = makeImportKey(merged.latitude, merged.longitude, startDate, !merged.dateUnknown);
+  merged.importKey = makeImportKey(
+    merged.latitude,
+    merged.longitude,
+    startDate,
+    merged.endDate,
+    !merged.dateUnknown
+  );
 
   const rest = trips.filter((t) => !ids.includes(t.id));
   return [merged, ...rest].sort((a, b) => b.startDate.localeCompare(a.startDate));
