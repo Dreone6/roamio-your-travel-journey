@@ -51,7 +51,7 @@ export async function loadViewerContext(userId: string): Promise<ViewerContext> 
     loadFollowing(userId),
     supabase.from("places_visited").select("city, country").eq("user_id", userId).neq("source", "demo").limit(2000),
     supabase.from("trips").select("destination, start_date, status").eq("user_id", userId)
-      .in("status", ["planning", "upcoming", "active"]).limit(20),
+      .in("status", ["planning", "active"]).limit(20),
   ]);
 
   const visitedCityKeys = new Set<string>();

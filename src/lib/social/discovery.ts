@@ -35,7 +35,7 @@ export async function loadViewerTravel(userId: string): Promise<ViewerTravel> {
   const [visits, trips] = await Promise.all([
     supabase.from("places_visited").select("city, country").eq("user_id", userId).neq("source", "demo").limit(2000),
     supabase.from("trips").select("destination, status").eq("user_id", userId)
-      .in("status", ["planning", "upcoming", "active"]).limit(10),
+      .in("status", ["planning", "active"]).limit(10),
   ]);
 
   const cityKeys = new Set<string>();
