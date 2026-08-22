@@ -73,6 +73,8 @@ const EMPTY: Omit<TravelIdentity, "refresh"> = {
   avatar: null,
   countries: 0,
   cities: 0,
+  visits: 0,
+  world: EMPTY_WORLD,
   memories: 0,
   trips: 0,
   completedTrips: 0,
