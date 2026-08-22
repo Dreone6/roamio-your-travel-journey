@@ -171,6 +171,7 @@ export type Database = {
           user_id: string
           verification_metadata: Json
           verified: boolean
+          visibility: string
         }
         Insert: {
           city?: string | null
@@ -190,6 +191,7 @@ export type Database = {
           user_id: string
           verification_metadata?: Json
           verified?: boolean
+          visibility?: string
         }
         Update: {
           city?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           user_id?: string
           verification_metadata?: Json
           verified?: boolean
+          visibility?: string
         }
         Relationships: []
       }
