@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import { toast } from "sonner";
 import {
   Pencil, MapPin, Globe as GlobeIcon, Share2, MessageCircle,
-  BadgeCheck, ChevronRight, Lock, Play, Plus, Sparkles,
+  BadgeCheck, ChevronRight, Lock, Play, Plus, Sparkles, BookMarked,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/sheet";
 import roavrPin from "@/assets/roavr-pin.png";
 import SafePassCard from "@/components/safety/SafePassCard";
+
+const WorldGlobe = lazy(() => import("@/components/globe/WorldGlobe"));
 
 const BADGE_LIBRARY = [
   { name: "First Steps", emoji: "📍" },
@@ -112,6 +114,17 @@ export default function ProfilePage() {
   };
 
   const hasCover = highlights[0]?.img;
+
+  // One point per city, straight from the canonical travel identity layer.
+  const worldPoints = useMemo(
+    () => identity.world.places
+      .filter((p) => p.lat !== 0 || p.lng !== 0)
+      .map((p, i) => ({
+        key: p.key, lat: p.lat, lng: p.lng, label: p.city,
+        weight: p.visitCount, recent: i === 0, milestone: p.isMilestone,
+      })),
+    [identity.world.places]
+  );
 
   return (
     <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
