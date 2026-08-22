@@ -5,7 +5,7 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import { toast } from "sonner";
 import {
   Pencil, MapPin, Globe as GlobeIcon, Share2, MessageCircle,
-  BadgeCheck, ChevronRight, Lock, Play, Plus, Sparkles,
+  BadgeCheck, ChevronRight, Lock, Play, Plus, Sparkles, BookMarked,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
