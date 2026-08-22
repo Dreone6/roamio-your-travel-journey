@@ -31,6 +31,8 @@ import SafePassPage from "@/pages/SafePassPage";
 import SurpriseMePage from "@/pages/SurpriseMePage";
 import SharedItineraryPage from "@/pages/SharedItineraryPage";
 import BuildWorldPage from "@/pages/BuildWorldPage";
+import PassportPage from "@/pages/PassportPage";
+import TravelerProfilePage from "@/pages/TravelerProfilePage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
