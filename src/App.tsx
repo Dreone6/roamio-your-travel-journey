@@ -65,6 +65,9 @@ const App = () => (
             <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
             <Route path="/build-world" element={<ProtectedRoute><BuildWorldPage /></ProtectedRoute>} />
             <Route path="/travel-history" element={<Navigate to="/build-world" replace />} />
+            <Route path="/passport" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
+            <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
+            <Route path="/u/:userId" element={<ProtectedRoute><TravelerProfilePage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
