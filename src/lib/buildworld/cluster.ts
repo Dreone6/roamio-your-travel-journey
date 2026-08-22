@@ -7,10 +7,11 @@
  * inventing a bogus "today" trip.
  *
  * Each cluster gets a stable `importKey` fingerprint:
- *   loc:<lat 1dp>,<lng 1dp>|<YYYY-MM>          for dated clusters
- *   loc:<lat 1dp>,<lng 1dp>|undated            for undated clusters
- * Re-importing the same photos therefore updates the same visit, while a
- * genuine second trip to the same city in another month is a separate row.
+ *   loc:<lat 1dp>,<lng 1dp>|<YYYY-MM-DD>..<YYYY-MM-DD>   for dated clusters
+ *   loc:<lat 1dp>,<lng 1dp>|undated                      for undated clusters
+ * The window is the cluster's real start/end day, so re-importing the same
+ * photos updates the same visit while two separate trips to the same city —
+ * even within one month — remain distinct rows.
  */
 import { haversineKm, normalizeLocation, prewarmLocations } from "./geocode";
 import type { DiscoveredTrip, GeotaggedMedia } from "./types";
