@@ -1,30 +1,50 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import WhatsNewModal from "@/components/WhatsNewModal";
 import StoriesRow from "@/components/home/StoriesRow";
 import NearbyStrip from "@/components/home/NearbyStrip";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip,
+  Sparkles, MessageCircle, Bell, Search, Mic, Camera, ImageIcon, Paperclip, Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import roavrLogo from "@/assets/roavr-logo.png";
 
-const CANON = {
-  unread: 3,
-  hasNotifications: true,
-};
-
-const CALIFORNIA_IMG =
-  "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=1200&q=80&auto=format&fit=crop";
-
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Andre";
+  const identity = useTravelIdentity();
+  const displayName = (identity.name || user?.email?.split("@")[0] || "Traveler").split(" ")[0];
   const [aiInput, setAiInput] = useState("");
+  const [unread, setUnread] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", user.id);
+      if (cancelled || !data?.length) return;
+      let count = 0;
+      for (const p of data) {
+        const q = supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", p.conversation_id)
+          .neq("sender_id", user.id);
+        const { count: c } = await (p.last_read_at ? q.gt("created_at", p.last_read_at) : q);
+        count += c ?? 0;
+      }
+      if (!cancelled) setUnread(count);
+    })().catch(() => { /* non-critical */ });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -32,6 +52,7 @@ export default function HomePage() {
     if (h < 18) return "Good afternoon";
     return "Good evening";
   };
+
 
   const handleAsk = () => {
     if (!aiInput.trim()) return;
