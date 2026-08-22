@@ -14,6 +14,8 @@ import {
 import roavrPin from "@/assets/roavr-pin.png";
 import SafePassCard from "@/components/safety/SafePassCard";
 
+const WorldGlobe = lazy(() => import("@/components/globe/WorldGlobe"));
+
 const BADGE_LIBRARY = [
   { name: "First Steps", emoji: "📍" },
   { name: "Globe Trotter", emoji: "🌍" },
