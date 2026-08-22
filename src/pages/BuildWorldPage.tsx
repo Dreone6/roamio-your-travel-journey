@@ -272,9 +272,25 @@ function ScanStep({
     setStarted(true);
     setPhase(0);
 
-    const { geotagged } = await extractMetadata(items, (scanned, _total, found) => {
-      setCounters((c) => ({ ...c, photos: scanned, locations: found }));
+    const { geotagged, scanned, truncated, undated } = await extractMetadata(items, (s, _total, found) => {
+      setCounters((c) => ({ ...c, photos: s, locations: found }));
     });
+
+    if (truncated > 0) {
+      toast.info(`Scanning the first ${scanned} photos`, {
+        description: `${truncated} more were left out of this run. You can import them next.`,
+      });
+    }
+    if (geotagged.length > 0 && geotagged.length < scanned) {
+      toast.info(`${scanned - geotagged.length} of ${scanned} photos had no location data`, {
+        description: "Those were skipped.",
+      });
+    }
+    if (undated > 0) {
+      toast.info(`${undated} ${undated === 1 ? "photo has" : "photos have"} no capture date`, {
+        description: "They were grouped by location — you can edit the details before saving.",
+      });
+    }
 
     setPhase(1);
     await wait(320);
@@ -282,7 +298,7 @@ function ScanStep({
 
     const discovered = await buildDiscoveredTrips(geotagged);
     setCounters({
-      photos: items.length,
+      photos: scanned,
       locations: geotagged.length,
       cities: new Set(discovered.map((t) => `${t.city}|${t.country}`)).size,
       countries: new Set(discovered.map((t) => t.country)).size,
@@ -297,14 +313,22 @@ function ScanStep({
     if (startedRef.current) return;
     startedRef.current = true;
     if (demoMode) {
-      demoSource.pickMedia().then(run);
+      demoSource.pickMedia().then(run).catch(() => {
+        toast.error("Demo scan failed");
+        onCancel();
+      });
     }
-  }, [demoMode, run]);
+  }, [demoMode, run, onCancel]);
 
   const pick = async () => {
-    const items = await browserFileSource.pickMedia();
-    if (items.length === 0) { toast.info("No photos selected"); return; }
-    run(items);
+    try {
+      const items = await browserFileSource.pickMedia();
+      if (items.length === 0) { toast.info("No photos selected"); return; }
+      await run(items);
+    } catch {
+      toast.error("Couldn't read those photos", { description: "Please try a different selection." });
+      onCancel();
+    }
   };
 
   if (!demoMode && !started) {
