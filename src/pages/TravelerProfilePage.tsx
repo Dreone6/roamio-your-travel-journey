@@ -312,7 +312,7 @@ export default function TravelerProfilePage() {
 
 function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
   return (
-    <div className="min-h-screen pb-16" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-16" style={{ background: "#080D1A" }}>
       <div className="px-5 pt-12 pb-4">
         <button onClick={onBack} className="h-10 w-10 rounded-full flex items-center justify-center"
           style={{ background: "#111827", border: "1px solid #1E2A3F" }} aria-label="Back">

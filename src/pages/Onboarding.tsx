@@ -72,7 +72,7 @@ export default function Onboarding() {
 
   if (loading || checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "#080D1A" }}>
+      <div className="flex min-h-dvh items-center justify-center" style={{ background: "#080D1A" }}>
         <Compass className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
       </div>
     );
@@ -80,7 +80,7 @@ export default function Onboarding() {
 
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: "#080D1A" }}>
       <div className="flex-1 flex flex-col px-5 pt-10 pb-6">
         {step === 1 && <PlanScreen />}
         {step === 2 && <CaptureScreen />}

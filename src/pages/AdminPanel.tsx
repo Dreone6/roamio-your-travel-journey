@@ -36,7 +36,7 @@ export default function AdminPanel() {
     }
   };
 
-  if (isAdmin === null) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isAdmin === null) return <div className="flex min-h-dvh items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   const tabs: { id: AdminTab; label: string; icon: any }[] = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
@@ -47,7 +47,7 @@ export default function AdminPanel() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="border-b border-border bg-card px-5 py-3 flex items-center gap-3">
         <button onClick={() => navigate("/")} className="text-muted-foreground"><ArrowLeft className="h-5 w-5" /></button>
         <h1 className="font-heading text-lg font-semibold text-foreground">Admin Panel</h1>

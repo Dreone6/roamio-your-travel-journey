@@ -7,6 +7,7 @@
  * world. Blocks are filtered out on every result type.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import { flagEmoji } from "@/lib/world/countries";
 
 export interface PersonResult {
@@ -104,11 +105,12 @@ export async function searchAll(viewerId: string, rawQuery: string): Promise<Sea
     const { data } = await supabase.from("profiles").select("id, name").in("id", authorIds);
     for (const a of data ?? []) authors.set(a.id, a.name || "Traveler");
   }
-  const stories = storyRows.map((s) => ({
+  const signedStoryMedia = await resolveMediaUrls(storyRows.map((s) => s.media_url));
+  const stories = storyRows.map((s, i) => ({
     id: s.id,
     userId: s.user_id,
     authorName: authors.get(s.user_id) ?? "Traveler",
-    mediaUrl: s.media_url as string,
+    mediaUrl: (signedStoryMedia[i] ?? "") as string,
     mediaType: s.media_type,
     locationName: s.location_name,
   }));

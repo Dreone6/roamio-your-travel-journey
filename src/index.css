@@ -250,3 +250,36 @@
     animation: scale-in 0.2s ease-out both;
   }
 }
+
+@layer base {
+  /* Respect the OS reduced-motion preference: keep the product usable and
+     stop continuous decorative animation from burning mobile battery. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Prevent horizontal overflow on narrow phones. */
+  html,
+  body {
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+}
+
+@layer utilities {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  /* Minimum comfortable tap target on touch devices. */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

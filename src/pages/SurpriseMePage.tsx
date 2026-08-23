@@ -46,7 +46,7 @@ export default function SurpriseMePage() {
   };
 
   return (
-    <div className="dark-immersive min-h-screen pb-12">
+    <div className="dark-immersive min-h-dvh pb-12">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
         <div className="relative px-5 pt-12 pb-5">

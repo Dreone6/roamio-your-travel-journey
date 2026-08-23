@@ -47,7 +47,7 @@ export default function PassportPage() {
   }, [s]);
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-24" style={{ background: "#080D1A" }}>
       <div className="px-5 pt-12 pb-2 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}

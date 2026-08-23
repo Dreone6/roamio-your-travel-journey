@@ -67,7 +67,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
         <div className="relative px-5 pt-12 pb-4">

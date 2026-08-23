@@ -51,14 +51,14 @@ export default function ReferralPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="h-5 w-5 rounded-full border-2 border-accent border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       {/* Dark Header */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />

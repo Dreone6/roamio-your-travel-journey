@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadUserMedia } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -77,12 +78,10 @@ export default function CheckInPage() {
       let photoUrl: string | null = null;
       if (photo) {
         const ext = photo.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("checkin-photos").upload(path, photo);
-        if (uploadErr) throw uploadErr;
-        const { data: urlData } = supabase.storage.from("checkin-photos").getPublicUrl(path);
-        photoUrl = urlData.publicUrl;
+        // Check-in photos are private by default, so they live in the private bucket.
+        photoUrl = await uploadUserMedia(photo, user.id, ext);
       }
+
       const { error: checkInErr } = await supabase.from("check_ins").insert({
         user_id: user.id, location_name: geo.location_name, latitude: lat, longitude: lng, notes: note || null, photo: photoUrl,
         visibility: shareCheckIn ? "followers" : "private",
@@ -121,7 +120,7 @@ export default function CheckInPage() {
   };
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       {/* Dark Header */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />

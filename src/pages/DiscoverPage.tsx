@@ -55,7 +55,7 @@ export default function DiscoverPage() {
     sections.mayKnow.length + sections.interesting.length;
 
   return (
-    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-6" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 pb-1">
         <h1 className="text-white" style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.5px" }}>Discover</h1>
         <p className="mt-1" style={{ color: "#94A3B8", fontSize: 14 }}>

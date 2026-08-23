@@ -246,7 +246,7 @@ export default function SafePassPage() {
 
   // ─── render ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen pb-12" style={{ background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-dvh pb-12" style={{ background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* Drag handle (sheet aesthetic) */}
       <div className="pt-3 flex justify-center">
         <div style={{ width: 32, height: 4, borderRadius: 999, background: C.border }} />
@@ -357,7 +357,12 @@ export default function SafePassPage() {
             onOpenMedical={() => setMedicalOpen(true)}
             onShareLocation={shareLocation}
             onAddContact={addContact}
-            onMessageContact={(c) => toast(`Message ${c.name}`)}
+            onMessageContact={(c) => {
+              if (c.phone) window.location.href = `sms:${c.phone}`;
+              else toast.error(`${c.name} has no phone number saved`);
+            }}
+
+
           />
         )}
       </main>

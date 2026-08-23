@@ -8,7 +8,7 @@ export default function AuthGate() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <img src={miloMascot} alt="Roavr" className="h-14 w-14 animate-pulse" />
       </div>
     );

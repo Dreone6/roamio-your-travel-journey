@@ -1727,6 +1727,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_user_media: {
+        Args: { _object_name: string; _viewer: string }
+        Returns: boolean
+      }
       conversation_created_by: {
         Args: { _conversation: string }
         Returns: string

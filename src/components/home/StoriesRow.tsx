@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, X, MapPin, Globe as GlobeIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 
 interface StoryRow {
   id: string;
@@ -55,6 +56,9 @@ export default function StoriesRow() {
 
       let liveBuckets: Bucket[] = [];
       if (stories && stories.length) {
+        // Story media lives in the private bucket; sign what we are about to show.
+        const signed = await resolveMediaUrls(stories.map((s: any) => s.media_url));
+        stories.forEach((s: any, i: number) => { s.media_url = signed[i] ?? s.media_url; });
         const ids = Array.from(new Set(stories.map(s => s.user_id)));
         const { data: profiles } = await supabase
           .from("profiles")

@@ -123,7 +123,7 @@ export default function InboxPage() {
   };
 
   return (
-    <div className="min-h-screen pb-8 bg-background">
+    <div className="min-h-dvh pb-8 bg-background">
       {/* === HEADER (dark immersive) === */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
@@ -310,7 +310,7 @@ export default function InboxPage() {
                   <div className={`h-12 w-12 rounded-full p-[2px] ${conv.unread ? "bg-gradient-to-tr from-primary via-electric to-primary" : "bg-transparent"}`}>
                     <div className="h-full w-full rounded-full bg-gradient-to-br from-primary/15 to-electric/10 flex items-center justify-center overflow-hidden border border-card">
                       {conv.other_user_photo ? (
-                        <img src={conv.other_user_photo} className="h-full w-full rounded-full object-cover" />
+                        <img src={conv.other_user_photo} alt={conv.other_user_name ?? "Traveler"} className="h-full w-full rounded-full object-cover" />
                       ) : (
                         <span className="text-lg">👤</span>
                       )}

@@ -24,13 +24,13 @@ export default function SharedItineraryPage() {
     })();
   }, [token]);
 
-  if (error) return <div className="min-h-screen flex items-center justify-center text-dark-muted">{error}</div>;
-  if (!trip) return <div className="min-h-screen flex items-center justify-center text-dark-muted">Loading…</div>;
+  if (error) return <div className="min-h-dvh flex items-center justify-center text-dark-muted">{error}</div>;
+  if (!trip) return <div className="min-h-dvh flex items-center justify-center text-dark-muted">Loading…</div>;
 
   const days = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
 
   return (
-    <div className="dark-immersive min-h-screen pb-12">
+    <div className="dark-immersive min-h-dvh pb-12">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
         <div className="relative px-5 pt-12 pb-5">

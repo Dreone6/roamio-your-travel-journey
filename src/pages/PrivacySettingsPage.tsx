@@ -99,14 +99,14 @@ export default function PrivacySettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       {/* Dark Header */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />

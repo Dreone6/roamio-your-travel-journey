@@ -51,7 +51,7 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="min-h-screen pb-10" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-10" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 pb-3 flex items-center gap-3">
         <button onClick={() => (place ? setParams({}) : navigate(-1))} aria-label="Back"
           className="h-9 w-9 rounded-full flex items-center justify-center" style={{ background: "#111827" }}>
@@ -172,7 +172,7 @@ export default function ExplorePage() {
                   <h2 className="text-white" style={{ fontSize: 16, fontWeight: 600 }}>Live stories</h2>
                   <div className="mt-2.5 flex gap-3 overflow-x-auto no-scrollbar">
                     {results.stories.map((s) => (
-                      <button key={s.id} onClick={() => navigate("/stories")} className="shrink-0 text-left">
+                      <button key={s.id} onClick={() => navigate("/home")} className="shrink-0 text-left">
                         <div className="overflow-hidden rounded-2xl" style={{ width: 108, height: 150, background: "#111827" }}>
                           {s.mediaType === "video" ? (
                             <video src={s.mediaUrl} muted playsInline className="h-full w-full object-cover" />

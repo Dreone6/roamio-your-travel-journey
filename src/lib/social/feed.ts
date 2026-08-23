@@ -13,6 +13,7 @@
  * in the client, and blocked relationships are excluded at the database layer.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import type { FeedAuthor, FeedItem } from "./types";
 import { rankFeed, type ViewerContext } from "./ranking";
 
@@ -207,9 +208,14 @@ export async function loadFeed(
   });
 
   const ranked = rankFeed(items, ctx);
+  const page = ranked.slice(0, limit);
+  // Private-bucket media is stored as a token; sign only what this page renders.
+  const signed = await resolveMediaUrls(page.map((i) => i.mediaUrl));
+  page.forEach((item, idx) => { item.mediaUrl = signed[idx]; });
   return {
-    items: ranked.slice(0, limit),
+    items: page,
     followsNobody,
     hasMore: ranked.length > limit,
   };
 }
+
