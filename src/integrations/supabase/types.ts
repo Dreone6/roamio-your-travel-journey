@@ -1549,6 +1549,10 @@ export type Database = {
         Args: { _conversation: string; _user: string }
         Returns: boolean
       }
+      is_trip_member: {
+        Args: { _trip: string; _user: string }
+        Returns: boolean
+      }
       nearby_offers: {
         Args: { lat: number; lng: number; radius_miles?: number }
         Returns: {
@@ -1575,6 +1579,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      owns_trip: { Args: { _trip: string; _user: string }; Returns: boolean }
       profile_is_private: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
