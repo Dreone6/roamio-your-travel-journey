@@ -199,7 +199,7 @@ export default function OfferDetailSheet({ offer, onClose }: Props) {
           )}
 
           {offer.city && user && (
-            <PeopleWhoKnowPlace viewerId={user.id} city={offer.city} country={offer.country ?? undefined} />
+            <PeopleWhoKnowPlace city={offer.city} country={offer.country ?? undefined} />
           )}
 
           <div className="space-y-2.5">
