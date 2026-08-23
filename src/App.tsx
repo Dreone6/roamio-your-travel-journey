@@ -34,6 +34,7 @@ import SharedItineraryPage from "@/pages/SharedItineraryPage";
 import BuildWorldPage from "@/pages/BuildWorldPage";
 import PassportPage from "@/pages/PassportPage";
 import TravelerProfilePage from "@/pages/TravelerProfilePage";
+import NearbyPage from "@/pages/NearbyPage";
 import AuthGate from "@/components/AuthGate";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
             <Route path="/u/:handle" element={<ProtectedRoute><TravelerProfilePage /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+            <Route path="/nearby" element={<ProtectedRoute><NearbyPage /></ProtectedRoute>} />
             <Route path="/i/:token" element={<SharedItineraryPage />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />

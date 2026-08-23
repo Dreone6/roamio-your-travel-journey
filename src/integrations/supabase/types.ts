@@ -518,6 +518,131 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_offers: {
+        Row: {
+          active: boolean
+          address: string | null
+          booking_mode: Database["public"]["Enums"]["booking_mode"]
+          booking_url: string | null
+          cancellation_policy: string | null
+          category: Database["public"]["Enums"]["offer_category"]
+          city: string | null
+          commission_amount: number | null
+          country: string | null
+          created_at: string
+          currency: string
+          deal_type: Database["public"]["Enums"]["deal_type"]
+          description: string | null
+          discount_amount: number | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          inventory_remaining: number | null
+          is_demo: boolean
+          latitude: number | null
+          longitude: number | null
+          merchant_id: string | null
+          merchant_name: string
+          merchant_payout: number | null
+          rating: number | null
+          rating_count: number | null
+          rating_source: string | null
+          retail_price: number | null
+          roavr_price: number | null
+          source: Database["public"]["Enums"]["offer_source"]
+          source_offer_id: string | null
+          starts_at: string | null
+          terms: string | null
+          title: string
+          updated_at: string
+          whats_included: string[]
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          booking_mode?: Database["public"]["Enums"]["booking_mode"]
+          booking_url?: string | null
+          cancellation_policy?: string | null
+          category?: Database["public"]["Enums"]["offer_category"]
+          city?: string | null
+          commission_amount?: number | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          deal_type?: Database["public"]["Enums"]["deal_type"]
+          description?: string | null
+          discount_amount?: number | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_remaining?: number | null
+          is_demo?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          merchant_id?: string | null
+          merchant_name: string
+          merchant_payout?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          rating_source?: string | null
+          retail_price?: number | null
+          roavr_price?: number | null
+          source?: Database["public"]["Enums"]["offer_source"]
+          source_offer_id?: string | null
+          starts_at?: string | null
+          terms?: string | null
+          title: string
+          updated_at?: string
+          whats_included?: string[]
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          booking_mode?: Database["public"]["Enums"]["booking_mode"]
+          booking_url?: string | null
+          cancellation_policy?: string | null
+          category?: Database["public"]["Enums"]["offer_category"]
+          city?: string | null
+          commission_amount?: number | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          deal_type?: Database["public"]["Enums"]["deal_type"]
+          description?: string | null
+          discount_amount?: number | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_remaining?: number | null
+          is_demo?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          merchant_id?: string | null
+          merchant_name?: string
+          merchant_payout?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          rating_source?: string | null
+          retail_price?: number | null
+          roavr_price?: number | null
+          source?: Database["public"]["Enums"]["offer_source"]
+          source_offer_id?: string | null
+          starts_at?: string | null
+          terms?: string | null
+          title?: string
+          updated_at?: string
+          whats_included?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_offers_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memories: {
         Row: {
           caption: string | null
@@ -741,6 +866,7 @@ export type Database = {
           discount: string | null
           id: string
           image: string | null
+          is_demo: boolean
           latitude: number | null
           longitude: number | null
           offer_description: string
@@ -758,6 +884,7 @@ export type Database = {
           discount?: string | null
           id?: string
           image?: string | null
+          is_demo?: boolean
           latitude?: number | null
           longitude?: number | null
           offer_description: string
@@ -775,6 +902,7 @@ export type Database = {
           discount?: string | null
           id?: string
           image?: string | null
+          is_demo?: boolean
           latitude?: number | null
           longitude?: number | null
           offer_description?: string
@@ -1635,6 +1763,58 @@ export type Database = {
         Args: { _trip: string; _user: string }
         Returns: boolean
       }
+      nearby_marketplace_offers: {
+        Args: {
+          include_demo?: boolean
+          lat: number
+          lng: number
+          radius_miles?: number
+        }
+        Returns: {
+          active: boolean
+          address: string | null
+          booking_mode: Database["public"]["Enums"]["booking_mode"]
+          booking_url: string | null
+          cancellation_policy: string | null
+          category: Database["public"]["Enums"]["offer_category"]
+          city: string | null
+          commission_amount: number | null
+          country: string | null
+          created_at: string
+          currency: string
+          deal_type: Database["public"]["Enums"]["deal_type"]
+          description: string | null
+          discount_amount: number | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          inventory_remaining: number | null
+          is_demo: boolean
+          latitude: number | null
+          longitude: number | null
+          merchant_id: string | null
+          merchant_name: string
+          merchant_payout: number | null
+          rating: number | null
+          rating_count: number | null
+          rating_source: string | null
+          retail_price: number | null
+          roavr_price: number | null
+          source: Database["public"]["Enums"]["offer_source"]
+          source_offer_id: string | null
+          starts_at: string | null
+          terms: string | null
+          title: string
+          updated_at: string
+          whats_included: string[]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_offers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       nearby_offers: {
         Args: { lat: number; lng: number; radius_miles?: number }
         Returns: {
@@ -1649,6 +1829,7 @@ export type Database = {
           discount: string | null
           id: string
           image: string | null
+          is_demo: boolean
           latitude: number | null
           longitude: number | null
           offer_description: string
@@ -1666,6 +1847,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      booking_mode:
+        | "preview_only"
+        | "external_redirect"
+        | "affiliate_redirect"
+        | "supplier_checkout"
+        | "roavr_checkout"
+        | "direct_merchant_request"
       challenge_status: "active" | "completed" | "expired"
       checklist_category:
         | "packing"
@@ -1674,6 +1862,7 @@ export type Database = {
         | "other"
         | "pre_trip_tasks"
         | "day_of"
+      deal_type: "standard" | "roavr_price" | "roavr_exclusive" | "roavr_drop"
       itinerary_type:
         | "food"
         | "activity"
@@ -1689,6 +1878,12 @@ export type Database = {
         | "transport"
         | "shopping"
         | "other"
+      offer_source:
+        | "roavr_direct"
+        | "partner"
+        | "supplier"
+        | "affiliate"
+        | "demo"
       subscription_tier: "free" | "plus" | "pro"
       trip_status: "planning" | "active" | "completed"
       trip_style: "solo" | "couple" | "family" | "friends" | "business"
@@ -1820,6 +2015,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      booking_mode: [
+        "preview_only",
+        "external_redirect",
+        "affiliate_redirect",
+        "supplier_checkout",
+        "roavr_checkout",
+        "direct_merchant_request",
+      ],
       challenge_status: ["active", "completed", "expired"],
       checklist_category: [
         "packing",
@@ -1829,6 +2032,7 @@ export const Constants = {
         "pre_trip_tasks",
         "day_of",
       ],
+      deal_type: ["standard", "roavr_price", "roavr_exclusive", "roavr_drop"],
       itinerary_type: [
         "food",
         "activity",
@@ -1845,6 +2049,13 @@ export const Constants = {
         "transport",
         "shopping",
         "other",
+      ],
+      offer_source: [
+        "roavr_direct",
+        "partner",
+        "supplier",
+        "affiliate",
+        "demo",
       ],
       subscription_tier: ["free", "plus", "pro"],
       trip_status: ["planning", "active", "completed"],
