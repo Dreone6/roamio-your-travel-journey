@@ -72,8 +72,8 @@ export async function createTrip(userId: string, input: NewTripInput): Promise<T
   return data as Trip;
 }
 
-export async function updateTrip(tripId: string, patch: Partial<Trip>) {
-  const { error } = await supabase.from("trips").update(patch).eq("id", tripId);
+export async function updateTrip(tripId: string, patch: Record<string, unknown>) {
+  const { error } = await supabase.from("trips").update(patch as never).eq("id", tripId);
   if (error) throw error;
 }
 
