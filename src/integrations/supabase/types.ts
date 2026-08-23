@@ -424,6 +424,7 @@ export type Database = {
         Row: {
           activity: string
           completed: boolean
+          confirmation_ref: string | null
           created_at: string
           day_number: number
           description: string | null
@@ -433,6 +434,7 @@ export type Database = {
           location: string | null
           longitude: number | null
           notes: string | null
+          sort_order: number
           time: string | null
           time_block: string | null
           tips: string | null
@@ -443,6 +445,7 @@ export type Database = {
         Insert: {
           activity: string
           completed?: boolean
+          confirmation_ref?: string | null
           created_at?: string
           day_number: number
           description?: string | null
@@ -452,6 +455,7 @@ export type Database = {
           location?: string | null
           longitude?: number | null
           notes?: string | null
+          sort_order?: number
           time?: string | null
           time_block?: string | null
           tips?: string | null
@@ -462,6 +466,7 @@ export type Database = {
         Update: {
           activity?: string
           completed?: boolean
+          confirmation_ref?: string | null
           created_at?: string
           day_number?: number
           description?: string | null
@@ -471,6 +476,7 @@ export type Database = {
           location?: string | null
           longitude?: number | null
           notes?: string | null
+          sort_order?: number
           time?: string | null
           time_block?: string | null
           tips?: string | null
@@ -1284,6 +1290,71 @@ export type Database = {
           },
         ]
       }
+      trip_saved_places: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          kind: string
+          latitude: number | null
+          longitude: number | null
+          metadata: Json
+          notes: string | null
+          source: string
+          source_id: string | null
+          subtitle: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          metadata?: Json
+          notes?: string | null
+          source?: string
+          source_id?: string | null
+          subtitle?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          metadata?: Json
+          notes?: string | null
+          source?: string
+          source_id?: string | null
+          subtitle?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_saved_places_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_shares: {
         Row: {
           created_at: string
@@ -1335,6 +1406,7 @@ export type Database = {
           trip_style: Database["public"]["Enums"]["trip_style"] | null
           updated_at: string
           user_id: string
+          world_visit_id: string | null
         }
         Insert: {
           ai_generated?: boolean
@@ -1356,6 +1428,7 @@ export type Database = {
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id: string
+          world_visit_id?: string | null
         }
         Update: {
           ai_generated?: boolean
@@ -1377,8 +1450,17 @@ export type Database = {
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id?: string
+          world_visit_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trips_world_visit_id_fkey"
+            columns: ["world_visit_id"]
+            isOneToOne: false
+            referencedRelation: "places_visited"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trusted_contacts: {
         Row: {
@@ -1592,7 +1674,14 @@ export type Database = {
         | "other"
         | "pre_trip_tasks"
         | "day_of"
-      itinerary_type: "food" | "activity" | "transport" | "lodging"
+      itinerary_type:
+        | "food"
+        | "activity"
+        | "transport"
+        | "lodging"
+        | "flight"
+        | "restaurant"
+        | "note"
       offer_category:
         | "food"
         | "activity"
@@ -1740,7 +1829,15 @@ export const Constants = {
         "pre_trip_tasks",
         "day_of",
       ],
-      itinerary_type: ["food", "activity", "transport", "lodging"],
+      itinerary_type: [
+        "food",
+        "activity",
+        "transport",
+        "lodging",
+        "flight",
+        "restaurant",
+        "note",
+      ],
       offer_category: [
         "food",
         "activity",
