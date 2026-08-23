@@ -10,6 +10,7 @@ import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import TripsPage from "@/pages/TripsPage";
+import TripDetailPage from "@/pages/TripDetailPage";
 import DiscoverPage from "@/pages/DiscoverPage";
 import ExplorePage from "@/pages/ExplorePage";
 import GlobePage from "@/pages/GlobePage";
@@ -74,13 +75,12 @@ const App = () => (
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/home" element={<HomePage />} />
               <Route path="/trips" element={<TripsPage />} />
+              <Route path="/trips/:id" element={<TripDetailPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/globe" element={<GlobePage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
-            <Route path="/plan" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-              <Route index element={<TripsPage />} />
-            </Route>
+            <Route path="/plan" element={<Navigate to="/trips" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
