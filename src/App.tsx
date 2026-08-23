@@ -10,6 +10,7 @@ import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import TripsPage from "@/pages/TripsPage";
+import TripDetailPage from "@/pages/TripDetailPage";
 import DiscoverPage from "@/pages/DiscoverPage";
 import ExplorePage from "@/pages/ExplorePage";
 import GlobePage from "@/pages/GlobePage";
