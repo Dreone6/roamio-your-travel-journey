@@ -46,7 +46,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (loading || (user && checkingOnboarding && onboardingCompleted === null)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Compass className="h-8 w-8 animate-spin text-primary" />
       </div>
     );

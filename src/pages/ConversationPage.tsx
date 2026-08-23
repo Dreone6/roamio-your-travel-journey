@@ -251,7 +251,7 @@ export default function ConversationPage() {
               </div>
             )}
             {msg.message_type === "image" && msg.media_url && (
-              <img src={msg.media_url} className="rounded-xl mb-1.5 max-h-48 object-cover" />
+              <img src={msg.media_url} alt="Shared photo" loading="lazy" className="rounded-xl mb-1.5 max-h-48 object-cover" />
             )}
             {msg.message_type === "trip_share" && (
               <div className={`rounded-lg p-2.5 mb-1.5 ${isMine ? "bg-white/15" : "bg-secondary"}`}>
@@ -351,7 +351,7 @@ export default function ConversationPage() {
           <div className="relative">
             <div className="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center overflow-hidden">
               {otherUser.photo ? (
-                <img src={otherUser.photo} className="h-9 w-9 rounded-full object-cover" />
+                <img src={otherUser.photo} alt={otherUser.name ?? "Traveler"} className="h-9 w-9 rounded-full object-cover" />
               ) : (
                 <span className="text-sm">👤</span>
               )}

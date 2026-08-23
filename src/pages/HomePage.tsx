@@ -68,7 +68,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-6" style={{ background: "#080D1A" }}>
       <WhatsNewModal />
 
       {/* HEADER */}

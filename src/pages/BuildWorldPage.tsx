@@ -97,7 +97,7 @@ export default function BuildWorldPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: BG, paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="min-h-dvh" style={{ background: BG, paddingBottom: "env(safe-area-inset-bottom)" }}>
       {step !== "reveal" && (
         <div className="px-5 flex items-center" style={{ paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}>
           <button
@@ -618,7 +618,7 @@ function RevealStep({
   }, [selected.length]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: BG }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: BG }}>
       <div className="relative flex-1" style={{ minHeight: "48vh" }}>
         <Suspense fallback={null}>
           <FlagGlobe pins={pins} milestoneCodes={[]} />
@@ -656,17 +656,8 @@ function RevealStep({
           <PrimaryButton onClick={() => navigate("/globe")}>
             <Compass className="h-4 w-4" strokeWidth={1.6} /> Explore My World
           </PrimaryButton>
-          <button
-            disabled
-            className="w-full inline-flex items-center justify-center gap-2"
-            style={{
-              height: 52, borderRadius: 9999, background: ELEV, border: `1px solid ${BORDER}`,
-              fontSize: 15, fontWeight: 600, color: MUTED, opacity: 0.7,
-            }}
-          >
-            <Share2 className="h-4 w-4" strokeWidth={1.6} /> Share My World — coming soon
-          </button>
         </div>
+
       </div>
     </div>
   );

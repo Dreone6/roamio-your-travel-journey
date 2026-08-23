@@ -102,21 +102,14 @@ export default function SettingsPage() {
     {
       title: "Support",
       items: [
-        { icon: HelpCircle, label: "Help Center", desc: "FAQs & guides", onClick: () => toast.info("Help center coming soon.") },
         { icon: Mail, label: "Contact Support", desc: "Get help via email", onClick: () => window.open("mailto:support@roavr.app") },
       ],
     },
-    {
-      title: "Legal",
-      items: [
-        { icon: Shield, label: "Privacy Policy", onClick: () => toast.info("Privacy Policy will be available at launch.") },
-        { icon: FileText, label: "Terms of Service", onClick: () => toast.info("Terms of Service will be available at launch.") },
-      ],
-    },
+
   ];
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       {/* Dark Header */}
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />

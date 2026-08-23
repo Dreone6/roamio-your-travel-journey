@@ -107,14 +107,14 @@ export default function SubscriptionPage() {
 
   if (loading) {
     return (
-      <div className="dark-immersive min-h-screen flex items-center justify-center">
+      <div className="dark-immersive min-h-dvh flex items-center justify-center">
         <div className="h-5 w-5 rounded-full border-2 border-emerald-500/40 border-t-emerald-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="dark-immersive min-h-screen pb-10">
+    <div className="dark-immersive min-h-dvh pb-10">
       {/* Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />

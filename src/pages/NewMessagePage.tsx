@@ -84,7 +84,7 @@ export default function NewMessagePage() {
   };
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-dvh pb-8">
       <div className="dark-immersive relative overflow-hidden">
         <div className="absolute inset-0 gradient-dark-radial" />
         <div className="relative px-5 pt-12 pb-4">
@@ -158,7 +158,7 @@ export default function NewMessagePage() {
               >
                 <div className="h-11 w-11 rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 flex items-center justify-center overflow-hidden shrink-0">
                   {u.profile_photo ? (
-                    <img src={u.profile_photo} className="h-11 w-11 rounded-full object-cover" />
+                    <img src={u.profile_photo} alt={u.name ?? "Traveler"} className="h-11 w-11 rounded-full object-cover" />
                   ) : (
                     <span className="text-lg">👤</span>
                   )}

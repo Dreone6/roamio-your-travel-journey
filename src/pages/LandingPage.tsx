@@ -15,7 +15,7 @@ export default function LandingPage() {
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-dvh bg-background overflow-x-hidden">
       {/* ── Navbar ──────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-border/30 bg-card/80 backdrop-blur-2xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-3">

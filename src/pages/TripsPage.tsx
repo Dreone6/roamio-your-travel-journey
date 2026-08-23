@@ -61,7 +61,7 @@ export default function TripsPage() {
   const visible = buckets[tab];
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-28" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 pb-3 flex items-center justify-between">
         <h1 className="text-white font-heading" style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.5px" }}>Trips</h1>
         <button

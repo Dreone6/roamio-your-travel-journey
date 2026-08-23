@@ -73,7 +73,7 @@ export default function NearbyPage() {
   const rest = visible.filter((o) => o.deal_type !== "roavr_drop");
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-24" style={{ background: "#080D1A" }}>
       <header className="sticky top-0 z-20 px-5 pt-5 pb-3" style={{ background: "#080D1A" }}>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} aria-label="Back">

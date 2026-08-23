@@ -24,7 +24,7 @@ serve(async (req) => {
     // Reverse geocode using OpenStreetMap Nominatim (free, no key needed)
     const geoRes = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`,
-      { headers: { "User-Agent": "Roamio/1.0" } }
+      { headers: { "User-Agent": "Roavr/1.0" } }
     );
     const geoData = await geoRes.json();
 

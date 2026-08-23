@@ -9,6 +9,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import { aggregateWorld, fetchVisits, EMPTY_WORLD, type World } from "@/lib/world/visits";
 
 export type PinCategory = "memory" | "checkin" | "visit";
@@ -163,7 +164,8 @@ export function useTravelIdentity(): TravelIdentity {
           city: c.city,
         });
       });
-      memories.forEach((m) => {
+      const signedMemoryMedia = await resolveMediaUrls(memories.map((m: any) => m.media_url));
+      memories.forEach((m, mi) => {
         if (m.latitude == null || m.longitude == null || !m.pinned_to_globe) return;
         pins.push({
           id: `memory-${m.id}`,
@@ -172,7 +174,7 @@ export function useTravelIdentity(): TravelIdentity {
           label: m.location_name || "Memory",
           description: m.caption,
           category: "memory",
-          thumbnail: m.media_url,
+          thumbnail: signedMemoryMedia[mi],
           visibility: (m.visibility as IdentityPin["visibility"]) ?? "private",
           createdAt: m.created_at,
         });

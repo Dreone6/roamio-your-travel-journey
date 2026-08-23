@@ -105,7 +105,8 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
     const g = globeRef.current;
     if (!g) return;
     const controls: any = g.controls();
-    controls.autoRotate = true;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    controls.autoRotate = !reduced;
     controls.autoRotateSpeed = 0.35;
     controls.enableZoom = true;
     controls.enablePan = false;
@@ -123,7 +124,7 @@ export default function FlagGlobe({ pins, arcs, onPinClick, milestoneCodes }: Pr
       lastInteractionRef.current = performance.now();
     };
     const tick = () => {
-      if (!controls.autoRotate && performance.now() - lastInteractionRef.current > 3000) {
+      if (!reduced && !controls.autoRotate && performance.now() - lastInteractionRef.current > 3000) {
         controls.autoRotate = true;
       }
       raf = requestAnimationFrame(tick);

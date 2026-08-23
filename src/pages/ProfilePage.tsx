@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import { toast } from "sonner";
 import {
@@ -84,18 +85,23 @@ export default function ProfilePage() {
       if (cancelled) return;
 
       const mems = (memRes.data ?? []).filter((m) => m.media_url);
+      const signed = await resolveMediaUrls(mems.map((m) => m.media_url));
+      if (cancelled) return;
+      const urlFor = (i: number) => signed[i] ?? "";
       const dayAgo = Date.now() - 86_400_000;
-      setMoments(mems.slice(0, 12).map((m) => ({
+      setMoments(mems.slice(0, 12).map((m, i) => ({
         id: m.id,
-        img: m.media_url!,
+        img: urlFor(i),
         isVideo: (m.media_type ?? "").startsWith("video"),
         live: new Date(m.created_at).getTime() > dayAgo,
       })));
       setHighlights(
-        mems.filter((m) => m.pinned_to_globe && m.location_name)
+        mems.map((m, i) => ({ m, i }))
+          .filter(({ m }) => m.pinned_to_globe && m.location_name)
           .slice(0, 6)
-          .map((m) => ({ name: m.location_name!, img: m.media_url! }))
+          .map(({ m, i }) => ({ name: m.location_name!, img: urlFor(i) }))
       );
+
       setTrips((tripRes.data ?? []) as TripRow[]);
       setEarnedNames(new Set((badgeRes.data ?? []).map((b) => b.badge_name)));
       setSavedCount(0);
@@ -127,7 +133,7 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-28" style={{ background: "#080D1A" }}>
       {/* 1. HERO ──────────────────────────────────────── */}
       <div className="relative">
         <div className="relative h-[200px] overflow-hidden">

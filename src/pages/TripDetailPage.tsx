@@ -80,7 +80,7 @@ export default function TripDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#080D1A" }}>
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: "#080D1A" }}>
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#3B82F6" }} />
       </div>
     );
@@ -88,7 +88,7 @@ export default function TripDetailPage() {
 
   if (!trip) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-8 text-center" style={{ background: "#080D1A" }}>
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-3 px-8 text-center" style={{ background: "#080D1A" }}>
         <p className="text-white font-heading" style={{ fontSize: 18, fontWeight: 600 }}>Trip not found</p>
         <p style={{ color: "#94A3B8", fontSize: 13 }}>It may have been deleted, or you no longer have access.</p>
         <button onClick={() => navigate("/trips")} className="text-white" style={{ background: "#3B82F6", borderRadius: 9999, padding: "10px 18px", fontSize: 14, fontWeight: 600 }}>
@@ -99,7 +99,7 @@ export default function TripDetailPage() {
   }
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-28" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 pb-4">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate("/trips")} aria-label="Back" className="p-1.5 -ml-1.5">

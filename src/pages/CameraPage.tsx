@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadUserMedia } from "@/lib/media";
 import {
   X, Zap, ZapOff, ChevronDown, Sparkles, Smile, Type as TypeIcon, Info,
   SlidersHorizontal, MapPin, Calendar, Tag as TagIcon, Users, Lock, Globe as GlobeIcon,
@@ -180,7 +181,7 @@ export default function CameraPage() {
 
   // ─────────────── LIVE CAMERA ───────────────
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#000000" }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: "#000000" }}>
       {/* Top row — 3 elements */}
       <div className="px-5 pt-12 flex items-center justify-between">
         <button
@@ -405,7 +406,7 @@ function EditScreen({
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#000000" }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: "#000000" }}>
       {/* Preview */}
       <div ref={dragRef} className="relative flex-1 overflow-hidden touch-none">
         <img
@@ -725,13 +726,10 @@ function PublishSheet({
       let mediaUrl = previewUrl;
       if (pickedFile) {
         const ext = pickedFile.name.split(".").pop() || "jpg";
-        const path = `${userId}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("checkin-photos")
-          .upload(path, pickedFile, { cacheControl: "3600", upsert: false });
-        if (upErr) throw upErr;
-        mediaUrl = supabase.storage.from("checkin-photos").getPublicUrl(path).data.publicUrl;
+        // Private bucket + signed URLs: visibility is enforced by storage policy.
+        mediaUrl = await uploadUserMedia(pickedFile, userId, ext);
       }
+
       const visibility = savePrivate ? "private" : vis;
       const { error } = await supabase.from("memories").insert({
         user_id: userId,
@@ -947,7 +945,7 @@ function CheckInScreen({
   };
 
   return (
-    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-6" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 flex items-center justify-between">
         <button onClick={onBack} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
           <ChevronLeft className="h-5 w-5" strokeWidth={1.5} /> Back
@@ -1066,7 +1064,7 @@ function CheckInScreen({
 
 function ScanReviewScreen({ onBack, onAdded }: { onBack: () => void; onAdded: () => void }) {
   return (
-    <div className="min-h-screen pb-6" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-6" style={{ background: "#080D1A" }}>
       <header className="px-5 pt-12 flex items-center justify-between">
         <button onClick={onBack} className="text-white inline-flex items-center gap-1" style={{ fontSize: 14, fontWeight: 600 }}>
           <ChevronLeft className="h-5 w-5" strokeWidth={1.5} /> Back

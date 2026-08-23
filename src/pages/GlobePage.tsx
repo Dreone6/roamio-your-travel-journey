@@ -9,6 +9,7 @@ import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import {
@@ -70,13 +71,14 @@ export default function GlobePage() {
           ? await supabase.from("profiles").select("id, name, profile_photo").in("id", userIds)
           : { data: [] as any[] };
         const byId = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p]));
-        return rows.map((r) => ({
+        const signed = await resolveMediaUrls(rows.map((r) => r.media_url));
+        return rows.map((r, i) => ({
           id: r.id,
           userId: r.user_id,
           name: byId[r.user_id]?.name || "Traveler",
           avatar: byId[r.user_id]?.profile_photo,
           city: r.location_name,
-          photo: r.media_url,
+          photo: signed[i],
           when: timeAgo(r.created_at),
         }));
       };
@@ -162,7 +164,7 @@ export default function GlobePage() {
   const early = hasPlaces && world.places.length <= 3;
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: "#080D1A" }}>
+    <div className="min-h-dvh pb-28" style={{ background: "#080D1A" }}>
       {/* Header */}
       <div className="px-5 pt-12 pb-4 flex items-start justify-between">
         <div>
