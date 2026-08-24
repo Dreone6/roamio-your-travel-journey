@@ -62,3 +62,30 @@ Leave `CAP_SERVER_URL` unset for release builds so `dist/` is bundled.
 - Push provider (APNs/FCM) credentials.
 - Custom URL scheme + universal/app links for deep linking.
 - Native auth (Sign in with Apple, Google native) — required by Apple if social login ships.
+
+## Device capabilities — implemented (Phase: photos / camera / location)
+
+| Capability | Module | Native (iOS/Android) | Web fallback |
+| --- | --- | --- | --- |
+| Build My World library scan | `src/lib/native/photos.ts` → `nativePhotoLibrarySource` | `Camera.pickImages` (selected-photos access only) | `<input type=file multiple>` |
+| Asset → bytes | `src/lib/native/assets.ts` | `path` (EXIF-preserving) then `webPath`, bounded concurrency | `File` blobs |
+| Capture new photo | `src/lib/native/camera.ts` → `takePhoto` | `Camera.getPhoto(source: Camera, saveToGallery: false)` | `<input capture="environment">` |
+| Choose existing media | `chooseFromLibrary` | `Camera.getPhoto(source: Photos)` | gallery `<input type=file>` |
+| Video capture | `NATIVE_VIDEO_CAPTURE_SUPPORTED = false` | system camera via webview capture input | same |
+| Current location | `src/lib/native/location.ts` → `getCurrentLocation` | `Geolocation.getCurrentPosition` (one-shot, when-in-use) | `navigator.geolocation` |
+
+Invariants: no background location, no `watchPosition`, no unrestricted photo-library
+request, no upload of scanned photos (Build My World persists visit metadata and
+photo counts only), private-by-default visibility, signed private media unchanged.
+
+Permission education copy lives in `src/lib/native/permissionCopy.ts` and is the
+single source for the purpose strings mirrored into `Info.plist`.
+
+### Permission entries added
+- iOS `Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`,
+  `NSMicrophoneUsageDescription`, `NSLocationWhenInUseUsageDescription`,
+  `PHPhotoLibraryPreventAutomaticLimitedAccessAlert=true`.
+  `NSPhotoLibraryAddUsageDescription` removed — Roavr never writes to the camera roll.
+- Android `AndroidManifest.xml`: `CAMERA`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`,
+  `READ_EXTERNAL_STORAGE` (maxSdkVersion 32), `ACCESS_COARSE_LOCATION`,
+  `ACCESS_FINE_LOCATION`. No `ACCESS_BACKGROUND_LOCATION`.
