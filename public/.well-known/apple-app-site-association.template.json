@@ -1,0 +1,22 @@
+{
+  "//": "TEMPLATE — OWNER CONFIGURATION REQUIRED. Not live. Deploy as /.well-known/apple-app-site-association (NO .json extension, content-type application/json, https, no redirects) on the production domain, then add the applinks:<domain> Associated Domains entitlement in Xcode.",
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["REPLACE_WITH_TEAM_ID.REPLACE_WITH_BUNDLE_ID"],
+        "components": [
+          { "/": "/u/*", "comment": "Traveler profiles" },
+          { "/": "/trips/*", "comment": "Trip details" },
+          { "/": "/i/*", "comment": "Shared itinerary tokens" },
+          { "/": "/passport/*", "comment": "Travel passport" },
+          { "/": "/messages/*", "comment": "Conversations" },
+          { "/": "/nearby", "comment": "Nearby offers" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["REPLACE_WITH_TEAM_ID.REPLACE_WITH_BUNDLE_ID"]
+  }
+}
