@@ -1,27 +1,64 @@
-# Roavr — browser/native boundaries (Capacitor prep)
+# Roavr — browser/native boundaries (Capacitor)
 
-Capacitor is intentionally **not installed**. This document lists every place the
-web app touches a device capability, and the seam a native implementation should
-replace. Screens must not be rewritten when native lands — only the adapter.
+Capacitor **is installed** (core 8.5.0) and the `ios/` and `android/` projects are
+generated and synced. The web/PWA build is unchanged and remains first-class:
+every capability below has a browser implementation, and no native plugin is
+required for a web route to work.
 
-| Capability | Current browser implementation | Seam to swap | Native plugin later |
-| --- | --- | --- | --- |
-| Photo library | `browserFileSource` in `src/lib/buildworld/mediaSource.ts` (`<input type="file">`) | `MediaSource` interface; `nativePhotoLibrarySource` placeholder already exists and is the intended native slot | `@capacitor/camera` (`pickImages`) |
-| Camera capture | `src/pages/CameraPage.tsx` — `getUserMedia` + canvas capture | Extract capture into a `CaptureSource` adapter mirroring `MediaSource`; the post-capture edit/post flow is already source-agnostic | `@capacitor/camera` |
-| Geolocation | `src/lib/permissions.ts` + `src/lib/marketplace/location.ts` (`navigator.geolocation`, session-only, explicit gesture) | `requestLocation()` in `permissions.ts` is the single call site | `@capacitor/geolocation` |
-| Push notifications | None. In-app notifications only (`notifications` table, `/notifications`) | Needs a `PushRegistry` adapter that stores a device token per profile | `@capacitor/push-notifications` |
-| Deep linking | React Router web paths (`/u/:handle`, `/trips/:id`, `/i/:token`) | Route table in `src/App.tsx` is already path-based; add a URL-open listener that pushes into the router | `@capacitor/app` (`appUrlOpen`) |
-| App lifecycle | Browser visibility only | Data refresh points: Home feed, Stories row, Inbox | `@capacitor/app` state change |
-| Sharing | `navigator.share`/clipboard fallbacks (share itinerary, referral) | Centralise into a `share()` helper before native | `@capacitor/share` |
-| Secure storage | Supabase session in `localStorage` (`src/integrations/supabase/previewAuthStorage.ts`, generated) | Supabase client `auth.storage` option | `@capacitor/preferences` + Keychain |
-| Subscriptions | `src/services/subscriptions.ts` — no payment provider connected | Entitlement read is already server-side | StoreKit / Play Billing |
-| Keyboard & safe areas | CSS `env(safe-area-inset-*)` (`.safe-area-bottom`, `.safe-area-top`), `min-h-dvh` everywhere | Global CSS only | `@capacitor/keyboard` |
-| Status bar / splash | Web `theme_color` in `public/manifest.webmanifest` | Manifest + `index.html` meta | `@capacitor/status-bar`, `@capacitor/splash-screen` |
+Single entry point for capabilities: `src/lib/native/`
+
+| File | Role |
+| --- | --- |
+| `types.ts` | Capability contracts (platform, share, secure store, lifecycle, network, push, billing) |
+| `index.ts` | `native` singleton — native impl on device, browser impl on web |
+| `device.ts` | Re-exports the pre-existing photo/camera/geolocation seams (no duplicate abstractions) |
+| `bootstrap.ts` | One-time status bar + keyboard setup, no-op on web |
+
+Screens must import `native` (or the existing seams) rather than branching on
+`Capacitor.isNativePlatform()`.
+
+| Capability | Web implementation | Native status |
+| --- | --- | --- |
+| Platform info | `native.platform` (`isWeb`) | Live (`@capacitor/core`) |
+| Sharing | `navigator.share` → clipboard fallback | Live (`@capacitor/share`) via `native.share()` |
+| Secure storage | `localStorage` | Live (`@capacitor/preferences`); Supabase session still uses the generated `previewAuthStorage` |
+| App lifecycle | `visibilitychange` | Live (`@capacitor/app` `appStateChange`) via `useAppLifecycle` |
+| Deep links | React Router paths | Live listener (`appUrlOpen` → `navigate()`); URL scheme / universal links **not** configured yet |
+| Android back button | n/a | Listener available (`native.lifecycle.onBackButton`) |
+| Network reconnect | `online`/`offline` | Live (`@capacitor/network`) |
+| Status bar / splash | `theme_color`, manifest | Status bar live (`@capacitor/status-bar`); splash assets still missing |
+| Keyboard | none | Live (`@capacitor/keyboard`): `--keyboard-height` CSS var, `.keyboard-inset-bottom`, `.hide-on-keyboard` |
+| Photo library | `browserFileSource` (`<input type="file">`) | **Not implemented** — `nativePhotoLibrarySource` placeholder is the slot for `@capacitor/camera` `pickImages` |
+| Camera capture | `CameraPage` `getUserMedia` + canvas | **Not implemented** — swap to `@capacitor/camera` behind the same post-capture flow |
+| Geolocation | `ensureLocationPermission()` in `src/lib/permissions.ts` | **Not implemented** — single call site, swap to `@capacitor/geolocation` |
+| Push notifications | in-app `notifications` table only | **Not implemented** — `native.push` interface exists, returns unsupported |
+| Billing / subscriptions | `src/services/subscriptions.ts`, entitlement read server-side | **Not implemented** — `native.billing` interface exists, returns unsupported |
+| Safe areas | `env(safe-area-inset-*)`, `min-h-dvh` | Works inside the shell (`contentInset: never`, overlaying status bar) |
+
+## App identity
+
+- `appName`: **Roavr**
+- `appId`: `app.lovable.p5f9b5ca8aa1d4b7781099bda94ab9271` — **temporary development
+  identifier**. Owner decision required for the final iOS Bundle ID / Android
+  applicationId. Change it in `capacitor.config.ts` and re-run `npx cap sync`;
+  no signing identities or provisioning profiles exist yet, so the swap is free.
+
+## Commands
+
+```bash
+npm run cap:sync       # vite build + cap sync (both platforms)
+npm run cap:ios        # build, sync, open Xcode  (macOS only)
+npm run cap:android    # build, sync, open Android Studio
+CAP_SERVER_URL=https://<preview-url> npx cap sync   # optional live reload
+```
+
+Leave `CAP_SERVER_URL` unset for release builds so `dist/` is bundled.
 
 ## Still needed before packaging
 
-- App icon set at 1024×1024 source (today: `public/favicon.png`, `public/apple-touch-icon.png`).
-- Splash assets (portrait, dark `#080D1A`).
-- A real Privacy Policy and Terms URL (store review requirement).
+- Compile/run on Xcode simulator and Android Studio emulator (not possible in this environment).
+- App icon set from a 1024×1024 source and dark `#080D1A` splash assets.
+- Real Privacy Policy and Terms URLs (store review requirement).
 - Push provider (APNs/FCM) credentials.
-- Purpose strings for camera, photo library and location (iOS `Info.plist`).
+- Custom URL scheme + universal/app links for deep linking.
+- Native auth (Sign in with Apple, Google native) — required by Apple if social login ships.
