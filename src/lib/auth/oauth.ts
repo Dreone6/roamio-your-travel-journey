@@ -10,13 +10,15 @@
  *          session via `supabase.auth.exchangeCodeForSession`.
  *
  * No custom session infrastructure: Supabase issues, stores and refreshes the
- * tokens in both paths.
+ * tokens in both paths. Public identifiers (Apple Services ID, per-platform
+ * Google client IDs) come from `identityConfig`; no secret is ever bundled.
  */
 import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { platform } from "@/lib/native/platform";
 import { APP_SCHEME, OAUTH_CALLBACK_PATH } from "./deepLinks";
+import { googleClientIdFor, identityConfig } from "./identityConfig";
 
 export type OAuthProvider = "google" | "apple";
 
@@ -26,6 +28,26 @@ export interface OAuthStartResult {
   /** Control handed to the provider; the session arrives via deep link. */
   pending: boolean;
   error: Error | null;
+}
+
+/**
+ * Extra authorization parameters for the native flow.
+ *
+ * Apple: the Services ID must be the audience when the request originates from
+ * a native shell rather than the web origin.
+ * Google: iOS and Android each have their own OAuth client; when the owner has
+ * registered them we pass the platform-specific id so the consent screen and
+ * the release fingerprint line up.
+ */
+export function nativeOAuthQueryParams(provider: OAuthProvider): Record<string, string> {
+  if (provider === "apple") {
+    return identityConfig.appleServicesId
+      ? { client_id: identityConfig.appleServicesId }
+      : {};
+  }
+  const target = platform.isIOS ? "ios" : platform.isAndroid ? "android" : "web";
+  const clientId = googleClientIdFor(target);
+  return clientId ? { client_id: clientId } : {};
 }
 
 export async function startOAuth(provider: OAuthProvider): Promise<OAuthStartResult> {
@@ -41,6 +63,7 @@ export async function startOAuth(provider: OAuthProvider): Promise<OAuthStartRes
     options: {
       redirectTo: NATIVE_REDIRECT_URI,
       skipBrowserRedirect: true,
+      queryParams: nativeOAuthQueryParams(provider),
     },
   });
 
