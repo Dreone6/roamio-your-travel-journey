@@ -28,22 +28,13 @@ import type {
 } from "./types";
 
 export * from "./types";
+export * from "./permissionCopy";
+export { getCurrentLocation, ensureLocationAccess } from "./location";
+export { takePhoto, chooseFromLibrary, ensureNativeCameraAccess, isNativeCameraAvailable } from "./camera";
+export { pickNativePhotos, ensureNativePhotoAccess, expandLimitedSelection, isNativePhotoLibraryAvailable } from "./photos";
 
-function readPlatform(): PlatformInfo {
-  const raw = (Capacitor.getPlatform?.() ?? "web") as RoavrPlatform;
-  const platform: RoavrPlatform =
-    raw === "ios" || raw === "android" ? raw : "web";
-  const isNative = platform !== "web" && Capacitor.isNativePlatform?.() === true;
-  return {
-    platform,
-    isNative,
-    isIOS: isNative && platform === "ios",
-    isAndroid: isNative && platform === "android",
-    isWeb: !isNative,
-  };
-}
-
-export const platform: PlatformInfo = readPlatform();
+export { platform } from "./platform";
+import { platform } from "./platform";
 
 /* ------------------------------- sharing -------------------------------- */
 

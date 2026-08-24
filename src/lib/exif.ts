@@ -1,5 +1,6 @@
 import exifr from "exifr";
 import { ensureLocationPermission } from "./permissions";
+import { getCurrentLocation } from "./native/location";
 
 export interface PhotoLocation {
   latitude: number;
@@ -34,16 +35,7 @@ export async function geotagPhoto(file: File | Blob | null): Promise<PhotoLocati
   const ok = await ensureLocationPermission();
   if (!ok) return null;
 
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          source: "device",
-        }),
-      () => resolve(null),
-      { timeout: 8000, maximumAge: 60000, enableHighAccuracy: true }
-    );
-  });
+  const { status, coords } = await getCurrentLocation();
+  if (status !== "ok" || !coords) return null;
+  return { latitude: coords.latitude, longitude: coords.longitude, source: "device" };
 }
