@@ -20,6 +20,7 @@ import { conversationStarters, sharedWorld, type CityPlace } from "@/lib/world/v
 import { flagEmoji } from "@/lib/world/countries";
 import { startConversation } from "@/lib/messaging/startConversation";
 import PlaceDetailSheet from "@/components/world/PlaceDetailSheet";
+import { ReportDialog } from "@/components/social/ReportDialog";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -46,6 +47,7 @@ export default function TravelerProfilePage() {
   const [place, setPlace] = useState<CityPlace | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [messaging, setMessaging] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!handle) return;
@@ -153,6 +155,9 @@ export default function TravelerProfilePage() {
             <DropdownMenuContent align="end" style={{ background: "#1A2236", border: "1px solid #1E2A3F" }}>
               <DropdownMenuItem className="text-white" onClick={follow.toggleBlock}>
                 {follow.blockedByMe ? "Unblock traveler" : "Block traveler"}
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-white" onClick={() => setReportOpen(true)}>
+                Report traveler
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -306,6 +311,15 @@ export default function TravelerProfilePage() {
       <div className="h-16" />
 
       <PlaceDetailSheet place={place} open={sheetOpen} onOpenChange={setSheetOpen} />
+      {targetId && (
+        <ReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          targetType="user"
+          targetId={targetId}
+          targetLabel={profile.name ?? "traveler"}
+        />
+      )}
     </Shell>
   );
 }

@@ -38,22 +38,27 @@ export default function SettingsPage() {
     }
   }, []);
 
+  /**
+   * Real deletion: the `delete-account` edge function removes stored media,
+   * every user-owned row, and the authentication account itself. Only an
+   * anonymous audit record (user id + timestamps) is retained.
+   */
   const handleDeleteAccount = async () => {
     if (!user) return;
     setDeleting(true);
     try {
-      await Promise.all([
-        supabase.from("check_ins").delete().eq("user_id", user.id),
-        supabase.from("trips").delete().eq("user_id", user.id),
-        supabase.from("badges").delete().eq("user_id", user.id),
-        supabase.from("challenges").delete().eq("user_id", user.id),
-        supabase.from("places_visited").delete().eq("user_id", user.id),
-        supabase.from("checklists").delete().eq("user_id", user.id),
-      ]);
+      const { data, error } = await supabase.functions.invoke("delete-account", {
+        body: { confirm: "DELETE" },
+      });
+      if (error) throw new Error("Deletion could not be completed. Nothing was removed — please contact support@roavr.app.");
+      const result = data as { ok?: boolean; failures?: string[] };
+      if (!result?.ok) {
+        throw new Error("Some data could not be removed. Our team has been notified — contact support@roavr.app.");
+      }
       await signOut();
-      toast.success("Account data deleted. You have been signed out.");
+      toast.success("Your account and all associated data have been permanently deleted.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete account data");
+      toast.error(err.message || "Failed to delete account");
     } finally {
       setDeleting(false);
     }
@@ -197,7 +202,11 @@ export default function SettingsPage() {
               <AlertTriangle className="h-4 w-4" />
               <p className="font-heading font-bold text-[13px]">Delete everything?</p>
             </div>
-            <p className="text-[11px] text-muted-foreground">This permanently removes all trips, check-ins, badges, and account data.</p>
+            <p className="text-[11px] text-muted-foreground">
+              This permanently deletes your profile, photos and stories, travel history, trips, messages, saved offers
+              and your sign-in account. It cannot be undone, and an active store subscription must be cancelled
+              separately in your App Store or Google Play account settings.
+            </p>
             <div className="flex gap-2">
               <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={deleting} className="flex-1 rounded-xl h-9 text-[12px]">
                 {deleting ? "Deleting..." : "Delete"}

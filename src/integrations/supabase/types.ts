@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          completed_at: string | null
+          error: string | null
+          id: string
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error?: string | null
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          error?: string | null
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           badge_image: string | null
@@ -1226,29 +1253,41 @@ export type Database = {
       reports: {
         Row: {
           created_at: string
+          details: string | null
           id: string
           reason: string | null
           reported_id: string
           reported_type: string
           reporter_id: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           status: string
         }
         Insert: {
           created_at?: string
+          details?: string | null
           id?: string
           reason?: string | null
           reported_id: string
           reported_type: string
           reporter_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Update: {
           created_at?: string
+          details?: string | null
           id?: string
           reason?: string | null
           reported_id?: string
           reported_type?: string
           reporter_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Relationships: []
@@ -1424,11 +1463,21 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          auto_renew: boolean | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          entitlement_source: string
+          expires_at: string | null
           id: string
+          last_verified_at: string | null
+          platform: string
+          product_id: string | null
+          revoked_at: string | null
           status: string
+          store_environment: string | null
+          store_original_transaction_id: string | null
+          store_transaction_id: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
@@ -1438,11 +1487,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_renew?: boolean | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          entitlement_source?: string
+          expires_at?: string | null
           id?: string
+          last_verified_at?: string | null
+          platform?: string
+          product_id?: string | null
+          revoked_at?: string | null
           status?: string
+          store_environment?: string | null
+          store_original_transaction_id?: string | null
+          store_transaction_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -1452,11 +1511,21 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_renew?: boolean | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          entitlement_source?: string
+          expires_at?: string | null
           id?: string
+          last_verified_at?: string | null
+          platform?: string
+          product_id?: string | null
+          revoked_at?: string | null
           status?: string
+          store_environment?: string | null
+          store_original_transaction_id?: string | null
+          store_transaction_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -1820,6 +1889,23 @@ export type Database = {
         Args: { _conversation: string; _user: string }
         Returns: boolean
       }
+      current_entitlement: {
+        Args: never
+        Returns: {
+          auto_renew: boolean
+          base_tier: string
+          entitlement_source: string
+          expires_at: string
+          is_trialing: boolean
+          last_verified_at: string
+          platform: string
+          product_id: string
+          status: string
+          tier: string
+          trial_ends_at: string
+        }[]
+      }
+      ensure_subscription: { Args: never; Returns: undefined }
       find_trip_by_invite: {
         Args: { _code: string }
         Returns: {
