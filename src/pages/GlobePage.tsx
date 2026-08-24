@@ -5,6 +5,7 @@
  * store via `useTravelIdentity`. One point per city (never one per photo), so
  * the globe stays cheap no matter how large a travel history gets.
  */
+import { native } from "@/lib/native";
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";
@@ -153,10 +154,8 @@ export default function GlobePage() {
 
   const handleShare = async () => {
     const url = `${window.location.origin}/globe`;
-    try {
-      if (navigator.share) await navigator.share({ title: "My Roavr world", url });
-      else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
-    } catch { /* user dismissed */ }
+    const result = await native.share({ title: "My Roavr world", url });
+    if (result === "copied") toast.success("Link copied");
   };
 
   const hasPlaces = world.places.length > 0;
