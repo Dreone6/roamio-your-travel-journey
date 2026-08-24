@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { native } from "@/lib/native";
 import type { AppState } from "@/lib/native";
 import { parseDeepLink } from "@/lib/auth/deepLinks";
+import { resolveDeepLink } from "@/lib/auth/deepLinkRouting";
 import { completeNativeOAuth } from "@/lib/auth/oauth";
 import { consumeReturnTo, hydrateReturnTo, saveReturnTo } from "@/lib/auth/returnTo";
 
