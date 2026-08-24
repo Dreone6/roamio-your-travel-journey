@@ -108,3 +108,27 @@ single source for the purpose strings mirrored into `Info.plist`.
 **Google** — Google Cloud console: OAuth consent screen, Web client (for the Supabase callback URL), plus iOS and Android OAuth clients bound to the final bundle ID / applicationId and the release SHA-256 signing fingerprint. Enter the web client ID/secret in Cloud auth settings (or use managed Google credentials).
 
 **Both** — the final bundle identifier must replace the temporary `app.lovable.p5f9b5ca8aa1d4b7781099bda94ab9271`, and `roavr://auth-callback` must be added to Supabase's additional redirect URL allow-list.
+
+
+## Push notifications (native)
+
+| Concern | Implementation | Status |
+| --- | --- | --- |
+| Permission state | `src/lib/native/push.ts` (`getPushPermission` / `requestPushPermission`) — never prompted on launch, only from Settings → Notifications | Works |
+| Device token | `registration` listener upserts into `push_devices` (unique on `token`, so a re-homed device re-points instead of fanning out) | Works |
+| Token refresh | Same listener fires on rotation; `usePushNotifications` re-registers on sign-in | Works |
+| Logout cleanup | `clearDeviceTokens()` runs in `AuthContext.signOut` and on `SIGNED_OUT` | Works |
+| Foreground | In-app Sonner toast with a "View" action; query cache invalidated. No duplicate OS banner handling | Works |
+| Open routing | `src/lib/notifications/routing.ts` allow-list → `navigate()`; unknown payloads fall back to `/notifications` | Works, unit tested |
+| Preferences | `notification_preferences` table + `/settings/notifications`. Travel alerts and nearby offers default OFF | Works |
+| Send path | `supabase/functions/send-push` only. Writes the in-app row, checks blocks in both directions, checks preferences, then delivers via FCM v1 | Code complete, credentials pending |
+| Delivery credentials | `FCM_SERVICE_ACCOUNT_JSON` secret; APNs auth key uploaded to that Firebase project; `google-services.json` (Android) and `GoogleService-Info.plist` + Push Notifications capability / `aps-environment` entitlement (iOS) | NOT configured |
+
+Roavr never sends a notification because infrastructure exists: `send-push` is
+called from real user actions only, there is no scheduler, and location-based
+marketing (`nearby_offers`) is opt-in.
+
+### Permission entries added for push
+- Android `AndroidManifest.xml`: `POST_NOTIFICATIONS`.
+- iOS: enable the **Push Notifications** capability in Xcode (adds the
+  `aps-environment` entitlement) — cannot be added from this repo.
