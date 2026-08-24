@@ -21,7 +21,10 @@ import {
   startPush,
 } from "@/lib/native/push";
 import { fetchPreferences } from "@/lib/notifications/preferences";
-import { routeForNotification } from "@/lib/notifications/routing";
+import { resolveDelivery } from "@/lib/notifications/delivery";
+
+/** A tap within this window of registration is treated as a cold start. */
+const COLD_START_WINDOW_MS = 4_000;
 
 export function usePushNotifications() {
   const navigate = useNavigate();
@@ -45,18 +48,25 @@ export function usePushNotifications() {
       if (!prefs.push_enabled) return;
       if (cancelled || stopRef.current) return;
 
+      // A tap arriving before the app has settled is a cold start; afterwards
+      // it is a background resume. The distinction only affects history depth.
+      const startedAt = Date.now();
+
       stopRef.current = await startPush({
         onForeground: (push) => {
           void queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          toast(push.title ?? "Roavr", {
-            description: push.body,
-            action: {
-              label: "View",
-              onClick: () => navigate(routeForNotification(push.data)),
-            },
+          const action = resolveDelivery(push, "foreground");
+          if (action.kind !== "toast") return;
+          toast(action.title, {
+            description: action.body,
+            action: { label: "View", onClick: () => navigate(action.path) },
           });
         },
-        onOpened: (push) => navigate(routeForNotification(push.data)),
+        onOpened: (push) => {
+          const mode = Date.now() - startedAt < COLD_START_WINDOW_MS ? "cold_start" : "background";
+          const action = resolveDelivery(push, mode);
+          if (action.kind === "navigate") navigate(action.path, { replace: action.replace });
+        },
       });
     };
 
