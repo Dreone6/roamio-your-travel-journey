@@ -14,7 +14,7 @@ export default function AuthGate() {
     );
   }
 
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to={consumeReturnTo() ?? "/home"} replace />;
 
   return <LandingPage />;
 }
