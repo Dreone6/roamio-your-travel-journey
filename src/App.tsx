@@ -53,6 +53,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <NativeLifecycle />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<AuthGate />} />
