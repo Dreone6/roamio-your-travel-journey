@@ -146,7 +146,7 @@ export default function SubscriptionPage() {
     },
   ];
 
-  if (loading) {
+  if (loading || entitlementLoading) {
     return (
       <div className="dark-immersive min-h-dvh flex items-center justify-center">
         <div className="h-5 w-5 rounded-full border-2 border-emerald-500/40 border-t-emerald-500 animate-spin" />
@@ -173,10 +173,10 @@ export default function SubscriptionPage() {
           </div>
 
           <p className="text-[12px] text-dark-muted leading-relaxed max-w-[300px]">
-            Unlock the full Roavr experience. Every plan starts with a free trial — no commitment required.
+            Unlock the full Roavr experience. Subscriptions are billed by the App Store or Google Play and renew until cancelled.
           </p>
 
-          {/* Current plan badge */}
+          {/* Current plan badge — reflects the server-verified entitlement */}
           <div className="dark-card rounded-xl p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg gradient-glow flex items-center justify-center glow-accent">
               <Star className="h-4 w-4 text-white" />
@@ -184,14 +184,36 @@ export default function SubscriptionPage() {
             <div className="flex-1">
               <p className="text-white text-[13px] font-semibold capitalize">
                 {currentTier === "free" ? "Free Plan" : `Roavr ${currentTier === "plus" ? "Plus" : "Pro"}`}
+                {entitlement.isTrialing && <span className="ml-2 text-[10px] font-bold text-amber-400 uppercase">Trial</span>}
               </p>
-              {subscription?.current_period_end ? (
-                <p className="text-dark-muted text-[10px]">Renews {new Date(subscription.current_period_end).toLocaleDateString()}</p>
+              {entitlement.isTrialing && entitlement.trialEndsAt ? (
+                <p className="text-dark-muted text-[10px]">Trial ends {entitlement.trialEndsAt.toLocaleDateString()}</p>
+              ) : entitlement.expiresAt ? (
+                <p className="text-dark-muted text-[10px]">
+                  {entitlement.autoRenew === false ? "Ends" : "Renews"} {entitlement.expiresAt.toLocaleDateString()}
+                </p>
               ) : (
                 <p className="text-dark-muted text-[10px]">Upgrade anytime</p>
               )}
             </div>
+            {manageUrl && currentTier !== "free" && (
+              <a
+                href={manageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-bold text-white/70 flex items-center gap-1"
+              >
+                Manage <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
           </div>
+
+          {availability && !availability.available && (
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 flex gap-2.5">
+              <Info className="h-3.5 w-3.5 text-dark-muted shrink-0 mt-0.5" />
+              <p className="text-[11px] text-dark-muted leading-relaxed">{availability.message}</p>
+            </div>
+          )}
         </div>
       </div>
 
