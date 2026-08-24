@@ -18,33 +18,17 @@
  *   an APNs auth key uploaded to that Firebase project.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  isDeadToken,
+  pushDecision,
+  relationshipSkip,
+  requiresRelationship,
+  validatePayload,
+} from "./gates.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const PREF_BY_TYPE: Record<string, string> = {
-  new_follower: "new_follower",
-  follow_request: "new_follower",
-  message: "messages",
-  trip_invite: "trip_collaboration",
-  trip_collaboration: "trip_collaboration",
-  story_reply: "story_activity",
-  story_reaction: "story_activity",
-  story_view_milestone: "story_activity",
-  travel_alert: "travel_alerts",
-  nearby_offer: "nearby_offers",
-};
-
-const DEFAULT_PREFS: Record<string, boolean> = {
-  push_enabled: true,
-  new_follower: true,
-  messages: true,
-  trip_collaboration: true,
-  story_activity: true,
-  travel_alerts: false,
-  nearby_offers: false,
 };
 
 /* ----------------------------- FCM v1 client ----------------------------- */
