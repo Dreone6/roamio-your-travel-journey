@@ -184,13 +184,31 @@ const push: PushRegistry = {
   },
 };
 
+/**
+ * Billing lives in `@/lib/billing` (store adapter + server-verified
+ * entitlements). This shim keeps the capability surface consistent; it never
+ * decides entitlement itself.
+ */
 const billing: BillingApi = {
-  isSupported: () => false,
+  isSupported: () => platform.isNative,
   async listProducts() {
-    return [];
+    const { billing: store } = await import("@/lib/billing/store");
+    const products = await store.listProducts();
+    return products.map((p) => ({ id: p.productId, price: p.displayPrice }));
   },
-  async purchase() {
-    return { ok: false, reason: "Native billing is not configured yet." };
+  async purchase(productId: string) {
+    const { billing: store } = await import("@/lib/billing/store");
+    const { PRODUCT_IDS } = await import("@/lib/billing/types");
+    const key = (Object.keys(PRODUCT_IDS) as Array<keyof typeof PRODUCT_IDS>)
+      .find((k) => PRODUCT_IDS[k] === productId);
+    if (!key) return { ok: false, reason: "Unknown product." };
+    const outcome = await store.purchase(key);
+    if (outcome.status === "entitled") return { ok: true };
+    const reason =
+      outcome.status === "unavailable" || outcome.status === "verification_failed"
+        ? outcome.message
+        : outcome.status;
+    return { ok: false, reason };
   },
 };
 
