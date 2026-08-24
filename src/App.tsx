@@ -74,6 +74,7 @@ const App = () => (
               <Route path="/camera" element={<ProtectedRoute><CameraPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
               <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+              <Route path="/settings/identity" element={<ProtectedRoute><IdentityDiagnosticsPage /></ProtectedRoute>} />
               {/* Stories live in the Home stories row + viewer. */}
               <Route path="/stories" element={<Navigate to="/home" replace />} />
               {/* The real, ranked travel feed lives on Home. */}
