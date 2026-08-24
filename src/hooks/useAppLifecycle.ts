@@ -60,8 +60,11 @@ export function useAppLifecycle() {
       if (!link) return;
 
       void (async () => {
+        // OAuth returns are resolved before any session lookup.
         if (link.isOAuthCallback) {
-          const error = await completeNativeOAuth(link.search, link.hash);
+          const action = resolveDeepLink(link, { authenticated: false });
+          if (action.kind !== "oauth") return;
+          const error = await completeNativeOAuth(action.search, action.hash);
           if (error) {
             navigate("/auth", { replace: true });
             return;
@@ -70,20 +73,21 @@ export function useAppLifecycle() {
           return;
         }
 
-        if (link.isPublic) {
-          navigate(link.path);
-          return;
-        }
+        // Protected destinations need a validated session; RLS still governs
+        // what the screen can actually read.
+        const authenticated = link.isPublic
+          ? true
+          : !!(await supabase.auth.getUser()).data.user;
 
-        // Protected destination: only route there with a validated session.
-        // RLS still governs what the screen can read.
-        const { data } = await supabase.auth.getUser();
-        if (!data.user) {
-          saveReturnTo(link.path);
-          navigate("/auth");
+        const action = resolveDeepLink(link, { authenticated });
+        if (action.kind === "navigate") {
+          navigate(action.path);
           return;
         }
-        navigate(link.path);
+        if (action.kind === "authenticate") {
+          saveReturnTo(action.returnTo);
+          navigate(action.path);
+        }
       })();
     });
 
