@@ -104,7 +104,11 @@ async function verifyOnServer(receipt: PurchaseReceipt): Promise<PurchaseOutcome
   if (!result?.entitled) {
     return { status: "verification_failed", message: result?.error ?? "The store could not confirm this purchase." };
   }
-  return { status: "entitled", tier: (result.tier ?? "free") as PurchaseOutcome extends never ? never : never extends never ? any : any, expiresAt: result.expires_at ?? null };
+  return {
+    status: "entitled",
+    tier: (result.tier ?? "free") as SubscriptionTier,
+    expiresAt: result.expires_at ?? null,
+  };
 }
 
 export async function purchase(key: ProductKey): Promise<PurchaseOutcome> {

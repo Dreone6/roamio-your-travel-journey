@@ -18,7 +18,8 @@ export async function fetchEntitlement(): Promise<Entitlement> {
   const { data, error } = await supabase.rpc("current_entitlement" as never);
   if (error) return FREE_ENTITLEMENT;
 
-  const row = Array.isArray(data) ? (data[0] as Record<string, unknown> | undefined) : undefined;
+  const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : undefined;
   if (!row) {
     // First read for a brand-new account: create the free row server-side, once.
     await supabase.rpc("ensure_subscription" as never);
