@@ -72,13 +72,15 @@ function isAllowedPath(pathname: string) {
  * Turns an inbound URL into a routing decision, or `null` when the link points
  * at nothing we recognise (never navigate blindly on an untrusted URL).
  */
-export function parseDeepLink(input: URL | string): ParsedDeepLink | null {
+export function parseDeepLink(input: URL | string | null | undefined): ParsedDeepLink | null {
+  if (!input) return null;
   let url: URL;
   try {
     url = typeof input === "string" ? new URL(input) : input;
   } catch {
     return null;
   }
+  if (!(url instanceof URL)) return null;
 
   const custom = url.protocol.replace(":", "").toLowerCase() === APP_SCHEME;
 
