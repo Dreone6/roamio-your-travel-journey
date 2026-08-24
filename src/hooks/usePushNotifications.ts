@@ -21,7 +21,10 @@ import {
   startPush,
 } from "@/lib/native/push";
 import { fetchPreferences } from "@/lib/notifications/preferences";
-import { routeForNotification } from "@/lib/notifications/routing";
+import { resolveDelivery } from "@/lib/notifications/delivery";
+
+/** A tap within this window of registration is treated as a cold start. */
+const COLD_START_WINDOW_MS = 4_000;
 
 export function usePushNotifications() {
   const navigate = useNavigate();
