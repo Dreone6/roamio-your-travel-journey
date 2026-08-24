@@ -9,7 +9,12 @@ import {
   Eye, Loader2, CheckCircle2, Plus, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ensurePhotoPermission, ensureLocationPermission } from "@/lib/permissions";
+import { ensurePhotoPermission, ensureCameraPermission, ensureLocationPermission } from "@/lib/permissions";
+import { takePhoto, chooseFromLibrary, isNativeCameraAvailable } from "@/lib/native/camera";
+import {
+  PHOTO_DURATION_MAX, PHOTO_DURATION_DEFAULT, VIDEO_DURATION_MAX, VIDEO_DURATION_DEFAULT,
+  checkStoryMedia, clampDisplayDuration,
+} from "@/lib/mediaDuration";
 import { geotagPhoto, type PhotoLocation } from "@/lib/exif";
 import GeoFilterCarousel, { GeoFilterOverlay } from "@/components/camera/GeoFilterCarousel";
 import type { GeoFilter } from "@/lib/geoFilters";
@@ -114,27 +119,62 @@ export default function CameraPage() {
     setAutoLocation(null);
   };
 
-  // Capture flow → opens correct post-capture screen
+  /**
+   * Shutter = "take something NEW". Camera permission only — never the photo
+   * library. Native capture on iOS/Android, browser capture input on web.
+   */
   const handleShutter = async () => {
-    const ok = await ensurePhotoPermission();
+    const ok = await ensureCameraPermission();
     if (!ok) return;
+
+    if (isNativeCameraAvailable()) {
+      const { status, file } = await takePhoto();
+      if (status === "cancelled") return;
+      if (status !== "ok" || !file) {
+        if (status === "unreadable") toast.error("Couldn't read that capture");
+        return;
+      }
+      await acceptFile(file);
+      return;
+    }
     fileInputRef.current?.click();
+  };
+
+  /** Gallery = "choose something EXISTING". Photo-library permission only. */
+  const handleGallery = async () => {
+    if (isNativeCameraAvailable()) {
+      const ok = await ensurePhotoPermission();
+      if (!ok) return;
+      const { status, file } = await chooseFromLibrary();
+      if (status === "cancelled") return;
+      if (status !== "ok" || !file) return;
+      await acceptFile(file);
+      return;
+    }
+    galleryInputRef.current?.click();
+  };
+
+  const acceptFile = async (file: File) => {
+    const isVideo = file.type.startsWith("video/");
+    const check = await checkStoryMedia(file, isVideo);
+    if (!check.ok) {
+      toast.error("That video is too long", { description: check.reason });
+      return;
+    }
+    setPickedFile(file);
+    setPickedPreview(URL.createObjectURL(file));
+    if (mode === "Check In") setCheckInOpen(true);
+    else if (mode === "Scan") setScanReview(true);
+    else setEditing(true);
+    const loc = await geotagPhoto(file);
+    setAutoLocation(loc);
   };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    setPickedFile(file);
-    setPickedPreview(URL.createObjectURL(file));
-    if (mode === "Check In") {
-      setCheckInOpen(true);
-    } else if (mode === "Scan") {
-      setScanReview(true);
-    } else {
-      setEditing(true);
-    }
-    const loc = await geotagPhoto(file);
-    setAutoLocation(loc);
+    await acceptFile(file);
   };
 
   // ─────────────── ROUTES ───────────────
@@ -195,7 +235,7 @@ export default function CameraPage() {
           {mode}
         </p>
         <button
-          onClick={() => galleryInputRef.current?.click()}
+          onClick={handleGallery}
           aria-label="Gallery"
           className="h-9 w-9 active:scale-95 transition-transform"
           style={{ borderRadius: 8, border: "1px solid #FFFFFF", overflow: "hidden", background: "#1A2236" }}
@@ -713,12 +753,32 @@ function PublishSheet({
   const [vis, setVis] = useState<Visibility>("private");
   const [posting, setPosting] = useState(false);
   const isVideo = !!pickedFile?.type.startsWith("video/");
-  const maxDuration = isVideo ? 60 : 30;
-  const [duration, setDuration] = useState<number>(isVideo ? 15 : 5);
+  const maxDuration = isVideo ? VIDEO_DURATION_MAX : PHOTO_DURATION_MAX;
+  const [duration, setDuration] = useState<number>(isVideo ? VIDEO_DURATION_DEFAULT : PHOTO_DURATION_DEFAULT);
+  const [realSeconds, setRealSeconds] = useState<number | null>(null);
+
+  // Enforce the advertised limits against the ACTUAL file, not just the slider.
+  useEffect(() => {
+    let cancelled = false;
+    if (!pickedFile || !isVideo) { setRealSeconds(null); return; }
+    void checkStoryMedia(pickedFile, true).then((check) => {
+      if (cancelled) return;
+      setRealSeconds(check.seconds);
+      if (!check.ok) toast.error("That video is too long", { description: check.reason });
+      else if (check.seconds) setDuration((d) => clampDisplayDuration(d, true, check.seconds));
+    });
+    return () => { cancelled = true; };
+  }, [pickedFile, isVideo]);
 
   const post = async (savePrivate: boolean) => {
     if (!userId) {
       toast.error("Please sign in first");
+      return;
+    }
+    // Roavr does not trim video — an over-limit clip is rejected, never faked.
+    const check = await checkStoryMedia(pickedFile, isVideo);
+    if (!check.ok) {
+      toast.error("That video is too long", { description: check.reason });
       return;
     }
     setPosting(true);
@@ -750,7 +810,7 @@ function PublishSheet({
           media_url: mediaUrl,
           media_type: isVideo ? "video" : "photo",
           visibility,
-          duration_seconds: duration,
+          duration_seconds: clampDisplayDuration(duration, isVideo, check.seconds ?? realSeconds),
           latitude: location?.latitude ?? null,
           longitude: location?.longitude ?? null,
           auto_save_to_globe: true,
