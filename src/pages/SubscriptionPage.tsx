@@ -318,7 +318,7 @@ export default function SubscriptionPage() {
                       <p className="font-heading text-2xl font-bold text-white">$0</p>
                     ) : (
                       <>
-                        <p className="font-heading text-2xl font-bold text-white">${price}</p>
+                        <p className="font-heading text-2xl font-bold text-white">{price}</p>
                         <p className="text-[10px] text-dark-muted">/month</p>
                         {billing === "yearly" && tier.savings && (
                           <p className="text-[9px] font-bold text-emerald-400 mt-0.5">Save {tier.savings}%</p>
@@ -352,13 +352,15 @@ export default function SubscriptionPage() {
                 ) : isUpgrade ? (
                   <button
                     onClick={() => handleUpgrade(tier.id)}
+                    disabled={busy === tier.id}
                     className={`w-full rounded-xl py-3 text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
                       tier.popular
                         ? "gradient-glow text-white glow-accent"
                         : "dark-card-elevated text-white hover:bg-white/[0.06]"
                     }`}
                   >
-                    Upgrade to {tier.name} <ArrowRight className="h-3.5 w-3.5" />
+                    {busy === tier.id ? "Opening store…" : `Upgrade to ${tier.name}`}
+                    {busy !== tier.id && <ArrowRight className="h-3.5 w-3.5" />}
                   </button>
                 ) : null}
               </div>
