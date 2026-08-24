@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Compass } from "lucide-react";
+import { saveReturnTo } from "@/lib/auth/returnTo";
 
 const cacheKey = (id: string) => `roavr_onboarded_${id}`;
 
