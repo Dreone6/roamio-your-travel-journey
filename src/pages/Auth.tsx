@@ -52,9 +52,8 @@ export default function Auth() {
   };
 
   const handleOAuth = async (provider: "google" | "apple") => {
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
-    });
+    // Web -> managed OAuth broker; native -> system browser + roavr:// return.
+    const result = await startOAuth(provider);
     if (result.error) {
       toast({
         title: `${provider === "google" ? "Google" : "Apple"} sign-in failed`,
