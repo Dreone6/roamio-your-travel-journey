@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentLocation } from "@/lib/native/location";
 
 export type LocationMode = "unset" | "device" | "trip" | "denied" | "unavailable";
 
@@ -73,29 +74,39 @@ export function useMarketplaceLocation(userId?: string) {
     void loadTripFallback();
   }, [loadTripFallback]);
 
-  /** Must be called from a user gesture — this is the permission prompt. */
-  const requestDeviceLocation = useCallback(() => {
-    if (!("geolocation" in navigator)) {
-      setState((p) => ({ ...p, mode: "unavailable" }));
+  /**
+   * Must be called from a user gesture — this is the permission prompt.
+   * Native (Capacitor Geolocation) on iOS/Android, browser geolocation on web,
+   * behind the same one-shot foreground-only contract.
+   */
+  const requestDeviceLocation = useCallback(async () => {
+    setState((p) => ({ ...p, loading: true }));
+    const { status, coords } = await getCurrentLocation();
+
+    if (status === "ok" && coords) {
+      setState({
+        mode: "device",
+        lat: coords.latitude,
+        lng: coords.longitude,
+        label: "Around you",
+        city: null,
+        loading: false,
+      });
       return;
     }
-    setState((p) => ({ ...p, loading: true }));
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setState({
-          mode: "device",
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          label: "Around you",
-          city: null,
-          loading: false,
-        });
-      },
-      () => {
-        setState((p) => ({ ...p, mode: p.lat != null ? p.mode : "denied", loading: false }));
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-    );
+
+    setState((p) => ({
+      ...p,
+      mode:
+        status === "unavailable"
+          ? "unavailable"
+          : p.lat != null && p.mode === "trip"
+            ? p.mode
+            : status === "denied" || status === "restricted"
+              ? "denied"
+              : p.mode,
+      loading: false,
+    }));
   }, []);
 
   return { location: state, requestDeviceLocation };

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { getCurrentLocation } from "@/lib/native/location";
+import { PERMISSION_COPY } from "@/lib/native/permissionCopy";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadUserMedia } from "@/lib/media";
@@ -46,11 +48,17 @@ export default function CheckInPage() {
   const requestLocation = async () => {
     setStep("locating");
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 });
-      });
-      const latitude = pos.coords.latitude;
-      const longitude = pos.coords.longitude;
+      // Deliberate check-in: one-shot foreground location, native or browser.
+      const { status, coords } = await getCurrentLocation();
+      if (status !== "ok" || !coords) {
+        throw new Error(
+          status === "denied" || status === "restricted"
+            ? PERMISSION_COPY.location.deniedBody
+            : "Could not get your location.",
+        );
+      }
+      const latitude = coords.latitude;
+      const longitude = coords.longitude;
       setLat(latitude);
       setLng(longitude);
       const { data, error } = await supabase.functions.invoke("reverse-geocode", {
