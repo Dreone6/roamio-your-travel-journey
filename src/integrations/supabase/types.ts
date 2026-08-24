@@ -779,6 +779,45 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          messages: boolean
+          nearby_offers: boolean
+          new_follower: boolean
+          push_enabled: boolean
+          story_activity: boolean
+          travel_alerts: boolean
+          trip_collaboration: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          messages?: boolean
+          nearby_offers?: boolean
+          new_follower?: boolean
+          push_enabled?: boolean
+          story_activity?: boolean
+          travel_alerts?: boolean
+          trip_collaboration?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          messages?: boolean
+          nearby_offers?: boolean
+          new_follower?: boolean
+          push_enabled?: boolean
+          story_activity?: boolean
+          travel_alerts?: boolean
+          trip_collaboration?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -1106,6 +1145,48 @@ export type Database = {
           travel_style?: string | null
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      push_devices: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_model: string | null
+          enabled: boolean
+          id: string
+          last_seen_at: string
+          platform: string
+          provider: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_model?: string | null
+          enabled?: boolean
+          id?: string
+          last_seen_at?: string
+          platform: string
+          provider?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_model?: string | null
+          enabled?: boolean
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          provider?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

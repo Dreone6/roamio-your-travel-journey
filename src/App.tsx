@@ -41,6 +41,7 @@ const BuildWorldPage = lazy(() => import("@/pages/BuildWorldPage"));
 const PassportPage = lazy(() => import("@/pages/PassportPage"));
 const TravelerProfilePage = lazy(() => import("@/pages/TravelerProfilePage"));
 const NearbyPage = lazy(() => import("@/pages/NearbyPage"));
+const NotificationSettingsPage = lazy(() => import("@/pages/NotificationSettingsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, refetchOnWindowFocus: false } },
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/messages/:id" element={<ProtectedRoute><ConversationPage /></ProtectedRoute>} />
               <Route path="/camera" element={<ProtectedRoute><CameraPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
               {/* Stories live in the Home stories row + viewer. */}
               <Route path="/stories" element={<Navigate to="/home" replace />} />
               {/* The real, ranked travel feed lives on Home. */}

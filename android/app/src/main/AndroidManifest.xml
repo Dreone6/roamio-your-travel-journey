@@ -61,6 +61,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Push notifications (Android 13+ runtime prompt; requested only after
+         the user opts in from Settings -> Notifications). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Camera: capture travel memories (photo/video the user takes). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { clearDeviceTokens } from "@/lib/native/push";
 
 interface AuthContextType {
   user: User | null;
@@ -52,6 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Retire this account's push tokens before the session goes away, so a
+    // shared device never receives the previous user's activity.
+    try {
+      await clearDeviceTokens();
+    } catch {
+      /* best effort — never block sign-out */
+    }
     Object.keys(sessionStorage)
       .filter((k) => k.startsWith("roavr_onboarded_"))
       .forEach((k) => sessionStorage.removeItem(k));
