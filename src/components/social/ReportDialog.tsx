@@ -15,7 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export type ReportableType = "user" | "story" | "message" | "trip" | "offer";
+/** Mirrors the `reports.reported_type` check constraint exactly. */
+export type ReportableType = "user" | "story" | "message";
 
 const REASONS = [
   { id: "harassment", label: "Harassment or bullying" },

@@ -92,7 +92,7 @@ token), and purchase history. Nothing is sold; no third-party ad SDK is present.
 | --- | --- |
 | Block a user | Implemented — block-aware RLS hides content both directions |
 | Report a user | Implemented — `ReportDialog` on traveler profiles |
-| Report content (stories, messages, offers) | Dialog is generic (`ReportableType`); wired for users and conversations |
+| Report content (stories, messages) | Dialog is generic over the `reports.reported_type` values; wired for users and conversations |
 | Reports reach a reviewable queue | `public.reports`, admin-only read |
 | Filter/moderate objectionable content | **Manual review only** — no automated classifier |
 | Published terms of service | **Not ready** — `roavr.app/terms` must exist before submission |
