@@ -1,0 +1,11 @@
+[
+  {
+    "//": "TEMPLATE — OWNER CONFIGURATION REQUIRED. Not live. Rename to assetlinks.json and replace the placeholders once the production domain and release signing key exist. Android verifies this over https at https://<domain>/.well-known/assetlinks.json with content-type application/json and no redirects.",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "REPLACE_WITH_ANDROID_APPLICATION_ID",
+      "sha256_cert_fingerprints": ["REPLACE_WITH_RELEASE_SHA256_FINGERPRINT"]
+    }
+  }
+]

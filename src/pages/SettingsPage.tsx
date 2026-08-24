@@ -100,6 +100,12 @@ export default function SettingsPage() {
           desc: "Photo library, bookings",
           onClick: () => navigate("/build-world"),
         },
+        {
+          icon: Shield,
+          label: "Sign-in & Links",
+          desc: "Apple, Google, deep links",
+          onClick: () => navigate("/settings/identity"),
+        },
       ],
     },
     {

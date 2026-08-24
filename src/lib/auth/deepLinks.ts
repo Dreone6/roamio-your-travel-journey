@@ -13,6 +13,8 @@
  * navigated to by hand.
  */
 
+import { identityConfig, isUniversalLinkHost } from "./identityConfig";
+
 export const APP_SCHEME = "roavr";
 export const OAUTH_CALLBACK_PATH = "/auth-callback";
 
@@ -70,15 +72,28 @@ function isAllowedPath(pathname: string) {
  * Turns an inbound URL into a routing decision, or `null` when the link points
  * at nothing we recognise (never navigate blindly on an untrusted URL).
  */
-export function parseDeepLink(input: URL | string): ParsedDeepLink | null {
+export function parseDeepLink(input: URL | string | null | undefined): ParsedDeepLink | null {
+  if (!input) return null;
   let url: URL;
   try {
     url = typeof input === "string" ? new URL(input) : input;
   } catch {
     return null;
   }
+  if (!(url instanceof URL)) return null;
 
   const custom = url.protocol.replace(":", "").toLowerCase() === APP_SCHEME;
+
+  // https links only count when they arrive from a host the owner has declared
+  // for Universal / App Links. Until a production domain is configured the
+  // list is empty and we stay permissive — the path allow-list below is what
+  // actually constrains where a link can go.
+  if (!custom) {
+    if (url.protocol !== "https:") return null;
+    const hosts = identityConfig.universalLinkHosts;
+    if (hosts.length > 0 && !isUniversalLinkHost(url.hostname)) return null;
+  }
+
   // roavr://u/andre parses with host="u" and pathname="/andre".
   let pathname = custom
     ? `/${[url.hostname, url.pathname.replace(/^\//, "")].filter(Boolean).join("/")}`
