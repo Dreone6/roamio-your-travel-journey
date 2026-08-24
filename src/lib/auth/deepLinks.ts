@@ -41,6 +41,7 @@ const ALLOWED_PATTERNS: RegExp[] = [
   /^\/profile$/,
   /^\/notifications$/,
   /^\/settings$/,
+  /^\/settings\/notifications$/,
 ];
 
 export interface ParsedDeepLink {

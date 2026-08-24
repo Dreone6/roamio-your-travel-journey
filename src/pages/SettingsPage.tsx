@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   ArrowLeft, Bell, MapPin, Shield, FileText, Mail, LogOut,
@@ -20,7 +19,6 @@ const PING_SOUNDS = [
 export default function SettingsPage() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(true);
   const [locationStatus, setLocationStatus] = useState<string>("unknown");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -67,9 +65,9 @@ export default function SettingsPage() {
       items: [
         {
           icon: Bell,
-          label: "Push Notifications",
-          desc: "Trip reminders & offers",
-          right: <Switch checked={notifications} onCheckedChange={setNotifications} />,
+          label: "Notifications",
+          desc: "Messages, follows, trips",
+          onClick: () => navigate("/settings/notifications"),
         },
         {
           icon: MapPin,
