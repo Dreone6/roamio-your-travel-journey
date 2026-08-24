@@ -7,7 +7,8 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
-import { browserFileSource, demoSource, nativePhotoLibrarySource } from "@/lib/buildworld/mediaSource";
+import { browserFileSource, demoSource, nativePhotoLibrarySource, pickNativeMedia } from "@/lib/buildworld/mediaSource";
+import { PERMISSION_COPY } from "@/lib/native/permissionCopy";
 import { extractMetadata } from "@/lib/buildworld/metadata";
 import { buildDiscoveredTrips, formatRange, summarize, mergeTrips } from "@/lib/buildworld/cluster";
 import { saveDiscoveredTrips } from "@/lib/buildworld/persist";
