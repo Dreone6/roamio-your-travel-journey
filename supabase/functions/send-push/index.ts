@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ inApp: true, push: "sent", sent, devices: devices.length }), {
+    return new Response(JSON.stringify({ inApp: true, push: "sent", sent, devices: devices!.length }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (e) {
