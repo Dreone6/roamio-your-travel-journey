@@ -42,6 +42,7 @@ const PassportPage = lazy(() => import("@/pages/PassportPage"));
 const TravelerProfilePage = lazy(() => import("@/pages/TravelerProfilePage"));
 const NearbyPage = lazy(() => import("@/pages/NearbyPage"));
 const NotificationSettingsPage = lazy(() => import("@/pages/NotificationSettingsPage"));
+const IdentityDiagnosticsPage = lazy(() => import("@/pages/IdentityDiagnosticsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, refetchOnWindowFocus: false } },
