@@ -28,7 +28,7 @@ export default function Auth() {
     );
   }
 
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to={consumeReturnTo() ?? "/home"} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
