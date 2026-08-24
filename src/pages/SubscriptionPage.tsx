@@ -3,17 +3,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Check, Crown, Zap, Sparkles, Star, ArrowRight, X,
-  Globe, Shield, Camera, Users, MessageCircle, Map, Trophy,
+  Shield, Info, RotateCcw, ExternalLink,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { PLANS, FREE_LIMITS } from "@/services/subscriptions";
-
-interface Subscription {
-  tier: string;
-  status: string;
-  current_period_end: string | null;
-}
+import { useSubscription } from "@/hooks/useSubscription";
+import { billing as billingStore } from "@/lib/billing/store";
+import { productKeyFor, type BillingAvailability, type StoreProduct } from "@/lib/billing/types";
 
 interface UsageStats {
   tripsUsed: number;
@@ -25,23 +22,26 @@ export default function SubscriptionPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const { entitlement, loading: entitlementLoading, refresh } = useSubscription();
   const [usage, setUsage] = useState<UsageStats>({ tripsUsed: 0, checkInsThisMonth: 0, aiPlansThisMonth: 0 });
   const [loading, setLoading] = useState(true);
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
+  const [availability, setAvailability] = useState<BillingAvailability | null>(null);
+  const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) loadData();
   }, [user]);
 
+  useEffect(() => {
+    billingStore.availability().then(async (a) => {
+      setAvailability(a);
+      if (a.available) setProducts(await billingStore.listProducts());
+    });
+  }, []);
+
   const loadData = async () => {
-    const { data: sub } = await supabase.from("subscriptions").select("*").eq("user_id", user!.id).single();
-    if (sub) {
-      setSubscription(sub as Subscription);
-    } else {
-      await supabase.from("subscriptions").insert({ user_id: user!.id, tier: "free" as any, status: "active" });
-      setSubscription({ tier: "free", status: "active", current_period_end: null });
-    }
     const { count: tripCount } = await supabase.from("trips").select("id", { count: "exact", head: true }).eq("user_id", user!.id);
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -51,14 +51,55 @@ export default function SubscriptionPage() {
     setLoading(false);
   };
 
-  const handleUpgrade = (tierId: string) => {
-    toast({
-      title: "Coming soon!",
-      description: `Upgrade to ${tierId === "plus" ? "Roavr Plus" : "Roavr Pro"} will be available when payment processing is configured.`,
-    });
+  /**
+   * Purchases always go through the store, then through server-side receipt
+   * verification. Nothing here ever marks the account premium locally.
+   */
+  const handleUpgrade = async (tierId: string) => {
+    if (tierId !== "plus" && tierId !== "pro") return;
+    setBusy(tierId);
+    try {
+      const outcome = await billingStore.purchase(productKeyFor(tierId, billing));
+      if (outcome.status === "entitled") {
+        await refresh();
+        toast({ title: "You're upgraded", description: `Roavr ${tierId === "plus" ? "Plus" : "Pro"} is now active on your account.` });
+      } else if (outcome.status === "pending") {
+        toast({ title: "Purchase pending", description: "The store is still processing this payment. Your plan updates automatically once it clears." });
+      } else if (outcome.status === "cancelled") {
+        /* user backed out — no message needed */
+      } else if (outcome.status === "unavailable") {
+        toast({ title: "Not available yet", description: outcome.message });
+      } else {
+        toast({ title: "Couldn't verify purchase", description: outcome.message, variant: "destructive" });
+      }
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const currentTier = subscription?.tier || "free";
+  const handleRestore = async () => {
+    setBusy("restore");
+    try {
+      const outcome = await billingStore.restore();
+      if (outcome.status === "restored") {
+        await refresh();
+        toast({ title: "Purchases restored", description: `Roavr ${outcome.tier === "plus" ? "Plus" : "Pro"} is active again.` });
+      } else if (outcome.status === "nothing_to_restore") {
+        toast({ title: "Nothing to restore", description: "No active Roavr subscription was found on this store account." });
+      } else if (outcome.status === "unavailable") {
+        toast({ title: "Not available yet", description: outcome.message });
+      } else {
+        toast({ title: "Couldn't verify purchase", description: outcome.message, variant: "destructive" });
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const manageUrl = billingStore.manageSubscriptionUrl();
+  const currentTier = entitlement.tier;
+  const storePriceFor = (tierId: string) =>
+    products.find((p) => p.tier === tierId && p.period === billing)?.displayPrice ?? null;
 
   const TIER_CARDS = [
     {
