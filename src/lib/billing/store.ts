@@ -18,6 +18,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { platform } from "@/lib/native/platform";
+import type { SubscriptionTier } from "@/data/types";
 import {
   PRODUCT_IDS,
   PRODUCT_TIER,
