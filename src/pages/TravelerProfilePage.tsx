@@ -311,6 +311,15 @@ export default function TravelerProfilePage() {
       <div className="h-16" />
 
       <PlaceDetailSheet place={place} open={sheetOpen} onOpenChange={setSheetOpen} />
+      {targetId && (
+        <ReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          targetType="user"
+          targetId={targetId}
+          targetLabel={profile.name ?? "traveler"}
+        />
+      )}
     </Shell>
   );
 }
