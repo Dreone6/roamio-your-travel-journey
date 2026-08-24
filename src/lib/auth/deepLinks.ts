@@ -13,6 +13,8 @@
  * navigated to by hand.
  */
 
+import { identityConfig, isUniversalLinkHost } from "./identityConfig";
+
 export const APP_SCHEME = "roavr";
 export const OAUTH_CALLBACK_PATH = "/auth-callback";
 
