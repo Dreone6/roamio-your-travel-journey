@@ -7,7 +7,8 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
-import { browserFileSource, demoSource, nativePhotoLibrarySource } from "@/lib/buildworld/mediaSource";
+import { browserFileSource, demoSource, nativePhotoLibrarySource, pickNativeMedia } from "@/lib/buildworld/mediaSource";
+import { PERMISSION_COPY } from "@/lib/native/permissionCopy";
 import { extractMetadata } from "@/lib/buildworld/metadata";
 import { buildDiscoveredTrips, formatRange, summarize, mergeTrips } from "@/lib/buildworld/cluster";
 import { saveDiscoveredTrips } from "@/lib/buildworld/persist";
@@ -322,6 +323,40 @@ function ScanStep({
   }, [demoMode, run, onCancel]);
 
   const pick = async () => {
+    // Native picker on iOS/Android (selected-photos access only), browser file
+    // picker on web. Both feed the SAME downstream pipeline.
+    if (nativePhotoLibrarySource.isAvailable()) {
+      const result = await pickNativeMedia();
+      if (result.status === "denied" || result.status === "restricted") {
+        toast.error(PERMISSION_COPY.photos.deniedTitle, {
+          description:
+            result.status === "restricted"
+              ? "Photo access is blocked by this device's restrictions. You can still add places manually."
+              : PERMISSION_COPY.photos.deniedBody,
+        });
+        onCancel();
+        return;
+      }
+      if (result.status === "cancelled") { toast.info("No photos selected"); return; }
+      if (result.status === "unreadable" || result.status === "unavailable") {
+        toast.error("Couldn't read those photos", { description: "Please try a different selection." });
+        onCancel();
+        return;
+      }
+      if (result.failed > 0) {
+        toast.info(`${result.failed} ${result.failed === 1 ? "photo" : "photos"} couldn't be read`, {
+          description: "They were skipped — the rest are being scanned.",
+        });
+      }
+      if (result.limited) {
+        toast.info("Scanning your selected photos", {
+          description: "Roavr only sees the photos you chose. You can add more any time.",
+        });
+      }
+      await run(result.items);
+      return;
+    }
+
     try {
       const items = await browserFileSource.pickMedia();
       if (items.length === 0) { toast.info("No photos selected"); return; }
@@ -331,6 +366,7 @@ function ScanStep({
       onCancel();
     }
   };
+
 
   if (!demoMode && !started) {
     return (

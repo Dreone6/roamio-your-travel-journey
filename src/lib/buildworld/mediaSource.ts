@@ -1,12 +1,19 @@
 /**
- * Media selection layer — the ONLY browser-coupled stage of Build My World.
+ * Media selection layer — the ONLY device-coupled stage of Build My World.
  *
- * Replace/augment with a Capacitor implementation later:
- *   export const nativePhotoLibrarySource: MediaSource = { id: "native", ... }
- * Everything downstream consumes `MediaItem[]` and stays unchanged.
+ * `nativePhotoLibrarySource` (iOS/Android) and `browserFileSource` (web) both
+ * emit `MediaItem[]`; every downstream stage — metadata extraction,
+ * normalization, clustering, review, dedupe, persistence, World reveal — is
+ * shared and untouched by which source produced the items.
  */
 import type { MediaItem, MediaSource } from "./types";
 import { DEMO_MEDIA } from "./demoDataset";
+import {
+  isNativePhotoLibraryAvailable,
+  pickNativePhotos,
+  type NativePickResult,
+} from "@/lib/native/photos";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -63,13 +70,26 @@ export const demoSource: MediaSource = {
   pickMedia: async () => DEMO_MEDIA.map((m) => ({ ...m, id: uid() })),
 };
 
-/** Native photo library — not wired yet, kept so callers can feature-detect. */
+/**
+ * Native photo library (Capacitor). Uses the OS picker so only the assets the
+ * user selected are ever readable — Roavr never requests full-library access.
+ * The richer result (denied / limited / truncated) is available via
+ * `pickNativeMedia`; `pickMedia` keeps the plain MediaSource contract.
+ */
 export const nativePhotoLibrarySource: MediaSource = {
   id: "native",
   label: "Scan my photo library",
-  isAvailable: () => false,
-  pickMedia: async () => [],
+  isAvailable: () => isNativePhotoLibraryAvailable(),
+  pickMedia: async () => (await pickNativePhotos()).items,
 };
+
+/** Full-fidelity native pick — the UI needs the status to explain outcomes. */
+export async function pickNativeMedia(
+  onProgress?: (done: number, total: number) => void,
+): Promise<NativePickResult> {
+  return pickNativePhotos(onProgress);
+}
+
 
 export const MEDIA_SOURCES: MediaSource[] = [
   nativePhotoLibrarySource,
