@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import LandingPage from "@/pages/LandingPage";
 import miloMascot from "@/assets/roavr-pin.png";
+import { consumeReturnTo } from "@/lib/auth/returnTo";
 
 export default function AuthGate() {
   const { user, loading } = useAuth();
