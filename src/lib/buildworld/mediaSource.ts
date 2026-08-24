@@ -70,13 +70,26 @@ export const demoSource: MediaSource = {
   pickMedia: async () => DEMO_MEDIA.map((m) => ({ ...m, id: uid() })),
 };
 
-/** Native photo library — not wired yet, kept so callers can feature-detect. */
+/**
+ * Native photo library (Capacitor). Uses the OS picker so only the assets the
+ * user selected are ever readable — Roavr never requests full-library access.
+ * The richer result (denied / limited / truncated) is available via
+ * `pickNativeMedia`; `pickMedia` keeps the plain MediaSource contract.
+ */
 export const nativePhotoLibrarySource: MediaSource = {
   id: "native",
   label: "Scan my photo library",
-  isAvailable: () => false,
-  pickMedia: async () => [],
+  isAvailable: () => isNativePhotoLibraryAvailable(),
+  pickMedia: async () => (await pickNativePhotos()).items,
 };
+
+/** Full-fidelity native pick — the UI needs the status to explain outcomes. */
+export async function pickNativeMedia(
+  onProgress?: (done: number, total: number) => void,
+): Promise<NativePickResult> {
+  return pickNativePhotos(onProgress);
+}
+
 
 export const MEDIA_SOURCES: MediaSource[] = [
   nativePhotoLibrarySource,
