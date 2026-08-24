@@ -52,7 +52,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) {
+    // Preserve where they were headed so sign-in returns them there.
+    saveReturnTo(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to="/" replace />;
+  }
   if (onboardingCompleted === false) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;
