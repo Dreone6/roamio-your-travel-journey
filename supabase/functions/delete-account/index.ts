@@ -26,15 +26,29 @@ const OWNED_TABLES: Array<[table: string, column: string]> = [
   ["push_devices", "user_id"],
   ["notification_preferences", "user_id"],
   ["notifications", "user_id"],
+  ["story_views", "viewer_id"],
+  ["story_reactions", "user_id"],
   ["stories", "user_id"],
+  ["message_reactions", "user_id"],
+  ["offer_interactions", "user_id"],
+  ["trip_saved_places", "user_id"],
+  ["trip_shares", "user_id"],
+  ["itinerary_item_votes", "user_id"],
+  ["itinerary_items", "user_id"],
+  ["bookings", "user_id"],
+  ["flight_alerts", "user_id"],
+  ["live_locations", "user_id"],
+  ["trusted_contacts", "user_id"],
   ["check_ins", "user_id"],
+  ["memories", "user_id"],
   ["badges", "user_id"],
   ["challenges", "user_id"],
   ["checklists", "user_id"],
   ["places_visited", "user_id"],
-  ["saved_places", "user_id"],
   ["trips", "user_id"],
   ["reports", "reporter_id"],
+  ["user_privacy_settings", "user_id"],
+  ["user_roles", "user_id"],
   ["subscriptions", "user_id"],
   ["profiles", "id"],
 ];
@@ -93,10 +107,12 @@ Deno.serve(async (req) => {
   // 2. Relationship + messaging rows (two-sided keys)
   const twoSided: Array<[string, string[]]> = [
     ["follows", ["follower_id", "following_id"]],
+    ["user_follows", ["follower_id", "following_id"]],
     ["blocked_users", ["blocker_id", "blocked_id"]],
     ["messages", ["sender_id"]],
     ["conversation_participants", ["user_id"]],
     ["trip_members", ["user_id"]],
+    ["conversations", ["created_by"]],
   ];
   for (const [table, cols] of twoSided) {
     for (const col of cols) {
