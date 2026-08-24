@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppShell from "@/components/AppShell";
 import AuthGate from "@/components/AuthGate";
+import NativeLifecycle from "@/components/NativeLifecycle";
 import RouteFallback from "@/components/RouteFallback";
 import Auth from "@/pages/Auth";
 import HomePage from "@/pages/HomePage";
