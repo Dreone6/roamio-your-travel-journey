@@ -89,3 +89,22 @@ single source for the purpose strings mirrored into `Info.plist`.
 - Android `AndroidManifest.xml`: `CAMERA`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`,
   `READ_EXTERNAL_STORAGE` (maxSdkVersion 32), `ACCESS_COARSE_LOCATION`,
   `ACCESS_FINE_LOCATION`. No `ACCESS_BACKGROUND_LOCATION`.
+
+## Authentication & deep links (native)
+
+| Concern | Implementation | Status |
+| --- | --- | --- |
+| Email auth | Supabase `signUp` / `signInWithPassword` / `signOut` (`AuthContext`) | Unchanged, works web + native WebView |
+| Session restore | Supabase `persistSession` + `autoRefreshToken`; resume re-validates via `getSession()` | Works |
+| Apple / Google | `src/lib/auth/oauth.ts` — web: managed broker; native: Supabase OAuth URL in system browser (`@capacitor/browser`) returning to `roavr://auth-callback`, PKCE exchanged with `exchangeCodeForSession` | Code complete, provider credentials pending |
+| Deep links | `src/lib/auth/deepLinks.ts` allow-list + `useAppLifecycle` routing; unauthenticated protected links park at `/auth` with the destination preserved (`src/lib/auth/returnTo.ts`) | Custom scheme `roavr://` registered on iOS + Android |
+| Universal Links / App Links | iOS Associated Domains entitlement + `apple-app-site-association`; Android `assetlinks.json` + intent-filter (commented out in the manifest) | NOT configured / NOT verified |
+| Session storage | Supabase's own storage inside the app-sandboxed WebView. No custom token encryption, no service-role key on device. Only the non-sensitive return path is written to Preferences | Works |
+
+### Owner / console steps still required
+
+**Apple** — Apple Developer account: create the Services ID, enable Sign in with Apple on the App ID matching the final bundle identifier, create the `.p8` key (note Key ID + Team ID), add the Supabase callback URL as a Return URL, then enter Client ID + generated client-secret JWT in Cloud → Users → Auth Settings → Apple (or switch to managed Apple credentials).
+
+**Google** — Google Cloud console: OAuth consent screen, Web client (for the Supabase callback URL), plus iOS and Android OAuth clients bound to the final bundle ID / applicationId and the release SHA-256 signing fingerprint. Enter the web client ID/secret in Cloud auth settings (or use managed Google credentials).
+
+**Both** — the final bundle identifier must replace the temporary `app.lovable.p5f9b5ca8aa1d4b7781099bda94ab9271`, and `roavr://auth-callback` must be added to Supabase's additional redirect URL allow-list.

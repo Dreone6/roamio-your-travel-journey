@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Compass } from "lucide-react";
+import { saveReturnTo } from "@/lib/auth/returnTo";
 
 const cacheKey = (id: string) => `roavr_onboarded_${id}`;
 
@@ -52,7 +53,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) {
+    // Preserve where they were headed so sign-in returns them there.
+    saveReturnTo(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to="/" replace />;
+  }
   if (onboardingCompleted === false) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;

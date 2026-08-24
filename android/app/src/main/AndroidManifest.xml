@@ -22,6 +22,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Custom scheme deep links: roavr://u/<handle>, roavr://trips/<id>,
+                 roavr://i/<token>, and the OAuth return roavr://auth-callback.
+                 Works without any domain configuration. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="roavr" />
+            </intent-filter>
+
+            <!-- Android App Links (https). INACTIVE until the production domain is
+                 decided and /.well-known/assetlinks.json is published with the
+                 release signing certificate fingerprint. Uncomment and set the
+                 host once verified; autoVerify will fail silently otherwise.
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="REPLACE_WITH_PRODUCTION_DOMAIN" />
+            </intent-filter>
+            -->
+
         </activity>
 
         <provider

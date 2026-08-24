@@ -76,5 +76,23 @@
 	<string>Roavr records audio when you capture a video clip for a story.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Find relevant experiences nearby when you choose. Roavr checks your location only when you tap for it, never in the background.</string>
+	<!-- Deep links. The custom scheme works today (no domain setup required)
+	     and is the OAuth return target for Sign in with Apple / Google.
+	     Universal Links additionally require an `applinks:<domain>` entry in the
+	     app's Associated Domains capability (Xcode, signing team needed) and an
+	     apple-app-site-association file served from the domain. NOT configured. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>roavr</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

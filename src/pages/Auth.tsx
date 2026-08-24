@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { startOAuth } from "@/lib/auth/oauth";
+import { consumeReturnTo } from "@/lib/auth/returnTo";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { lovable } from "@/integrations/lovable";
 import miloMascot from "@/assets/roavr-pin.png";
 
 export default function Auth() {
@@ -26,7 +27,7 @@ export default function Auth() {
     );
   }
 
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to={consumeReturnTo() ?? "/home"} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +51,8 @@ export default function Auth() {
   };
 
   const handleOAuth = async (provider: "google" | "apple") => {
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
-    });
+    // Web -> managed OAuth broker; native -> system browser + roavr:// return.
+    const result = await startOAuth(provider);
     if (result.error) {
       toast({
         title: `${provider === "google" ? "Google" : "Apple"} sign-in failed`,
