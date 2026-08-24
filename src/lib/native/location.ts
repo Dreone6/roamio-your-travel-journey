@@ -98,7 +98,7 @@ function browserPosition(): Promise<LocationResult> {
 export async function getCurrentLocation(): Promise<LocationResult> {
   const access = await ensureLocationAccess();
   if (!isUsable(access)) {
-    return { status: access === "restricted" ? "restricted" : access, coords: null };
+    return { status: access === "granted" ? "error" : access, coords: null };
   }
 
   if (platform.isNative) {
