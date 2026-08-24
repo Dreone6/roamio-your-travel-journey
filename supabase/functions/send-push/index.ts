@@ -131,25 +131,17 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json();
-    const recipientId: string = payload.userId;
-    const type: string = payload.type;
-    const title: string = payload.title;
-    const body: string = payload.body ?? "";
-    const data: Record<string, string> = payload.data ?? {};
     actorId = isService ? payload.actorId ?? null : actorId;
 
-    if (!recipientId || !type || !title) {
-      return new Response(JSON.stringify({ error: "userId, type and title are required" }), {
+    const parsed = validatePayload(payload);
+    if (!parsed.ok) {
+      return new Response(JSON.stringify({ error: parsed.error }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
-    if (!(type in PREF_BY_TYPE)) {
-      return new Response(JSON.stringify({ error: `unknown notification type: ${type}` }), {
-        status: 400,
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
+    const { recipientId, type, title, body, data } = parsed;
+
     if (actorId === recipientId) {
       return new Response(JSON.stringify({ skipped: "self" }), {
         headers: { ...cors, "Content-Type": "application/json" },
@@ -169,6 +161,33 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- private-account gate for relationship-scoped activity ---
+    if (requiresRelationship(type)) {
+      const [{ data: isPrivate }, { data: actorFollows }, { data: recipientFollows }] =
+        await Promise.all([
+          admin.rpc("profile_is_private", { _uid: recipientId }),
+          actorId
+            ? admin.rpc("follows_accepted", { _follower: actorId, _following: recipientId })
+            : Promise.resolve({ data: false }),
+          actorId
+            ? admin.rpc("follows_accepted", { _follower: recipientId, _following: actorId })
+            : Promise.resolve({ data: false }),
+        ]);
+
+      const skip = relationshipSkip({
+        type,
+        actorId,
+        recipientPrivate: !!isPrivate,
+        actorFollowsRecipient: !!actorFollows,
+        recipientFollowsActor: !!recipientFollows,
+      });
+      if (skip) {
+        return new Response(JSON.stringify({ skipped: skip }), {
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // --- in-app notification is always the record of truth ---
     await admin.from("notifications").insert({
       user_id: recipientId,
@@ -179,18 +198,11 @@ Deno.serve(async (req) => {
       data,
     });
 
-    // --- preference gate ---
     const { data: prefRow } = await admin
       .from("notification_preferences")
       .select("*")
       .eq("user_id", recipientId)
       .maybeSingle();
-    const prefs = { ...DEFAULT_PREFS, ...(prefRow ?? {}) };
-    if (!prefs.push_enabled || !prefs[PREF_BY_TYPE[type]]) {
-      return new Response(JSON.stringify({ inApp: true, push: "muted" }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
 
     const { data: devices } = await admin
       .from("push_devices")
@@ -198,35 +210,36 @@ Deno.serve(async (req) => {
       .eq("user_id", recipientId)
       .eq("enabled", true);
 
-    if (!devices?.length) {
-      return new Response(JSON.stringify({ inApp: true, push: "no_devices" }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
-
     const saRaw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
-    if (!saRaw) {
+    const decision = pushDecision({
+      type,
+      prefs: (prefRow ?? {}) as Record<string, unknown>,
+      deviceCount: devices?.length ?? 0,
+      fcmConfigured: !!saRaw,
+    });
+
+    if (decision !== "send") {
       return new Response(
         JSON.stringify({
           inApp: true,
-          push: "not_configured",
-          required: ["FCM_SERVICE_ACCOUNT_JSON"],
+          push: decision,
+          ...(decision === "not_configured" ? { required: ["FCM_SERVICE_ACCOUNT_JSON"] } : {}),
         }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    const sa = JSON.parse(saRaw);
+    const sa = JSON.parse(saRaw!);
     const accessToken = await fcmAccessToken(sa);
     let sent = 0;
-    for (const device of devices) {
+    for (const device of devices!) {
       const result = await sendViaFcm(sa.project_id, accessToken, device.token, title, body, {
         ...data,
         type,
       });
       if (result.ok) sent++;
       // 404/403 means the token is dead — retire it instead of retrying forever.
-      else if (result.status === 404 || result.status === 403) {
+      else if (isDeadToken(result.status)) {
         await admin.from("push_devices").delete().eq("id", device.id);
       }
     }
