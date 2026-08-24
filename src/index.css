@@ -207,6 +207,15 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Native keyboard: fixed composers/footers lift above the keyboard.
+     --keyboard-height is set by the Capacitor keyboard listeners; 0 on web. */
+  .keyboard-inset-bottom {
+    padding-bottom: calc(var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px));
+  }
+  html.keyboard-open .hide-on-keyboard {
+    display: none;
+  }
+
   /* Section header pattern */
   .section-header {
     @apply flex items-center justify-between mb-3;
