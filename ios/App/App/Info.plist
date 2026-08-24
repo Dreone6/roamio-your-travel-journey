@@ -67,14 +67,14 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Roavr uses the camera to capture travel moments you post to your stories and map.</string>
+	<string>Capture travel memories. Roavr uses the camera only when you take a photo or video yourself.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Roavr reads photo location and date metadata to build your travel map.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Roavr saves captured travel photos back to your photo library.</string>
+	<string>Build your World from places you've been. Roavr reads only the location and date stored inside the photos you choose.</string>
+	<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Roavr records audio when you capture a video clip for a story.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Roavr uses your location to place trip pins and show nearby local offers.</string>
+	<string>Find relevant experiences nearby when you choose. Roavr checks your location only when you tap for it, never in the background.</string>
 </dict>
 </plist>
