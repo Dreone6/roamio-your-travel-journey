@@ -113,10 +113,8 @@ export default function ProfilePage() {
 
   const handleShare = async () => {
     const url = `${window.location.origin}/profile`;
-    try {
-      if (navigator.share) await navigator.share({ title: `${identity.name} on Roavr`, url });
-      else { await navigator.clipboard.writeText(url); toast.success("Profile link copied"); }
-    } catch { /* dismissed */ }
+    const result = await native.share({ title: `${identity.name} on Roavr`, url });
+    if (result === "copied") toast.success("Profile link copied");
   };
 
   const hasCover = highlights[0]?.img;

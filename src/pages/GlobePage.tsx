@@ -153,10 +153,8 @@ export default function GlobePage() {
 
   const handleShare = async () => {
     const url = `${window.location.origin}/globe`;
-    try {
-      if (navigator.share) await navigator.share({ title: "My Roavr world", url });
-      else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
-    } catch { /* user dismissed */ }
+    const result = await native.share({ title: "My Roavr world", url });
+    if (result === "copied") toast.success("Link copied");
   };
 
   const hasPlaces = world.places.length > 0;
