@@ -5,6 +5,7 @@
  * store via `useTravelIdentity`. One point per city (never one per photo), so
  * the globe stays cheap no matter how large a travel history gets.
  */
+import { native } from "@/lib/native";
 import { useState, useMemo, Suspense, lazy, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ensureLocationPermission } from "@/lib/permissions";

@@ -1,3 +1,4 @@
+import { native } from "@/lib/native";
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
