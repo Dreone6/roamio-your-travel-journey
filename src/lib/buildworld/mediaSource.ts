@@ -1,12 +1,19 @@
 /**
- * Media selection layer — the ONLY browser-coupled stage of Build My World.
+ * Media selection layer — the ONLY device-coupled stage of Build My World.
  *
- * Replace/augment with a Capacitor implementation later:
- *   export const nativePhotoLibrarySource: MediaSource = { id: "native", ... }
- * Everything downstream consumes `MediaItem[]` and stays unchanged.
+ * `nativePhotoLibrarySource` (iOS/Android) and `browserFileSource` (web) both
+ * emit `MediaItem[]`; every downstream stage — metadata extraction,
+ * normalization, clustering, review, dedupe, persistence, World reveal — is
+ * shared and untouched by which source produced the items.
  */
 import type { MediaItem, MediaSource } from "./types";
 import { DEMO_MEDIA } from "./demoDataset";
+import {
+  isNativePhotoLibraryAvailable,
+  pickNativePhotos,
+  type NativePickResult,
+} from "@/lib/native/photos";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
