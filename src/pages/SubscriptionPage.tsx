@@ -278,9 +278,12 @@ export default function SubscriptionPage() {
           {TIER_CARDS.map((tier) => {
             const isCurrent = currentTier === tier.id;
             const Icon = tier.icon;
-            const price = billing === "yearly" && tier.priceYearly > 0
-              ? (tier.priceYearly / 12).toFixed(2)
-              : tier.priceMonthly.toFixed(2);
+            // Prefer the store's localized price whenever the store answered.
+            const price = storePriceFor(tier.id) ?? (
+              billing === "yearly" && tier.priceYearly > 0
+                ? `$${(tier.priceYearly / 12).toFixed(2)}`
+                : `$${tier.priceMonthly.toFixed(2)}`
+            );
             const isUpgrade = !isCurrent && tier.id !== "free";
 
             return (
@@ -405,11 +408,21 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
+        {/* Restore purchases — required by App Store review guideline 3.1.1 */}
+        <button
+          onClick={handleRestore}
+          disabled={busy === "restore"}
+          className="w-full rounded-xl dark-card-elevated py-3 text-[12px] font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          {busy === "restore" ? "Checking your store account…" : "Restore Purchases"}
+        </button>
+
         {/* Trust badges */}
         <div className="dark-card rounded-2xl p-4 space-y-3 mt-2">
           <div className="flex items-center justify-center gap-6">
             {[
-              { icon: Shield, label: "Secure" },
+              { icon: Shield, label: "Store-verified" },
               { icon: X, label: "No lock-in" },
               { icon: Star, label: "Cancel anytime" },
             ].map(({ icon: Icon, label }) => (
@@ -420,8 +433,13 @@ export default function SubscriptionPage() {
             ))}
           </div>
           <p className="text-[10px] text-dark-muted text-center leading-relaxed">
-            All plans include a 7-day free trial. Upgrade, downgrade, or cancel at any time.
+            Payment is charged to your App Store or Google Play account. Subscriptions renew automatically unless
+            cancelled at least 24 hours before the period ends; manage or cancel in your store account settings.
           </p>
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={() => navigate("/privacy")} className="text-[10px] text-dark-muted underline">Privacy</button>
+            <a href="https://roavr.app/terms" target="_blank" rel="noreferrer" className="text-[10px] text-dark-muted underline">Terms of Use</a>
+          </div>
         </div>
       </div>
     </div>
