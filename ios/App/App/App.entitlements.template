@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TEMPLATE — OWNER CONFIGURATION REQUIRED. This file is NOT wired into the Xcode
+  project, so Universal Links and Sign in with Apple are inert until the owner
+  acts. Do not rename it to App.entitlements and commit it as-is: an unverified
+  applinks: domain makes iOS silently fall back to Safari.
+
+  Steps:
+    1. Xcode -> App target -> Signing & Capabilities.
+    2. Add "Sign in with Apple".
+    3. Add "Associated Domains" and enter applinks:REPLACE_WITH_PRODUCTION_DOMAIN
+    4. Publish /.well-known/apple-app-site-association on that domain
+       (see public/.well-known/apple-app-site-association.template.json).
+    5. Set VITE_UNIVERSAL_LINK_HOSTS and VITE_ASSOCIATED_DOMAINS_VERIFIED=true.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:REPLACE_WITH_PRODUCTION_DOMAIN</string>
+	</array>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>
