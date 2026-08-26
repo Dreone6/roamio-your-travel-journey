@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Users, MapPin, Tag, BarChart3, Plus, Search,
+  Loader2, Users, MapPin, Tag, BarChart3, Plus, Search, Bell,
   ArrowLeft, Eye, Edit2, Power, PowerOff, ChevronRight, TrendingUp
 } from "lucide-react";
 
