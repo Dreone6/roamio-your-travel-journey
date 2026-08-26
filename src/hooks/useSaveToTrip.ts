@@ -74,7 +74,7 @@ export function useSaveToTrip() {
       setBusyId(target.sourceId);
       try {
         const all = await listTrips(user.id);
-        const active = all.filter((t) => t.status !== "completed" && t.status !== "cancelled");
+        const active = all.filter((t) => t.status !== "completed");
         const match = target.city
           ? active.find((t) => norm(t.destination).includes(norm(target.city!)))
           : undefined;
