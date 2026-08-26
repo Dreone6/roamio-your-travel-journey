@@ -43,6 +43,7 @@ const TravelerProfilePage = lazy(() => import("@/pages/TravelerProfilePage"));
 const NearbyPage = lazy(() => import("@/pages/NearbyPage"));
 const NotificationSettingsPage = lazy(() => import("@/pages/NotificationSettingsPage"));
 const IdentityDiagnosticsPage = lazy(() => import("@/pages/IdentityDiagnosticsPage"));
+const PushDiagnosticsPage = lazy(() => import("@/pages/PushDiagnosticsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, refetchOnWindowFocus: false } },
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+              <Route path="/admin/push" element={<ProtectedRoute><PushDiagnosticsPage /></ProtectedRoute>} />
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
