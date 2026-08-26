@@ -51,6 +51,12 @@ export default function AdminPanel() {
       <div className="border-b border-border bg-card px-5 py-3 flex items-center gap-3">
         <button onClick={() => navigate("/")} className="text-muted-foreground"><ArrowLeft className="h-5 w-5" /></button>
         <h1 className="font-heading text-lg font-semibold text-foreground">Admin Panel</h1>
+        <button
+          onClick={() => navigate("/admin/push")}
+          className="ml-auto flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Bell className="h-3.5 w-3.5" /> Push status
+        </button>
       </div>
 
       <div className="flex overflow-x-auto border-b border-border bg-card">
