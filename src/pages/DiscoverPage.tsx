@@ -129,6 +129,8 @@ export default function DiscoverPage() {
           />
         </>
       )}
+
+      {!loading && <MasonryDiscovery />}
     </div>
   );
 }
