@@ -25,6 +25,7 @@ export default function TravelFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [followsNobody, setFollowsNobody] = useState(false);
+  const saver = useSaveToTrip();
 
   useEffect(() => {
     if (!user) return;
@@ -103,7 +104,18 @@ export default function TravelFeed() {
       ) : (
         <>
           <div className="mt-3 space-y-3">
-            {items.map((item) => <FeedCard key={item.id} item={item} />)}
+            {items.map((item) => {
+              const sourceId = feedItemToSave(item).sourceId;
+              return (
+                <FeedCard
+                  key={item.id}
+                  item={item}
+                  onSave={saver.save}
+                  saved={saver.isSaved(sourceId)}
+                  saveBusy={saver.busyId === sourceId}
+                />
+              );
+            })}
           </div>
           {hasMore && (
             <button
