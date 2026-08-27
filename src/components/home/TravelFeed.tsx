@@ -129,6 +129,14 @@ export default function TravelFeed() {
           )}
         </>
       )}
+
+      <SaveToTripSheet
+        open={saver.sheetOpen}
+        onOpenChange={saver.setSheetOpen}
+        trips={saver.trips}
+        target={saver.pending}
+        onChoose={saver.choose}
+      />
     </section>
   );
 }
