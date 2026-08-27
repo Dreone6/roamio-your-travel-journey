@@ -10,6 +10,8 @@ import { askRoavr, type PlannerResult } from "@/lib/ai/planner";
 import { commitSuggestedDay, addItems } from "@/lib/trips/api";
 import type { ItineraryItem, SuggestedDay, SuggestedItem, Trip } from "@/lib/trips/types";
 import { useAuth } from "@/contexts/AuthContext";
+import MiloLoading from "@/components/states/MiloLoading";
+
 
 interface Props {
   trip: Trip | null;
