@@ -169,11 +169,8 @@ export default function AskRoavrPanel({
         ))}
       </div>
 
-      {busy && (
-        <p className="mt-4" style={{ color: "#94A3B8", fontSize: 13 }}>
-          Roavr is thinking through {trip?.destination ?? "your request"}…
-        </p>
-      )}
+      {busy && <MiloLoading className="mt-5" context={trip?.destination} />}
+
 
       {result?.status === "unavailable" && (
         <div className="mt-4 rounded-2xl p-4" style={{ background: "#1A2236", border: "1px solid #1E2A3F" }}>
