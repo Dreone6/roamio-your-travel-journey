@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Users, Plane, MapPin, Sparkles, Compass } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import TravelerRow from "@/components/social/TravelerRow";
+import MasonryDiscovery from "@/components/social/MasonryDiscovery";
 import { loadDiscovery } from "@/lib/social/discovery";
 import { EMPTY_DISCOVER, type DiscoverSections, type TravelerSummary } from "@/lib/social/types";
 
@@ -128,6 +129,8 @@ export default function DiscoverPage() {
           />
         </>
       )}
+
+      {!loading && <MasonryDiscovery />}
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { Compass, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import FeedCard from "@/components/social/FeedCard";
+import SaveToTripSheet from "@/components/social/SaveToTripSheet";
+import { useSaveToTrip, feedItemToSave } from "@/hooks/useSaveToTrip";
 import { loadFeed, loadViewerContext, PAGE_SIZE } from "@/lib/social/feed";
 import type { FeedItem } from "@/lib/social/types";
 import type { ViewerContext } from "@/lib/social/ranking";
@@ -23,6 +25,7 @@ export default function TravelFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [followsNobody, setFollowsNobody] = useState(false);
+  const saver = useSaveToTrip();
 
   useEffect(() => {
     if (!user) return;
@@ -101,7 +104,18 @@ export default function TravelFeed() {
       ) : (
         <>
           <div className="mt-3 space-y-3">
-            {items.map((item) => <FeedCard key={item.id} item={item} />)}
+            {items.map((item) => {
+              const sourceId = feedItemToSave(item).sourceId;
+              return (
+                <FeedCard
+                  key={item.id}
+                  item={item}
+                  onSave={saver.save}
+                  saved={saver.isSaved(sourceId)}
+                  saveBusy={saver.busyId === sourceId}
+                />
+              );
+            })}
           </div>
           {hasMore && (
             <button
@@ -115,6 +129,14 @@ export default function TravelFeed() {
           )}
         </>
       )}
+
+      <SaveToTripSheet
+        open={saver.sheetOpen}
+        onOpenChange={saver.setSheetOpen}
+        trips={saver.trips}
+        target={saver.pending}
+        onChoose={saver.choose}
+      />
     </section>
   );
 }
