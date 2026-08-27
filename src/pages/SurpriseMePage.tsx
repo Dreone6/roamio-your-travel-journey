@@ -112,9 +112,11 @@ export default function SurpriseMePage() {
               <p className="text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Interests</p>
               <Input placeholder="e.g. food markets, hiking, museums" value={form.interests} onChange={(e) => setForm({ ...form, interests: e.target.value })} />
             </div>
+            {loading && <MiloLoading className="pt-2" context="your kind of place" />}
             <Button onClick={generate} disabled={loading} className="w-full gradient-glow text-white border-0 rounded-xl glow-accent">
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Milo is thinking…</> : <><Sparkles className="h-4 w-4 mr-2" /> Get my destinations</>}
+              {loading ? "Milo is on the trail…" : <><Sparkles className="h-4 w-4 mr-2" /> Get my destinations</>}
             </Button>
+
           </div>
         )}
 
