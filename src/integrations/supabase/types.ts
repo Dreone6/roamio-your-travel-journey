@@ -1684,6 +1684,7 @@ export type Database = {
           trip_style: Database["public"]["Enums"]["trip_style"] | null
           updated_at: string
           user_id: string
+          visibility: Database["public"]["Enums"]["trip_visibility"]
           world_visit_id: string | null
         }
         Insert: {
@@ -1706,6 +1707,7 @@ export type Database = {
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id: string
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
           world_visit_id?: string | null
         }
         Update: {
@@ -1728,6 +1730,7 @@ export type Database = {
           trip_style?: Database["public"]["Enums"]["trip_style"] | null
           updated_at?: string
           user_id?: string
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
           world_visit_id?: string | null
         }
         Relationships: [
@@ -2058,6 +2061,7 @@ export type Database = {
       subscription_tier: "free" | "plus" | "pro"
       trip_status: "planning" | "active" | "completed"
       trip_style: "solo" | "couple" | "family" | "friends" | "business"
+      trip_visibility: "private" | "friends_only" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2231,6 +2235,7 @@ export const Constants = {
       subscription_tier: ["free", "plus", "pro"],
       trip_status: ["planning", "active", "completed"],
       trip_style: ["solo", "couple", "family", "friends", "business"],
+      trip_visibility: ["private", "friends_only", "public"],
     },
   },
 } as const
