@@ -3,9 +3,10 @@
  * / reorder. Ordering is stored in itinerary_items.sort_order.
  */
 import { useMemo, useState } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import {
   Plane, BedDouble, Utensils, Ticket, Car, StickyNote, Pencil, Trash2, Plus,
-  ChevronUp, ChevronDown, Check, X,
+  ChevronUp, ChevronDown, Check, X, GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -129,6 +130,20 @@ export default function TripItinerary({ trip, items, onChange }: Props) {
     onChange([...items.filter((i) => i.day_number !== day), ...reordered]);
     try {
       await persistOrder(reordered);
+    } catch {
+      toast.error("Couldn't save the new order");
+    }
+  };
+
+  /** Live drag reorder — local first for buttery motion, persisted on drop. */
+  const reorder = (day: number, next: ItineraryItem[]) => {
+    const renumbered = next.map((it, idx) => ({ ...it, sort_order: idx }));
+    onChange([...items.filter((i) => i.day_number !== day), ...renumbered]);
+  };
+
+  const persistDay = async (day: number) => {
+    try {
+      await persistOrder(forDay(day));
     } catch {
       toast.error("Couldn't save the new order");
     }
@@ -288,5 +303,87 @@ export default function TripItinerary({ trip, items, onChange }: Props) {
         );
       })}
     </div>
+  );
+}
+
+/** A single draggable itinerary node with its own drag handle. */
+function ItemNode({
+  item, first, last, onUp, onDown, onEdit, onRemove, onDrop,
+}: {
+  item: ItineraryItem;
+  first: boolean;
+  last: boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
+  onDrop: () => void;
+}) {
+  const controls = useDragControls();
+  const Icon = ICONS[item.type] ?? Ticket;
+
+  return (
+    <Reorder.Item
+      value={item}
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={onDrop}
+      layout
+      transition={{ type: "spring", stiffness: 520, damping: 38 }}
+      whileDrag={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,.6)", zIndex: 20 }}
+      className="flex items-start gap-2.5 rounded-2xl p-3"
+      style={{ background: "#111827", border: "1px solid #1E2A3F" }}
+    >
+      <button
+        aria-label="Drag to reorder"
+        onPointerDown={(e) => controls.start(e)}
+        className="shrink-0 -ml-1 py-1 touch-none cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4" style={{ color: "#4B5563" }} strokeWidth={1.5} />
+      </button>
+
+      <div className="shrink-0 h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: "#1A2236" }}>
+        <Icon className="h-4 w-4" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          {item.time && (
+            <span className="tabular-nums" style={{ color: "#3B82F6", fontSize: 12 }}>{item.time.slice(0, 5)}</span>
+          )}
+          <p className="text-white truncate" style={{ fontSize: 14, fontWeight: 500 }}>{item.activity}</p>
+        </div>
+        {item.location && <p className="truncate" style={{ color: "#94A3B8", fontSize: 12 }}>{item.location}</p>}
+        {(item.notes || item.description) && (
+          <p className="mt-0.5" style={{ color: "#4B5563", fontSize: 11, lineHeight: 1.4 }}>
+            {item.notes ?? item.description}
+          </p>
+        )}
+        {item.confirmation_ref && (
+          <p className="mt-1 inline-block rounded-md px-1.5 py-0.5" style={{ background: "#1A2236", color: "#94A3B8", fontSize: 10 }}>
+            Ref {item.confirmation_ref}
+          </p>
+        )}
+      </div>
+
+      <div className="shrink-0 flex flex-col items-center gap-0.5">
+        <div className="flex">
+          <button onClick={onUp} aria-label="Move up" className="p-1">
+            <ChevronUp className="h-3.5 w-3.5" style={{ color: first ? "#1E2A3F" : "#94A3B8" }} />
+          </button>
+          <button onClick={onDown} aria-label="Move down" className="p-1">
+            <ChevronDown className="h-3.5 w-3.5" style={{ color: last ? "#1E2A3F" : "#94A3B8" }} />
+          </button>
+        </div>
+        <div className="flex">
+          <button onClick={onEdit} aria-label="Edit" className="p-1">
+            <Pencil className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+          </button>
+          <button onClick={onRemove} aria-label="Remove" className="p-1">
+            <Trash2 className="h-3.5 w-3.5" style={{ color: "#EF4444" }} />
+          </button>
+        </div>
+      </div>
+    </Reorder.Item>
   );
 }
