@@ -259,75 +259,27 @@ export default function TripItinerary({ trip, items, onChange }: Props) {
               <Reorder.Group
                 axis="y"
                 values={list}
-                onReorder={(next) => reorder(day, next)}
+                onReorder={(next) => reorder(day, next as ItineraryItem[])}
                 className="space-y-2"
               >
                 {list.map((it, idx) => {
                   if (editingId === it.id) return <div key={it.id}>{form(submitEdit, () => setEditingId(null))}</div>;
-                  const Icon = ICONS[it.type] ?? Ticket;
                   return (
-                    <Reorder.Item
+                    <ItemNode
                       key={it.id}
-                      value={it}
-                      dragListener={false}
-                      dragControls={undefined}
-                      layout
-                      transition={{ type: "spring", stiffness: 520, damping: 38 }}
-                      whileDrag={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,.6)", zIndex: 20 }}
-                      className="flex items-start gap-3 rounded-2xl p-3"
-                      style={{ background: "#111827", border: "1px solid #1E2A3F" }}
-                      onPointerDown={undefined}
-                    >
-                      <div
-                        className="shrink-0 h-9 w-9 rounded-xl flex items-center justify-center"
-                        style={{ background: "#1A2236" }}
-                      >
-                        <Icon className="h-4 w-4" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {it.time && (
-                            <span className="tabular-nums" style={{ color: "#3B82F6", fontSize: 12 }}>
-                              {it.time.slice(0, 5)}
-                            </span>
-                          )}
-                          <p className="text-white truncate" style={{ fontSize: 14, fontWeight: 500 }}>{it.activity}</p>
-                        </div>
-                        {it.location && <p className="truncate" style={{ color: "#94A3B8", fontSize: 12 }}>{it.location}</p>}
-                        {(it.notes || it.description) && (
-                          <p className="mt-0.5" style={{ color: "#4B5563", fontSize: 11, lineHeight: 1.4 }}>
-                            {it.notes ?? it.description}
-                          </p>
-                        )}
-                        {it.confirmation_ref && (
-                          <p className="mt-1 inline-block rounded-md px-1.5 py-0.5" style={{ background: "#1A2236", color: "#94A3B8", fontSize: 10 }}>
-                            Ref {it.confirmation_ref}
-                          </p>
-                        )}
-                      </div>
-                      <div className="shrink-0 flex flex-col items-center gap-0.5">
-                        <div className="flex">
-                          <button onClick={() => move(day, idx, -1)} aria-label="Move up" className="p-1">
-                            <ChevronUp className="h-3.5 w-3.5" style={{ color: idx === 0 ? "#1E2A3F" : "#94A3B8" }} />
-                          </button>
-                          <button onClick={() => move(day, idx, 1)} aria-label="Move down" className="p-1">
-                            <ChevronDown className="h-3.5 w-3.5" style={{ color: idx === list.length - 1 ? "#1E2A3F" : "#94A3B8" }} />
-                          </button>
-                        </div>
-                        <div className="flex">
-                          <button onClick={() => startEdit(it)} aria-label="Edit" className="p-1">
-                            <Pencil className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
-                          </button>
-                          <button onClick={() => remove(it.id)} aria-label="Remove" className="p-1">
-                            <Trash2 className="h-3.5 w-3.5" style={{ color: "#EF4444" }} />
-                          </button>
-                        </div>
-                      </div>
-                      <DragHandle />
-                    </Reorder.Item>
+                      item={it}
+                      first={idx === 0}
+                      last={idx === list.length - 1}
+                      onUp={() => move(day, idx, -1)}
+                      onDown={() => move(day, idx, 1)}
+                      onEdit={() => startEdit(it)}
+                      onRemove={() => remove(it.id)}
+                      onDrop={() => persistDay(day)}
+                    />
                   );
                 })}
               </Reorder.Group>
+
 
               {addingDay === day && form(submitAdd, () => setAddingDay(null))}
             </div>
