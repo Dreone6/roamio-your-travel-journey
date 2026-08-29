@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Sparkles, Loader2, MapPin, DollarSign, Calendar, Shield, Plane, Hotel } from "lucide-react";
+import { ArrowLeft, Sparkles, MapPin, DollarSign, Calendar, Shield, Plane, Hotel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import MiloLoading from "@/components/states/MiloLoading";
+
 
 interface Suggestion {
   destination: string;
