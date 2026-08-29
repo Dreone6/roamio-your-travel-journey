@@ -17,6 +17,10 @@ import TripPeopleSection from "@/components/trip/TripPeopleSection";
 import AskRoavrPanel from "@/components/trip/AskRoavrPanel";
 import BookingImportSheet from "@/components/bookings/BookingImportSheet";
 import PeopleWhoKnowPlace from "@/components/social/PeopleWhoKnowPlace";
+import PresenceAvatars from "@/components/trip/PresenceAvatars";
+import AICommandFab from "@/components/trip/AICommandFab";
+import { useTripPresence } from "@/hooks/useTripPresence";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "overview" | "itinerary" | "saved" | "people";
 const TABS: Tab[] = ["overview", "itinerary", "saved", "people"];
@@ -32,6 +36,7 @@ export default function TripDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [worldLinked, setWorldLinked] = useState(false);
+  const present = useTripPresence(id);
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +56,20 @@ export default function TripDetailPage() {
     if (!trip || !user) return;
     worldLinkState(trip, user.id).then((s) => setWorldLinked(s.linked)).catch(() => undefined);
   }, [trip, user]);
+
+  // Multiplayer canvas: pull collaborators' itinerary edits in as they happen.
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`trip-items-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "itinerary_items", filter: `trip_id=eq.${id}` },
+        () => { listItems(id).then(setItems).catch(() => undefined); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id]);
 
   const countdown = useMemo(() => (trip ? daysUntil(trip.start_date) : null), [trip]);
   const bucket = trip ? bucketOf(trip) : null;
@@ -105,9 +124,12 @@ export default function TripDetailPage() {
           <button onClick={() => navigate("/trips")} aria-label="Back" className="p-1.5 -ml-1.5">
             <ArrowLeft className="h-5 w-5 text-white" strokeWidth={1.5} />
           </button>
-          <button onClick={remove} aria-label="Delete trip" className="p-1.5">
-            <Trash2 className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
-          </button>
+          <div className="flex items-center gap-3">
+            <PresenceAvatars users={present} />
+            <button onClick={remove} aria-label="Delete trip" className="p-1.5">
+              <Trash2 className="h-5 w-5" style={{ color: "#94A3B8" }} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         <h1 className="mt-3 text-white font-heading" style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.5px" }}>
@@ -234,6 +256,12 @@ export default function TripDetailPage() {
           <TripPeopleSection trip={trip} onTripChange={(patch) => setTrip((t) => (t ? { ...t, ...patch } : t))} />
         )}
       </main>
+
+      <AICommandFab
+        trip={trip}
+        items={items}
+        onItemsAdded={(added) => { setItems((i) => [...i, ...added]); setTab("itinerary"); }}
+      />
 
       <BookingImportSheet open={importOpen} onOpenChange={setImportOpen} tripId={trip.id} />
     </div>
