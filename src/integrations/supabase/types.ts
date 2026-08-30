@@ -1880,6 +1880,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_trip: {
+        Args: { _trip: string; _user: string }
+        Returns: boolean
+      }
       can_view_user_media: {
         Args: { _object_name: string; _viewer: string }
         Returns: boolean
@@ -2018,6 +2022,7 @@ export type Database = {
       }
       owns_trip: { Args: { _trip: string; _user: string }; Returns: boolean }
       profile_is_private: { Args: { _uid: string }; Returns: boolean }
+      trip_is_public: { Args: { _trip: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
