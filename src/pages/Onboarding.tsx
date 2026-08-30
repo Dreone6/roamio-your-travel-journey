@@ -3,8 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Sparkles, Compass } from "lucide-react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
-const InteractiveGlobe = lazy(() => import("@/components/globe/InteractiveGlobe"));
+const InteractiveGlobe = lazyWithRetry(
+  () => import("@/components/globe/InteractiveGlobe"),
+  "interactive-globe",
+);
 
 const ITINERARY_LINES = [
   { city: "Day 1 · Tokyo", sub: "Shibuya Crossing, Sushi Dai" },
