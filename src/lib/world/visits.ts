@@ -22,8 +22,10 @@ export interface Visit {
   longitude: number | null;
   startDate: string | null;
   endDate: string | null;
-  /** Visit-level photo count. Individual photos are not persisted yet. */
+  /** Saved memory records linked to this visit (RLS-filtered for the viewer). */
   memories: number;
+  /** Photos whose metadata was scanned on import. Not uploaded media. */
+  scannedPhotos: number;
   visibility: "private" | "followers" | "public";
   isMilestone: boolean;
   tripId: string | null;
@@ -40,6 +42,7 @@ export interface CityPlace {
   visits: Visit[];
   visitCount: number;
   memories: number;
+  scannedPhotos: number;
   /** ISO date of the most recent authorised visit, when dates are known. */
   lastVisit: string | null;
   firstVisit: string | null;
@@ -54,6 +57,7 @@ export interface CountryEntry {
   cityCount: number;
   visitCount: number;
   memories: number;
+  scannedPhotos: number;
   firstVisit: string | null;
   lastVisit: string | null;
 }
@@ -63,6 +67,7 @@ export interface WorldSummary {
   cities: number;
   visits: number;
   memories: number;
+  scannedPhotos: number;
   /** Null when there is not enough data to name one responsibly. */
   mostVisitedCountry: { country: string; visits: number } | null;
   mostVisitedCity: { city: string; country: string; visits: number } | null;
@@ -84,7 +89,7 @@ export const EMPTY_WORLD: World = {
   places: [],
   countries: [],
   summary: {
-    countries: 0, cities: 0, visits: 0, memories: 0,
+    countries: 0, cities: 0, visits: 0, memories: 0, scannedPhotos: 0,
     mostVisitedCountry: null, mostVisitedCity: null,
     firstYear: null, lastYear: null, yearsTraveling: null,
   },
@@ -102,7 +107,7 @@ const cityKey = (city: string, country: string) => `${norm(city)}|${norm(country
 export async function fetchVisits(userId: string): Promise<Visit[]> {
   const { data, error } = await supabase
     .from("places_visited")
-    .select("id, city, country, latitude, longitude, date_visited, end_date, photos_count, visibility, is_milestone, trip_id, source")
+    .select("id, city, country, latitude, longitude, date_visited, end_date, scanned_photo_count, visibility, is_milestone, trip_id, source, memories(count)")
     .eq("user_id", userId)
     .neq("source", "demo")
     .order("date_visited", { ascending: false });
@@ -119,7 +124,8 @@ export async function fetchVisits(userId: string): Promise<Visit[]> {
       longitude: r.longitude,
       startDate: r.date_visited,
       endDate: r.end_date,
-      memories: r.photos_count ?? 0,
+      memories: (r as any).memories?.[0]?.count ?? 0,
+      scannedPhotos: r.scanned_photo_count ?? 0,
       visibility: (r.visibility as Visit["visibility"]) ?? "private",
       isMilestone: !!r.is_milestone,
       tripId: r.trip_id,
@@ -144,6 +150,7 @@ export function aggregateWorld(visits: Visit[]): World {
         visits: [],
         visitCount: 0,
         memories: 0,
+        scannedPhotos: 0,
         lastVisit: null,
         firstVisit: null,
         isMilestone: false,
@@ -153,6 +160,7 @@ export function aggregateWorld(visits: Visit[]): World {
     place.visits.push(v);
     place.visitCount += 1;
     place.memories += v.memories;
+    place.scannedPhotos += v.scannedPhotos;
     place.isMilestone = place.isMilestone || v.isMilestone;
     if (v.latitude != null && v.longitude != null && place.lat === 0 && place.lng === 0) {
       place.lat = v.latitude;
@@ -183,6 +191,7 @@ export function aggregateWorld(visits: Visit[]): World {
         cityCount: 0,
         visitCount: 0,
         memories: 0,
+        scannedPhotos: 0,
         firstVisit: null,
         lastVisit: null,
       };
@@ -192,6 +201,7 @@ export function aggregateWorld(visits: Visit[]): World {
     entry.cityCount += 1;
     entry.visitCount += p.visitCount;
     entry.memories += p.memories;
+    entry.scannedPhotos += p.scannedPhotos;
     if (p.firstVisit && (!entry.firstVisit || p.firstVisit < entry.firstVisit)) entry.firstVisit = p.firstVisit;
     if (p.lastVisit && (!entry.lastVisit || p.lastVisit > entry.lastVisit)) entry.lastVisit = p.lastVisit;
   }
@@ -224,6 +234,7 @@ export function aggregateWorld(visits: Visit[]): World {
       cities: places.length,
       visits: visits.length,
       memories: visits.reduce((s, v) => s + v.memories, 0),
+      scannedPhotos: visits.reduce((s, v) => s + v.scannedPhotos, 0),
       mostVisitedCountry: countryLeads ? { country: topCountry.country, visits: topCountry.visitCount } : null,
       mostVisitedCity: cityLeads ? { city: topCity.city, country: topCity.country, visits: topCity.visitCount } : null,
       firstYear,

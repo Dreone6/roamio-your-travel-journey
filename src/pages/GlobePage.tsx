@@ -88,7 +88,7 @@ export default function GlobePage() {
         const { data } = await supabase
           .from("memories")
           .select("id, user_id, location_name, media_url, created_at")
-          .in("user_id", ids).eq("visibility", "public").not("location_name", "is", null)
+          .in("user_id", ids).eq("visibility", "public").not("location_name", "is", null).not("media_url", "is", null)
           .order("created_at", { ascending: false }).limit(8);
         if (!cancelled) setFollowing(await mapRows(data ?? []));
       } else if (!cancelled) setFollowing([]);

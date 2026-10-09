@@ -8,6 +8,27 @@
       "when": 1791587178135,
       "tag": "0000_conversations_creator_select_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791588584476,
+      "tag": "0001_p0_hardening_atlas_alignment",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791588780452,
+      "tag": "0002_notification_types_for_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791588875653,
+      "tag": "0003_story_reactions_require_visible_story",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ const visit = (
   id: string, city: string, country: string, start: string, end = start, memories = 0
 ): Visit => ({
   id, city, country, latitude: 41.9, longitude: 12.5,
-  startDate: start, endDate: end, memories,
+  startDate: start, endDate: end, memories, scannedPhotos: 0,
   visibility: "public", isMilestone: false, tripId: null,
 });
 
@@ -89,5 +89,18 @@ describe("conversationStarters", () => {
     expect(starters.some((x) => x.text.includes("Rome"))).toBe(true);
     expect(starters.some((x) => x.text === "Maya has visited Italy 3 times")).toBe(true);
     expect(starters.every((x) => !/recommend|loves|favorite/i.test(x.text))).toBe(true);
+  });
+});
+
+describe("scanned photos vs saved memories", () => {
+  it("never adds scanned import photos into the memories total", () => {
+    const w = aggregateWorld([
+      { ...visit("a", "Rome", "Italy", "2024-01-01", "2024-01-03", 2), scannedPhotos: 40 },
+      { ...visit("b", "Rome", "Italy", "2025-05-01", "2025-05-02", 0), scannedPhotos: 10 },
+    ]);
+    expect(w.summary.memories).toBe(2);
+    expect(w.summary.scannedPhotos).toBe(50);
+    expect(w.places[0].memories).toBe(2);
+    expect(w.places[0].scannedPhotos).toBe(50);
   });
 });

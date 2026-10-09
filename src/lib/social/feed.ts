@@ -117,6 +117,7 @@ export async function loadFeed(
         .select("id, user_id, media_url, media_type, caption, location_name, created_at, visibility")
         .in("user_id", authorIds)
         .neq("visibility", "private")
+        .not("media_url", "is", null)
         .order("created_at", { ascending: false })
         .limit(cap) as any
     ),

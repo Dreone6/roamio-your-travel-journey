@@ -43,6 +43,7 @@ export interface TravelIdentity {
   /** Full aggregated world — places, country collection, summary. */
   world: World;
   memories: number;
+  scannedPhotos: number;
   trips: number;
   completedTrips: number;
   checkIns: number;
@@ -77,6 +78,7 @@ const EMPTY: Omit<TravelIdentity, "refresh"> = {
   visits: 0,
   world: EMPTY_WORLD,
   memories: 0,
+  scannedPhotos: 0,
   trips: 0,
   completedTrips: 0,
   checkIns: 0,
@@ -195,8 +197,9 @@ export function useTravelIdentity(): TravelIdentity {
         cities: world.summary.cities,
         visits: world.summary.visits,
         world,
-        // Visit-level photo counts plus captured memory records.
-        memories: world.summary.memories + memories.length,
+        // Saved memory records only; scanned import photos are tracked separately.
+        memories: memories.length,
+        scannedPhotos: world.summary.scannedPhotos,
         trips: trips.length,
         completedTrips: trips.filter((t) => t.status === "completed").length,
         checkIns: checkins.length,

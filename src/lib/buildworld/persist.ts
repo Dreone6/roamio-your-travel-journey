@@ -19,6 +19,7 @@ export interface PersistResult {
   saved: number;
   countries: number;
   cities: number;
+  /** Photos scanned (metadata only) — not uploaded memories. */
   memories: number;
   /** Rows that already existed with the same import_key and were refreshed. */
   duplicates: number;
@@ -52,7 +53,8 @@ export async function saveDiscoveredTrips(
     longitude: t.longitude,
     date_visited: t.startDate.slice(0, 10),
     end_date: t.endDate.slice(0, 10),
-    photos_count: t.memoryCount,
+    // Metadata-only import: these photos were scanned, not uploaded.
+    scanned_photo_count: t.memoryCount,
     visibility: opts.demo ? "private" : t.visibility,
     source: opts.demo ? "demo" : "photo_import",
     import_key: t.importKey,
@@ -63,7 +65,7 @@ export async function saveDiscoveredTrips(
   const { data, error } = await supabase
     .from("places_visited")
     .upsert(rows, { onConflict: "user_id,import_key" })
-    .select("id, city, country, photos_count");
+    .select("id, city, country, scanned_photo_count");
 
   if (error) throw error;
   if (!data || data.length === 0) {
@@ -74,7 +76,7 @@ export async function saveDiscoveredTrips(
     saved: data.length,
     countries: new Set(data.map((r) => r.country)).size,
     cities: new Set(data.map((r) => `${r.city}|${r.country}`)).size,
-    memories: data.reduce((s, r) => s + (r.photos_count ?? 0), 0),
+    memories: data.reduce((s, r) => s + (r.scanned_photo_count ?? 0), 0),
     duplicates,
   };
 }
