@@ -20,7 +20,7 @@ export const SHARE_VISIBILITIES = [
 
 export default function ShareItinerarySheet({ open, onOpenChange, tripId, tripTitle }: Props) {
   const { user } = useAuth();
-  const [visibility, setVisibility] = useState<typeof VISIBILITIES[number]["value"]>("private");
+  const [visibility, setVisibility] = useState<typeof SHARE_VISIBILITIES[number]["value"]>("private");
   const [link, setLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
