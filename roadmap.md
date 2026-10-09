@@ -1,3 +1,3 @@
 - [x] Remove SafePass route and Profile entry point.
 - [x] Delete SafePass/SOS screens and unused feature assets; remove emergency simulation dependencies.
-- [ ] Check remaining imports, tests, and running app.
+- [x] Check remaining imports, tests, and running app (89 tests passed; compilation OK; signed-in Profile and retired route verified).
