@@ -1,0 +1,3 @@
+- [x] Remove SafePass route and Profile entry point.
+- [ ] Delete SafePass/SOS screens and unused feature assets; remove emergency simulation dependencies.
+- [ ] Check remaining imports, tests, and running app.
