@@ -113,7 +113,7 @@ export default function NewMessagePage() {
                 {startAsPrivate ? "Private Chat" : "Standard Chat"}
               </p>
               <p className="text-[10px] text-dark-muted">
-                {startAsPrivate ? "Private Chat · Only you and the recipient" : "Encrypted in transit and at rest"}
+                {startAsPrivate ? "Private Chat · Same protection as standard chat" : "Encrypted in transit and at rest"}
               </p>
             </div>
             <div className={`h-5 w-9 rounded-full relative transition-colors ${startAsPrivate ? "bg-emerald-500" : "bg-white/10"}`}>

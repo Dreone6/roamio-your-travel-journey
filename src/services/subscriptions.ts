@@ -187,7 +187,7 @@ export const UPGRADE_TRIGGERS: Record<UpgradeTrigger, UpgradeTriggerConfig> = {
   encrypted_chats: {
     trigger: "encrypted_chats",
     title: "Private Travel Chats",
-    description: "Private travel chats for your most sensitive travel conversations. Available with Roavr Pro.",
+    description: "Private Chat mode for your travel conversations. Available with Roavr Pro.",
     requiredTier: "pro",
     emoji: "💬",
     ctaLabel: "Unlock Private Chats",

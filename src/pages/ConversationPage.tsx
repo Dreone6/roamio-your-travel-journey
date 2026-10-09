@@ -377,7 +377,7 @@ export default function ConversationPage() {
               <Timer className="h-3.5 w-3.5" /> {encryptionMode === "vanish" ? "Change Vanish Timer" : "Enable Vanish Mode"}
             </button>
             <div className="border-t border-white/5 my-1" />
-            <button onClick={() => { setShowMenu(false); navigate(`/profile/${otherUser.id}`); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-dark-muted hover:text-white transition-colors rounded-lg">
+            <button onClick={() => { setShowMenu(false); navigate(`/u/${otherUser.id}`); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-dark-muted hover:text-white transition-colors rounded-lg">
               <Globe className="h-3.5 w-3.5" /> View Profile
             </button>
             <div className="border-t border-white/5 my-1" />
@@ -406,7 +406,7 @@ export default function ConversationPage() {
               <button onClick={() => setShowVanishPicker(false)}><X className="h-5 w-5 text-muted-foreground" /></button>
             </div>
             <p className="text-[12px] text-muted-foreground leading-relaxed">
-              Messages, photos, and shared pins will disappear after the selected time. Perfect for sharing sensitive travel details.
+              Messages, photos, and shared pins will disappear after the selected time.
             </p>
             <div className="space-y-1.5">
               {VANISH_OPTIONS.map((opt) => (
@@ -461,12 +461,6 @@ export default function ConversationPage() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
               </button>
             ))}
-            {encryptionMode !== "private" && (
-              <div className="flex items-center gap-2 px-3 pt-2 text-[10px] text-amber-600">
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-                <span>Sharing sensitive travel info? Consider enabling Private Chat.</span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -484,7 +478,7 @@ export default function ConversationPage() {
             </div>
             <p className="text-[13px] text-muted-foreground max-w-[220px]">
               {encryptionMode === "private"
-                ? "This is a Private Chat."
+                ? "Messages here are visible to chat participants."
                 : "Start a conversation! Share trips, memories, and travel stories."
               }
             </p>
