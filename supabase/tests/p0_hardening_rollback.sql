@@ -14,6 +14,8 @@ DECLARE
   b1 uuid := gen_random_uuid(); -- blocked BY o, still "follows" o
   b2 uuid := gen_random_uuid(); -- has blocked o, still "follows" o
   r text[] := '{}';
+  exp text[] := '{}';
+  fails text[] := '{}';
   n int; t text; j jsonb; v1 uuid; v2 uuid; pvisit uuid; nid uuid; sid uuid; trip uuid;
   u uuid;
 BEGIN
