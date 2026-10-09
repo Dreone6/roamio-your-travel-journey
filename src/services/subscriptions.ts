@@ -15,7 +15,6 @@ export const PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       "Basic Globe view",
       "Basic public profile",
       "Basic Discover",
-      "Basic safety notes",
       "Basic stories (3/day)",
       "Standard messaging",
     ],
