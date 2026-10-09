@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowLeft, Check, Crown, Zap, Sparkles, Star, ArrowRight, X,
+  ArrowLeft, Check, Crown, Zap, Sparkles, Star, X,
   Shield, Info, RotateCcw, ExternalLink,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PLANS, FREE_LIMITS } from "@/services/subscriptions";
 import { useSubscription } from "@/hooks/useSubscription";
 import { billing as billingStore } from "@/lib/billing/store";
-import { productKeyFor, type BillingAvailability, type StoreProduct } from "@/lib/billing/types";
+import { type BillingAvailability, type StoreProduct } from "@/lib/billing/types";
+import { pricingCta } from "@/lib/billing/checkout";
 
 interface UsageStats {
   tripsUsed: number;
@@ -51,31 +52,6 @@ export default function SubscriptionPage() {
     setLoading(false);
   };
 
-  /**
-   * Purchases always go through the store, then through server-side receipt
-   * verification. Nothing here ever marks the account premium locally.
-   */
-  const handleUpgrade = async (tierId: string) => {
-    if (tierId !== "plus" && tierId !== "pro") return;
-    setBusy(tierId);
-    try {
-      const outcome = await billingStore.purchase(productKeyFor(tierId, billing));
-      if (outcome.status === "entitled") {
-        await refresh();
-        toast({ title: "You're upgraded", description: `Roavr ${tierId === "plus" ? "Plus" : "Pro"} is now active on your account.` });
-      } else if (outcome.status === "pending") {
-        toast({ title: "Purchase pending", description: "The store is still processing this payment. Your plan updates automatically once it clears." });
-      } else if (outcome.status === "cancelled") {
-        /* user backed out — no message needed */
-      } else if (outcome.status === "unavailable") {
-        toast({ title: "Not available yet", description: outcome.message });
-      } else {
-        toast({ title: "Couldn't verify purchase", description: outcome.message, variant: "destructive" });
-      }
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const handleRestore = async () => {
     setBusy("restore");
@@ -351,16 +327,12 @@ export default function SubscriptionPage() {
                   </div>
                 ) : isUpgrade ? (
                   <button
-                    onClick={() => handleUpgrade(tier.id)}
-                    disabled={busy === tier.id}
-                    className={`w-full rounded-xl py-3 text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
-                      tier.popular
-                        ? "gradient-glow text-white glow-accent"
-                        : "dark-card-elevated text-white hover:bg-white/[0.06]"
-                    }`}
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="w-full rounded-xl py-3 text-[13px] font-bold flex items-center justify-center gap-2 bg-white/[0.04] border border-white/[0.08] text-white/40 cursor-not-allowed"
                   >
-                    {busy === tier.id ? "Opening store…" : `Upgrade to ${tier.name}`}
-                    {busy !== tier.id && <ArrowRight className="h-3.5 w-3.5" />}
+                    {pricingCta(tier.id).label}
                   </button>
                 ) : null}
               </div>
@@ -378,7 +350,6 @@ export default function SubscriptionPage() {
             { feature: "Check-ins", free: "10/mo", plus: "Unlimited", pro: "Unlimited", icon: "📍" },
             { feature: "Stories", free: "3/day", plus: "Unlimited", pro: "Unlimited", icon: "📸" },
             { feature: "Globe", free: "Basic", plus: "Advanced", pro: "Full Custom", icon: "🌍" },
-            { feature: "Safety Tools", free: "Basic", plus: "Enhanced", pro: "Advanced", icon: "🛡️" },
             { feature: "Messaging", free: "Standard", plus: "Standard", pro: "Private Chats", icon: "💬" },
             { feature: "Group Planning", free: "—", plus: "—", pro: "✓", icon: "👥" },
             { feature: "Creator Tools", free: "—", plus: "—", pro: "✓", icon: "⭐" },
