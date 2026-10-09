@@ -38,6 +38,10 @@ BEGIN
     INSERT INTO public.memories (user_id, media_url, media_type, visibility)
     SELECT u, 'user-media:' || u || '/mem-' || v || '.jpg', 'photo', v
     FROM unnest(ARRAY['public','followers','private']) v;
+    -- matching real storage objects: UID folder + correct uploader (owner and owner_id)
+    INSERT INTO storage.objects (bucket_id, name, owner, owner_id)
+    SELECT 'user-media', u || '/' || k || '-' || v || '.jpg', u, u::text
+    FROM unnest(ARRAY['public','followers','private']) v, unnest(ARRAY['story','mem']) k;
   END LOOP;
 
   -- ---------- story / memory SELECT matrix ----------
@@ -88,6 +92,48 @@ BEGIN
     PERFORM public.can_view_user_media(o, o || '/mem-public.jpg');
     r := r || 'anon_media_helper=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('anon_media_helper=DENIED ' || SQLSTATE); END;
+  PERFORM set_config('role', su, true);
+
+  -- ---------- media token spoofing ----------
+  PERFORM set_config('role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  BEGIN
+    INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public');
+    r := r || 'spoof_memory_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_memory_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.stories (user_id, media_url, media_type, visibility, expires_at) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public', now() + interval '1 day');
+    r := r || 'spoof_story_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_story_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.check_ins (user_id, location_name, photo, visibility) VALUES (s, 'x', 'user-media:' || o || '/mem-private.jpg', 'public');
+    r := r || 'spoof_checkin_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_checkin_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.memories (user_id, media_type, caption, visibility) VALUES (s, 'note', 'spoofnote', 'public');
+    UPDATE public.memories SET media_url = 'user-media:' || o || '/mem-private.jpg' WHERE user_id = s AND caption = 'spoofnote';
+    r := r || 'spoof_memory_update=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_memory_update=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'https://example.com/legacy.jpg', 'photo', 'private');
+    r := r || 'legacy_http_memory=OK'::text;
+  EXCEPTION WHEN others THEN r := r || ('legacy_http_memory=ERR ' || SQLSTATE); END;
+  PERFORM set_config('role', su, true);
+  -- pre-existing spoof row (write guard bypassed by superuser) must still not grant access
+  ALTER TABLE public.memories DISABLE TRIGGER memories_media_token_owner;
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public');
+  ALTER TABLE public.memories ENABLE TRIGGER memories_media_token_owner;
+  -- object planted in o's folder but uploaded by s, referenced by o's public memory
+  INSERT INTO storage.objects (bucket_id, name, owner, owner_id) VALUES ('user-media', o || '/planted-media.jpg', s, s::text);
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (o, 'user-media:' || o || '/planted-media.jpg', 'photo', 'public');
+  -- public memory whose storage object does not exist
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (o, 'user-media:' || o || '/ghost.jpg', 'photo', 'public');
+  PERFORM set_config('role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  r := r || ('spoof_row_helper=' || public.can_view_user_media(s, o || '/mem-private.jpg'));
+  r := r || ('planted_uploader_helper=' || public.can_view_user_media(s, o || '/planted-media.jpg'));
+  r := r || ('missing_object_helper=' || public.can_view_user_media(s, o || '/ghost.jpg'));
+  r := r || ('genuine_public_media_helper=' || public.can_view_user_media(s, o || '/mem-public.jpg'));
   PERFORM set_config('role', su, true);
 
   -- ---------- notifications ----------
