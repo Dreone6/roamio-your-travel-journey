@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
-  MessageCircle, Lock, Timer, Eye, EyeOff, AlertTriangle, Smartphone, Image,
+  MessageCircle, Timer, EyeOff, AlertTriangle, Image,
   ChevronRight, X, Check, CheckCheck, Tag, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ export default function ConversationPage() {
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [encryptionMode, setEncryptionMode] = useState<EncryptionMode>("standard");
-  const [showEncryptionInfo, setShowEncryptionInfo] = useState(false);
   const [showVanishPicker, setShowVanishPicker] = useState(false);
   const [vanishSeconds, setVanishSeconds] = useState<number | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -124,7 +123,7 @@ export default function ConversationPage() {
     await supabase.from("conversations").update({ encryption_mode: "private" }).eq("id", id!);
     setEncryptionMode("private");
     setShowMenu(false);
-    toast.success("Upgraded to Private Travel Chat 🔒");
+    toast.success("Private Chat enabled");
   };
 
   const toggleVanishMode = async (seconds: number | null) => {
@@ -205,23 +204,21 @@ export default function ConversationPage() {
 
   const formatTime = (date: string) => new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const EncryptionBar = () => {
+  const ChatStatusBar = () => {
     if (encryptionMode === "standard") return null;
     return (
-      <button
-        onClick={() => setShowEncryptionInfo(true)}
+      <div
         className={`shrink-0 flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-bold ${
           encryptionMode === "private"
             ? "bg-emerald-500/10 text-emerald-600"
             : "bg-amber-500/10 text-amber-600"
         }`}
       >
-        {encryptionMode === "private" ? <Lock className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
         {encryptionMode === "private"
-          ? "Private Travel Chat · End-to-end encrypted"
+          ? "Private Chat"
           : `Vanish Mode · Messages disappear after ${VANISH_OPTIONS.find(o => o.value === vanishSeconds)?.label || "..."}`
         }
-      </button>
+      </div>
     );
   };
 
@@ -240,11 +237,6 @@ export default function ConversationPage() {
             }`}
             onDoubleClick={() => setShowReactions(msg.id)}
           >
-            {msg.encrypted && (
-              <div className={`flex items-center gap-1 mb-1 text-[9px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>
-                <Lock className="h-2 w-2" /> Encrypted
-              </div>
-            )}
             {msg.expires_at && (
               <div className={`flex items-center gap-1 mb-1 text-[9px] ${isMine ? "text-white/60" : "text-amber-500"}`}>
                 <Timer className="h-2 w-2" /> Disappearing
