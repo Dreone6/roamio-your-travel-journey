@@ -679,13 +679,14 @@ export type Database = {
           location_name: string | null
           longitude: number | null
           media_type: string
-          media_url: string
+          media_url: string | null
           pinned_to_globe: boolean
           source: string
           source_id: string | null
           trip_id: string | null
           user_id: string
           visibility: string
+          visit_id: string | null
         }
         Insert: {
           caption?: string | null
@@ -695,13 +696,14 @@ export type Database = {
           location_name?: string | null
           longitude?: number | null
           media_type?: string
-          media_url: string
+          media_url?: string | null
           pinned_to_globe?: boolean
           source?: string
           source_id?: string | null
           trip_id?: string | null
           user_id: string
           visibility?: string
+          visit_id?: string | null
         }
         Update: {
           caption?: string | null
@@ -711,15 +713,24 @@ export type Database = {
           location_name?: string | null
           longitude?: number | null
           media_type?: string
-          media_url?: string
+          media_url?: string | null
           pinned_to_globe?: boolean
           source?: string
           source_id?: string | null
           trip_id?: string | null
           user_id?: string
           visibility?: string
+          visit_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "memories_visit_same_user_fkey"
+            columns: ["visit_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "places_visited"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
       }
       message_reactions: {
         Row: {
@@ -1044,8 +1055,54 @@ export type Database = {
         }
         Relationships: []
       }
+      places: {
+        Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          place_type: string
+          provider: string
+          provider_place_id: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          place_type?: string
+          provider: string
+          provider_place_id: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          place_type?: string
+          provider?: string
+          provider_place_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       places_visited: {
         Row: {
+          canonical_place_id: string | null
           city: string
           country: string
           created_at: string
@@ -1058,12 +1115,14 @@ export type Database = {
           longitude: number | null
           milestone_type: string | null
           photos_count: number
+          scanned_photo_count: number
           source: string
           trip_id: string | null
           user_id: string
           visibility: string
         }
         Insert: {
+          canonical_place_id?: string | null
           city: string
           country: string
           created_at?: string
@@ -1076,12 +1135,14 @@ export type Database = {
           longitude?: number | null
           milestone_type?: string | null
           photos_count?: number
+          scanned_photo_count?: number
           source?: string
           trip_id?: string | null
           user_id: string
           visibility?: string
         }
         Update: {
+          canonical_place_id?: string | null
           city?: string
           country?: string
           created_at?: string
@@ -1094,12 +1155,20 @@ export type Database = {
           longitude?: number | null
           milestone_type?: string | null
           photos_count?: number
+          scanned_photo_count?: number
           source?: string
           trip_id?: string | null
           user_id?: string
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "places_visited_canonical_place_id_fkey"
+            columns: ["canonical_place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "places_visited_trip_id_fkey"
             columns: ["trip_id"]
@@ -1880,8 +1949,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _actor_name: { Args: { _uid: string }; Returns: string }
+      _notify_internal: {
+        Args: {
+          _actor: string
+          _data: Json
+          _dedupe_key: string
+          _recipient: string
+          _title: string
+          _type: string
+        }
+        Returns: undefined
+      }
       can_edit_trip: {
         Args: { _trip: string; _user: string }
+        Returns: boolean
+      }
+      can_view_owned_content: {
+        Args: { _owner: string; _viewer: string; _visibility: string }
         Returns: boolean
       }
       can_view_user_media: {
@@ -2022,6 +2107,20 @@ export type Database = {
       }
       owns_trip: { Args: { _trip: string; _user: string }; Returns: boolean }
       profile_is_private: { Args: { _uid: string }; Returns: boolean }
+      record_check_in: {
+        Args: {
+          p_city: string
+          p_client_request_id: string
+          p_country: string
+          p_latitude: number
+          p_location_name: string
+          p_longitude: number
+          p_note?: string
+          p_photo?: string
+          p_share?: boolean
+        }
+        Returns: Json
+      }
       trip_is_public: { Args: { _trip: string }; Returns: boolean }
     }
     Enums: {
