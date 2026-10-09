@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import roavrLogo from "@/assets/roavr-logo.png";
 import miloMascot from "@/assets/roavr-pin.png";
-import { PLANS } from "@/services/subscriptions";
+import { pricingCta } from "@/lib/billing/checkout";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ export default function LandingPage() {
 
       {/* ── App Preview Cards ──────────────────────────── */}
       <section className="max-w-6xl mx-auto px-5 pb-16 md:pb-24">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {[
             { label: "AI Planner", icon: Sparkles, color: "from-emerald-500/15 to-teal-500/10", iconColor: "text-emerald-500" },
             { label: "Discover", icon: Compass, color: "from-blue-500/15 to-indigo-500/10", iconColor: "text-blue-500" },
@@ -80,7 +80,7 @@ export default function LandingPage() {
           ].map((item, i) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-border/40 bg-card p-5 text-center space-y-3 hover:shadow-elevated hover:border-accent/20 transition-all duration-300 group animate-fade-in"
+              className="w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(20%-10px)] rounded-2xl border border-border/40 bg-card p-5 text-center space-y-3 hover:shadow-elevated hover:border-accent/20 transition-all duration-300 group animate-fade-in"
               style={{ animationDelay: `${0.4 + i * 0.06}s` }}
             >
               <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto group-hover:scale-110 transition-transform`}>
@@ -322,7 +322,9 @@ export default function LandingPage() {
                 id: "pro", name: "Roavr Pro", price: "$14.99", period: "/mo", icon: Crown, iconColor: "text-amber-500",
                 features: ["Everything in Plus", "Group trip planning", "Private Travel Chats", "Creator profile tools", "Priority AI planning"],
               },
-            ].map((tier) => (
+            ].map((tier) => {
+              const cta = pricingCta(tier.id);
+              return (
               <div
                 key={tier.id}
                 className={`rounded-2xl bg-card p-7 space-y-5 relative transition-all duration-300 ${
@@ -357,18 +359,20 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => navigate("/auth")}
-                  className={`w-full h-12 rounded-xl font-semibold ${tier.popular ? "gradient-accent border-0" : ""}`}
+                  disabled={!cta.enabled}
+                  onClick={cta.navigates ? () => navigate("/auth") : undefined}
+                  className={`w-full h-12 rounded-xl font-semibold ${tier.popular ? "gradient-accent border-0" : ""} ${cta.enabled ? "" : "opacity-60 cursor-not-allowed"}`}
                   variant={tier.popular ? "default" : "outline"}
                 >
-                  {tier.id === "free" ? "Get Started Free" : `Start ${tier.name}`}
+                  {cta.label}
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            All plans include a 7-day free trial on paid tiers. Cancel anytime. No lock-in contracts.
+            The Free plan is available now. Roavr Plus and Roavr Pro are coming soon — nothing is charged until they launch.
           </p>
         </div>
       </section>
@@ -381,7 +385,7 @@ export default function LandingPage() {
             Built for travelers who<br /><span className="italic text-accent">want more</span>
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="flex flex-wrap justify-center gap-5">
           {[
             { icon: Sparkles, title: "AI that understands you", desc: "Not generic templates. Real itineraries matched to your style, budget, pace, and dietary preferences." },
             { icon: Globe, title: "Your travel story, mapped", desc: "Every trip becomes a pin on your globe. Watch your world fill up over time. Share it or keep it private." },
@@ -389,7 +393,7 @@ export default function LandingPage() {
             { icon: Lock, title: "Privacy you control", desc: "Set visibility per trip, memory, check-in, and story. From fully public to completely private." },
             { icon: Heart, title: "No ads, no spam", desc: "Roavr is built on subscriptions, not advertising. Your travel data stays yours." },
           ].map((b, i) => (
-            <div key={b.title} className="rounded-2xl border border-border/40 bg-card p-6 space-y-3 hover:shadow-elevated transition-all animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
+            <div key={b.title} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] rounded-2xl border border-border/40 bg-card p-6 space-y-3 hover:shadow-elevated transition-all animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
               <div className="h-10 w-10 rounded-xl bg-accent/8 flex items-center justify-center">
                 <b.icon className="h-5 w-5 text-accent" />
               </div>

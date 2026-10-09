@@ -4,3 +4,5 @@
 - [x] Remove false "End-to-End Encrypted" / E2E claims from chat and itinerary-sharing screens; keep real message and sharing logic.
 - [x] Fix chat creation so opening a traveler's chat works (creator could not read back the conversation they just made).
 - [x] Verify signed-in chat flow, share-visibility rule test, typecheck and build.
+- [x] Strip retired SOS/safety and encryption claims from the landing and pricing screens; re-center the feature grids.
+- [x] Disable premium checkout in the pricing UI: paid tiers read "Coming Soon" with no click handler; free tier still enters the app.
