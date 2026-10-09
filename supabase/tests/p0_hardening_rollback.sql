@@ -1,4 +1,4 @@
--- Rollback-only role-claim verification for migration 0001_p0_hardening_atlas_alignment.
+-- Rollback-only role-claim verification (migrations 0001-0005). Asserts every expected result; ends with P0TEST_PASS or P0TEST_FAIL.
 -- Creates synthetic users/rows, runs checks as `authenticated` with JWT claims,
 -- then RAISES at the end so the whole transaction (fixtures included) rolls back.
 -- Results are returned in the exception message. No rows persist; no push is sent
@@ -38,6 +38,10 @@ BEGIN
     INSERT INTO public.memories (user_id, media_url, media_type, visibility)
     SELECT u, 'user-media:' || u || '/mem-' || v || '.jpg', 'photo', v
     FROM unnest(ARRAY['public','followers','private']) v;
+    -- matching real storage objects: UID folder + correct uploader (owner and owner_id)
+    INSERT INTO storage.objects (bucket_id, name, owner, owner_id)
+    SELECT 'user-media', u || '/' || k || '-' || v || '.jpg', u, u::text
+    FROM unnest(ARRAY['public','followers','private']) v, unnest(ARRAY['story','mem']) k;
   END LOOP;
 
   -- ---------- story / memory SELECT matrix ----------
@@ -88,6 +92,48 @@ BEGIN
     PERFORM public.can_view_user_media(o, o || '/mem-public.jpg');
     r := r || 'anon_media_helper=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('anon_media_helper=DENIED ' || SQLSTATE); END;
+  PERFORM set_config('role', su, true);
+
+  -- ---------- media token spoofing ----------
+  PERFORM set_config('role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  BEGIN
+    INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public');
+    r := r || 'spoof_memory_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_memory_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.stories (user_id, media_url, media_type, visibility, expires_at) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public', now() + interval '1 day');
+    r := r || 'spoof_story_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_story_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.check_ins (user_id, location_name, photo, visibility) VALUES (s, 'x', 'user-media:' || o || '/mem-private.jpg', 'public');
+    r := r || 'spoof_checkin_insert=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_checkin_insert=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.memories (user_id, media_type, caption, visibility) VALUES (s, 'note', 'spoofnote', 'public');
+    UPDATE public.memories SET media_url = 'user-media:' || o || '/mem-private.jpg' WHERE user_id = s AND caption = 'spoofnote';
+    r := r || 'spoof_memory_update=ALLOWED'::text;
+  EXCEPTION WHEN others THEN r := r || ('spoof_memory_update=DENIED ' || SQLSTATE); END;
+  BEGIN
+    INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'https://example.com/legacy.jpg', 'photo', 'private');
+    r := r || 'legacy_http_memory=OK'::text;
+  EXCEPTION WHEN others THEN r := r || ('legacy_http_memory=ERR ' || SQLSTATE); END;
+  PERFORM set_config('role', su, true);
+  -- pre-existing spoof row (write guard bypassed by superuser) must still not grant access
+  ALTER TABLE public.memories DISABLE TRIGGER memories_media_token_owner;
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (s, 'user-media:' || o || '/mem-private.jpg', 'photo', 'public');
+  ALTER TABLE public.memories ENABLE TRIGGER memories_media_token_owner;
+  -- object planted in o's folder but uploaded by s, referenced by o's public memory
+  INSERT INTO storage.objects (bucket_id, name, owner, owner_id) VALUES ('user-media', o || '/planted-media.jpg', s, s::text);
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (o, 'user-media:' || o || '/planted-media.jpg', 'photo', 'public');
+  -- public memory whose storage object does not exist
+  INSERT INTO public.memories (user_id, media_url, media_type, visibility) VALUES (o, 'user-media:' || o || '/ghost.jpg', 'photo', 'public');
+  PERFORM set_config('role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  r := r || ('spoof_row_helper=' || public.can_view_user_media(s, o || '/mem-private.jpg'));
+  r := r || ('planted_uploader_helper=' || public.can_view_user_media(s, o || '/planted-media.jpg'));
+  r := r || ('missing_object_helper=' || public.can_view_user_media(s, o || '/ghost.jpg'));
+  r := r || ('genuine_public_media_helper=' || public.can_view_user_media(s, o || '/mem-public.jpg'));
   PERFORM set_config('role', su, true);
 
   -- ---------- notifications ----------
@@ -165,7 +211,8 @@ BEGIN
   -- ---------- checkin-photos storage ----------
   INSERT INTO storage.objects (bucket_id, name, owner, owner_id)
   VALUES ('checkin-photos', o || '/legit.jpg', o, o::text),
-         ('checkin-photos', o || '/planted.jpg', s, s::text);  -- legacy: s wrote into o's folder
+         ('checkin-photos', o || '/planted.jpg', s, s::text),  -- legacy: s wrote into o's folder
+         ('avatars', o || '/av.jpg', o, o::text);
   FOR t IN SELECT unnest(ARRAY[
     format('o_update_legit|%s|UPDATE storage.objects SET metadata = ''{"x":1}'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg'),
     format('o_update_planted|%s|UPDATE storage.objects SET metadata = ''{"x":1}'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/planted.jpg'),
@@ -176,10 +223,19 @@ BEGIN
     format('o_delete_planted|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/planted.jpg'),
     format('o_rename_into_s_folder|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, s || '/legit.jpg', o || '/legit.jpg'),
     format('o_reassign_owner_to_s|%s|UPDATE storage.objects SET owner=%L, owner_id=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, s, s, o || '/legit.jpg'),
+    -- cross-bucket: source = protected bucket
     format('o_move_bucket|%s|UPDATE storage.objects SET bucket_id=''avatars'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg'),
+    format('o_move_user_media_to_avatars|%s|UPDATE storage.objects SET bucket_id=''avatars'' WHERE bucket_id=''user-media'' AND name=%L', o, o || '/mem-public.jpg'),
+    -- cross-bucket: destination = protected bucket
+    format('o_move_avatar_into_checkin|%s|UPDATE storage.objects SET bucket_id=''checkin-photos'' WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av.jpg'),
+    format('o_move_avatar_into_user_media|%s|UPDATE storage.objects SET bucket_id=''user-media'' WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av.jpg'),
+    -- legitimate same-bucket moves still work
+    format('o_rename_within_checkin|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit2.jpg', o || '/legit.jpg'),
+    format('o_rename_within_user_media|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''user-media'' AND name=%L', o, o || '/renamed.jpg', o || '/story-private.jpg'),
+    format('o_rename_within_avatars|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av2.jpg', o || '/av.jpg'),
     format('s_insert_into_o_folder|%s|INSERT INTO storage.objects (bucket_id,name,owner,owner_id) VALUES (''checkin-photos'',%L,%L,%L)', s, o || '/x.jpg', s, s),
     format('s_insert_own_folder|%s|INSERT INTO storage.objects (bucket_id,name,owner,owner_id) VALUES (''checkin-photos'',%L,%L,%L)', s, s || '/x.jpg', s, s),
-    format('o_delete_legit|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg')
+    format('o_delete_legit|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit2.jpg')
   ]) LOOP
     BEGIN
       PERFORM set_config('role', 'authenticated', true);
@@ -282,6 +338,93 @@ BEGIN
   EXCEPTION WHEN others THEN r := r || ('import_upsert=ERR ' || SQLSTATE || ' ' || SQLERRM); END;
   PERFORM set_config('role', su, true);
 
-  RAISE EXCEPTION 'P0TEST_RESULTS%', E'\n' || array_to_string(r, E'\n');
+  -- ---------- assertions: every expected result must appear (prefix match) ----------
+  exp := ARRAY[
+    'stories_of_public_owner viewer=owner -> followers+private+public',
+    'stories_of_public_owner viewer=stranger -> public',
+    'stories_of_public_owner viewer=follower -> followers+public',
+    'stories_of_public_owner viewer=pending -> public',
+    'stories_of_public_owner viewer=blocked_by_owner -> none',
+    'stories_of_public_owner viewer=blocked_owner -> none',
+    'memories_of_public_owner viewer=stranger -> public',
+    'memories_of_public_owner viewer=blocked_by_owner -> none',
+    'memories_of_public_owner viewer=blocked_owner -> none',
+    'stories_of_private_owner viewer=owner -> followers+private+public',
+    'stories_of_private_owner viewer=stranger -> none',
+    'stories_of_private_owner viewer=accepted -> followers+public',
+    'stories_of_private_owner viewer=pending -> none',
+    'memories_of_private_owner viewer=stranger -> none',
+    'memories_of_private_owner viewer=pending -> none',
+    'media_helper_private_owner viewer=owner -> followers+private+public',
+    'media_helper_private_owner viewer=stranger -> none',
+    'media_helper_private_owner viewer=accepted -> followers+public',
+    'media_helper_private_owner viewer=pending -> none',
+    'media_helper_public_owner viewer=stranger -> public',
+    'media_helper_public_owner viewer=follower -> followers+public',
+    'media_helper_public_owner viewer=blocked_by_owner -> none',
+    'media_helper_public_owner viewer=blocked_owner -> none',
+    'impersonate_owner_media=false',
+    'impersonate_owner_content=false',
+    'anon_media_helper=DENIED',
+    'spoof_memory_insert=DENIED 42501',
+    'spoof_story_insert=DENIED 42501',
+    'spoof_checkin_insert=DENIED 42501',
+    'spoof_memory_update=DENIED 42501',
+    'legacy_http_memory=OK',
+    'spoof_row_helper=false',
+    'planted_uploader_helper=false',
+    'missing_object_helper=false',
+    'genuine_public_media_helper=true',
+    'client_insert=DENIED',
+    'own_content_edit=DENIED',
+    'own_user_id_edit=DENIED',
+    'foreign_read_update_rows=0',
+    'own_read_update_rows=1',
+    'owner_sees_strangers_notifs=0',
+    'client_call_notify_internal=DENIED',
+    'storage o_update_legit rows=1',
+    'storage o_update_planted rows=0',
+    'storage s_update_planted rows=0',
+    'storage s_update_legit rows=0',
+    'storage s_delete_legit rows=0',
+    'storage s_delete_planted rows=0',
+    'storage o_delete_planted rows=0',
+    'storage o_rename_into_s_folder DENIED 42501',
+    'storage o_reassign_owner_to_s DENIED 42501',
+    'storage o_move_bucket DENIED 42501',
+    'storage o_move_user_media_to_avatars DENIED 42501',
+    'storage o_move_avatar_into_checkin DENIED 42501',
+    'storage o_move_avatar_into_user_media DENIED 42501',
+    'storage o_rename_within_checkin rows=1',
+    'storage o_rename_within_user_media rows=1',
+    'storage o_rename_within_avatars rows=1',
+    'storage s_insert_into_o_folder DENIED 42501',
+    'storage s_insert_own_folder rows=1',
+    'storage o_delete_legit rows=1',
+    'cross_owner_visit_memory=DENIED 23503',
+    'note_only_memory=OK default_visibility=private',
+    'visit_delete_sets_only_visit_null=1',
+    'checkin_old_open_ended reused=false new_visit=t',
+    'checkin_same_day_again reused=true memory=t',
+    'shared_checkin_memory_visibility=followers',
+    'checkin_yesterday_visit reused=true same=t',
+    'continued_end_date_is_today=true',
+    'default_checkin_memory_visibility=private',
+    'checkin_unknown_dates reused=false memory_null=t',
+    'checkin_vs_import_row reused=false',
+    'new_checkin_visit=private/checkin',
+    'retry_same_request replayed=true',
+    'foreign_photo_ref=DENIED',
+    'stranger_sees_owner_private_visits=0',
+    'stranger_sees_owner_checkin_memories=0',
+    'import_upsert=1 rows scanned=12'
+  ];
+  FOREACH t IN ARRAY exp LOOP
+    IF NOT EXISTS (SELECT 1 FROM unnest(r) x WHERE x LIKE t || '%') THEN fails := fails || t; END IF;
+  END LOOP;
+  RAISE EXCEPTION 'P0TEST_%', CASE WHEN cardinality(fails) = 0
+    THEN 'PASS ' || cardinality(exp) || '/' || cardinality(exp) || ' assertions'
+    ELSE 'FAIL ' || cardinality(fails) || ' of ' || cardinality(exp) || E'\nMISSING:\n' || array_to_string(fails, E'\n') END
+    || E'\nRESULTS:\n' || array_to_string(r, E'\n');
 END
 $test$;

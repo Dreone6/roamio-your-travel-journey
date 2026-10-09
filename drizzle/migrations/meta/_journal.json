@@ -36,6 +36,13 @@
       "when": 1791589083967,
       "tag": "0004_media_token_ownership",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791589195299,
+      "tag": "0005_block_cross_bucket_moves",
+      "breakpoints": true
     }
   ]
 }

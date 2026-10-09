@@ -9,3 +9,4 @@
 - `places_visited.scanned_photo_count` (metadata-only import) and linked `memories` rows (real saved media/notes) are separate counts; never add one into the other. `photos_count` is deprecated.
 - `places_visited.canonical_place_id` links stay empty until a provider returns a stable city-level id; never guess or fabricate provider ids.
 - `user-media:` tokens on memories/stories/check_ins must sit in the row owner's own folder (trigger-enforced), and `can_view_user_media` also requires the storage uploader to match the row owner, so a foreign row can never grant access to someone else's private file. Legacy http URLs are public links with no private guarantee.
+- Client roles may never move storage objects into or out of `checkin-photos`/`user-media` (trigger `guard_bucket_move`), because permissive policies are OR-ed across buckets and cannot compare old vs new bucket; same-bucket renames stay allowed.
