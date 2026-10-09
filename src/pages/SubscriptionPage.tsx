@@ -379,7 +379,7 @@ export default function SubscriptionPage() {
             { feature: "Stories", free: "3/day", plus: "Unlimited", pro: "Unlimited", icon: "📸" },
             { feature: "Globe", free: "Basic", plus: "Advanced", pro: "Full Custom", icon: "🌍" },
             { feature: "Safety Tools", free: "Basic", plus: "Enhanced", pro: "Advanced", icon: "🛡️" },
-            { feature: "Messaging", free: "Standard", plus: "Standard", pro: "Private E2E", icon: "💬" },
+            { feature: "Messaging", free: "Standard", plus: "Standard", pro: "Private Chats", icon: "💬" },
             { feature: "Group Planning", free: "—", plus: "—", pro: "✓", icon: "👥" },
             { feature: "Creator Tools", free: "—", plus: "—", pro: "✓", icon: "⭐" },
             { feature: "Offline Access", free: "—", plus: "✓", pro: "✓", icon: "📱" },

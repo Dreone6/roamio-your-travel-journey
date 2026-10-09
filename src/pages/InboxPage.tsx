@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Search, Plus, MessageCircle, Lock, Shield, Timer, ChevronRight,
+  ArrowLeft, Search, Plus, MessageCircle, Shield, Timer, ChevronRight,
   Sparkles, Plane, MapPin, Globe, Image as ImageIcon, Video, Heart, Tag, UserPlus,
 } from "lucide-react";
 import { MOCK_USERS } from "@/data/mock/users";
@@ -66,7 +66,7 @@ export default function InboxPage() {
         .from("messages").select("content, message_type, sender_id, read_by, encrypted")
         .eq("conversation_id", conv.id).order("created_at", { ascending: false }).limit(1).single();
 
-      const lastContent = lastMsg?.encrypted ? "Encrypted message" :
+      const lastContent = lastMsg?.encrypted ? "Private message" :
         lastMsg?.message_type === "image" ? "Photo" :
         lastMsg?.message_type === "video" ? "Video" :
         lastMsg?.message_type === "trip_share" ? "Shared a trip" :
@@ -319,11 +319,6 @@ export default function InboxPage() {
                   {conv.online && (
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#22c55e] ring-2 ring-background" />
                   )}
-                  {conv.encryption_mode === "private" && (
-                    <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-                      <Lock className="h-2 w-2 text-white" />
-                    </div>
-                  )}
                   {conv.encryption_mode === "vanish" && (
                     <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-coral flex items-center justify-center border-2 border-background">
                       <Timer className="h-2 w-2 text-white" />
@@ -338,7 +333,7 @@ export default function InboxPage() {
                       </p>
                       {conv.encryption_mode === "private" && (
                         <span className="inline-flex items-center gap-0.5 text-[8.5px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                          <Lock className="h-2 w-2" /> Private
+                          Private Chat
                         </span>
                       )}
                     </div>

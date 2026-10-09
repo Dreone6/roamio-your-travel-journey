@@ -17,7 +17,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
   {
     id: "c-002", type: "direct", title: null, encryptionMode: "private", vanishAfterSeconds: null,
     createdBy: "u-004", lastMessageAt: new Date(Date.now() - 2 * 3600000).toISOString(),
-    lastMessagePreview: "🔒 Encrypted message",
+    lastMessagePreview: "Private message",
     participants: [
       { id: "cp-3", conversationId: "c-002", userId: "u-001", userName: u(0).name, userAvatar: u(0).avatarUrl, role: "member", muted: false, lastReadAt: new Date(Date.now() - 3 * 3600000).toISOString() },
       { id: "cp-4", conversationId: "c-002", userId: "u-004", userName: u(3).name, userAvatar: u(3).avatarUrl, role: "owner", muted: false, lastReadAt: new Date(Date.now() - 2 * 3600000).toISOString() },

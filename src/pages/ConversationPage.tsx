@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
-  MessageCircle, Lock, Timer, Eye, EyeOff, AlertTriangle, Smartphone, Image,
+  MessageCircle, Timer, EyeOff, AlertTriangle, Image,
   ChevronRight, X, Check, CheckCheck, Tag, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ export default function ConversationPage() {
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [encryptionMode, setEncryptionMode] = useState<EncryptionMode>("standard");
-  const [showEncryptionInfo, setShowEncryptionInfo] = useState(false);
   const [showVanishPicker, setShowVanishPicker] = useState(false);
   const [vanishSeconds, setVanishSeconds] = useState<number | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -124,7 +123,7 @@ export default function ConversationPage() {
     await supabase.from("conversations").update({ encryption_mode: "private" }).eq("id", id!);
     setEncryptionMode("private");
     setShowMenu(false);
-    toast.success("Upgraded to Private Travel Chat 🔒");
+    toast.success("Private Chat enabled");
   };
 
   const toggleVanishMode = async (seconds: number | null) => {
@@ -205,23 +204,21 @@ export default function ConversationPage() {
 
   const formatTime = (date: string) => new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const EncryptionBar = () => {
+  const ChatStatusBar = () => {
     if (encryptionMode === "standard") return null;
     return (
-      <button
-        onClick={() => setShowEncryptionInfo(true)}
+      <div
         className={`shrink-0 flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-bold ${
           encryptionMode === "private"
             ? "bg-emerald-500/10 text-emerald-600"
             : "bg-amber-500/10 text-amber-600"
         }`}
       >
-        {encryptionMode === "private" ? <Lock className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
         {encryptionMode === "private"
-          ? "Private Travel Chat · End-to-end encrypted"
+          ? "Private Chat"
           : `Vanish Mode · Messages disappear after ${VANISH_OPTIONS.find(o => o.value === vanishSeconds)?.label || "..."}`
         }
-      </button>
+      </div>
     );
   };
 
@@ -240,11 +237,6 @@ export default function ConversationPage() {
             }`}
             onDoubleClick={() => setShowReactions(msg.id)}
           >
-            {msg.encrypted && (
-              <div className={`flex items-center gap-1 mb-1 text-[9px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>
-                <Lock className="h-2 w-2" /> Encrypted
-              </div>
-            )}
             {msg.expires_at && (
               <div className={`flex items-center gap-1 mb-1 text-[9px] ${isMine ? "text-white/60" : "text-amber-500"}`}>
                 <Timer className="h-2 w-2" /> Disappearing
@@ -356,21 +348,16 @@ export default function ConversationPage() {
                 <span className="text-sm">👤</span>
               )}
             </div>
-            {encryptionMode === "private" && (
-              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 flex items-center justify-center border border-[hsl(var(--dark-bg))]">
-                <Lock className="h-2 w-2 text-white" />
-              </div>
-            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-[14px] truncate">{otherUser.name}</p>
             <p className="text-dark-muted text-[10px] flex items-center gap-1">
               {encryptionMode === "private" ? (
-                <><Lock className="h-2.5 w-2.5 text-emerald-400" /> Private Travel Chat</>
+                "Private Chat"
               ) : encryptionMode === "vanish" ? (
                 <><Timer className="h-2.5 w-2.5 text-amber-400" /> Vanish Mode</>
               ) : (
-                "Standard · Encrypted"
+                "Standard Chat"
               )}
             </p>
           </div>
@@ -383,16 +370,13 @@ export default function ConversationPage() {
           <div className="absolute right-4 top-20 z-50 rounded-xl dark-card-elevated p-1.5 shadow-elevated animate-scale-in min-w-[200px]">
             {encryptionMode !== "private" && (
               <button onClick={upgradeToPrivate} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-emerald-400 hover:bg-white/5 transition-colors rounded-lg">
-                <Lock className="h-3.5 w-3.5" /> Start Private Travel Chat
+                <MessageCircle className="h-3.5 w-3.5" /> Start Private Chat
               </button>
             )}
             <button onClick={() => { setShowMenu(false); setShowVanishPicker(true); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-amber-400 hover:bg-white/5 transition-colors rounded-lg">
               <Timer className="h-3.5 w-3.5" /> {encryptionMode === "vanish" ? "Change Vanish Timer" : "Enable Vanish Mode"}
             </button>
             <div className="border-t border-white/5 my-1" />
-            <button onClick={() => { setShowMenu(false); setShowEncryptionInfo(true); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-dark-muted hover:text-white transition-colors rounded-lg">
-              <Shield className="h-3.5 w-3.5" /> Encryption Info
-            </button>
             <button onClick={() => { setShowMenu(false); navigate(`/profile/${otherUser.id}`); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-dark-muted hover:text-white transition-colors rounded-lg">
               <Globe className="h-3.5 w-3.5" /> View Profile
             </button>
@@ -407,66 +391,8 @@ export default function ConversationPage() {
         )}
       </div>
 
-      {/* Encryption bar */}
-      <EncryptionBar />
-
-      {/* Encryption info modal */}
-      {showEncryptionInfo && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setShowEncryptionInfo(false)}>
-          <div className="bg-card rounded-t-3xl w-full max-w-md p-6 space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-emerald-500" />
-                <h3 className="font-heading text-[17px] font-bold text-foreground">
-                  {encryptionMode === "private" ? "Private Travel Chat" : "Messaging Security"}
-                </h3>
-              </div>
-              <button onClick={() => setShowEncryptionInfo(false)}>
-                <X className="h-5 w-5 text-muted-foreground" />
-              </button>
-            </div>
-
-            {encryptionMode === "private" ? (
-              <div className="space-y-3">
-                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-700">
-                    <Lock className="h-4 w-4" />
-                    <p className="text-[13px] font-bold">End-to-End Encrypted</p>
-                  </div>
-                  <p className="text-[12px] text-emerald-700/80 leading-relaxed">
-                    Messages in this chat are designed so only you and {otherUser.name} can read them. Not even Roavr can access these messages.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { icon: Lock, text: "Messages encrypted before leaving your device" },
-                    { icon: Eye, text: "Only sender and recipient hold the keys" },
-                    { icon: AlertTriangle, text: "Screenshots may be detected in a future update" },
-                    { icon: Smartphone, text: "Device verification coming soon" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-[12px] text-muted-foreground">
-                      <item.icon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-500" />
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted-foreground/60 text-center pt-1">
-                  Encryption architecture is prepared for a proven E2E protocol. No custom cryptography is used.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-[13px] text-muted-foreground leading-relaxed">
-                  Standard chats are encrypted in transit (TLS) and encrypted at rest on the server. Messages sync across your devices.
-                </p>
-                <Button onClick={() => { setShowEncryptionInfo(false); upgradeToPrivate(); }} className="w-full h-10 rounded-xl gradient-glow border-0 text-white font-bold text-[13px] gap-2">
-                  <Lock className="h-4 w-4" /> Upgrade to Private Travel Chat
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Chat status bar */}
+      <ChatStatusBar />
 
       {/* Vanish mode picker */}
       {showVanishPicker && (
@@ -538,7 +464,7 @@ export default function ConversationPage() {
             {encryptionMode !== "private" && (
               <div className="flex items-center gap-2 px-3 pt-2 text-[10px] text-amber-600">
                 <AlertTriangle className="h-3 w-3 shrink-0" />
-                <span>Sharing sensitive travel info? Consider enabling Private Travel Chat.</span>
+                <span>Sharing sensitive travel info? Consider enabling Private Chat.</span>
               </div>
             )}
           </div>
@@ -558,7 +484,7 @@ export default function ConversationPage() {
             </div>
             <p className="text-[13px] text-muted-foreground max-w-[220px]">
               {encryptionMode === "private"
-                ? "This is a Private Travel Chat. Messages are end-to-end encrypted."
+                ? "This is a Private Chat."
                 : "Start a conversation! Share trips, memories, and travel stories."
               }
             </p>
@@ -582,11 +508,6 @@ export default function ConversationPage() {
 
       {/* Input */}
       <div className="shrink-0 border-t border-border/40 bg-card/98 backdrop-blur-xl px-3 py-2.5 safe-area-bottom">
-        {encryptionMode === "private" && (
-          <div className="flex items-center gap-1 justify-center mb-1.5 text-[9px] text-emerald-600 font-medium">
-            <Lock className="h-2.5 w-2.5" /> End-to-end encrypted
-          </div>
-        )}
         <div className="flex items-center gap-2">
           <button onClick={() => setShowAttachMenu(true)} className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
             <Camera className="h-4 w-4 text-muted-foreground" />
