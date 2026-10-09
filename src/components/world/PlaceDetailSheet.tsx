@@ -83,6 +83,11 @@ export default function PlaceDetailSheet({
               {place.memories} {place.memories === 1 ? "memory" : "memories"} from this place
             </p>
           )}
+          {place.scannedPhotos > 0 && (
+            <p className="mt-1 text-[12px]" style={{ color: "#4B5563" }}>
+              {place.scannedPhotos} {place.scannedPhotos === 1 ? "photo" : "photos"} found on your device (not uploaded)
+            </p>
+          )}
 
           {/* Who else genuinely knows this place — authorised visits only. */}
           <div className="mt-5">

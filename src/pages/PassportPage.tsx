@@ -40,6 +40,7 @@ export default function PassportPage() {
       { label: "Visits", value: String(s.visits) },
     ];
     if (s.memories > 0) out.push({ label: "Memories", value: String(s.memories) });
+    if (s.scannedPhotos > 0) out.push({ label: "Photos scanned", value: String(s.scannedPhotos) });
     if (s.yearsTraveling && s.yearsTraveling > 1) {
       out.push({ label: "Years traveling", value: String(s.yearsTraveling) });
     }
