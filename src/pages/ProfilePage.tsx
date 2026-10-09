@@ -76,7 +76,7 @@ export default function ProfilePage() {
       const [memRes, tripRes, badgeRes] = await Promise.all([
         supabase.from("memories")
           .select("id, media_url, media_type, location_name, created_at, pinned_to_globe")
-          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(24),
+          .eq("user_id", user.id).not("media_url", "is", null).order("created_at", { ascending: false }).limit(24),
         supabase.from("trips")
           .select("id, title, destination, cover_photo, status")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),

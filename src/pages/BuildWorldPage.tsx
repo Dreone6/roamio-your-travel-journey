@@ -460,7 +460,7 @@ function ReviewStep({
         We found your travels
       </h1>
       <p className="mt-2 text-[14px]" style={{ color: MUTED }}>
-        {stats.countries} {stats.countries === 1 ? "country" : "countries"} · {stats.cities} {stats.cities === 1 ? "city" : "cities"} · {stats.memories} memories
+        {stats.countries} {stats.countries === 1 ? "country" : "countries"} · {stats.cities} {stats.cities === 1 ? "city" : "cities"} · {stats.memories} photos scanned
       </p>
 
       <div className="mt-4 flex items-center gap-3">
@@ -537,7 +537,7 @@ function ReviewStep({
                         <>
                           <p className="text-white truncate" style={{ fontSize: 16, fontWeight: 600 }}>{t.city}</p>
                           <p className="text-[12px] mt-0.5" style={{ color: MUTED }}>
-                            {formatRange(t.startDate, t.endDate)} · {t.memoryCount} {t.memoryCount === 1 ? "memory" : "memories"}
+                            {formatRange(t.startDate, t.endDate)} · {t.memoryCount} {t.memoryCount === 1 ? "photo" : "photos"}
                           </p>
                         </>
                       )}
@@ -679,7 +679,7 @@ function RevealStep({
           {[
             { v: stats.countries, l: "Countries" },
             { v: stats.cities, l: "Cities" },
-            { v: stats.memories, l: "Memories" },
+            { v: stats.memories, l: "Photos scanned" },
           ].map((s) => (
             <div key={s.l} className="flex-1 text-center">
               <p className="font-heading text-white font-bold" style={{ fontSize: 34, lineHeight: 1 }}>{s.v}</p>

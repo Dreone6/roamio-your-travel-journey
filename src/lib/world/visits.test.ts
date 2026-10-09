@@ -5,7 +5,7 @@ const visit = (
   id: string, city: string, country: string, start: string, end = start, memories = 0
 ): Visit => ({
   id, city, country, latitude: 41.9, longitude: 12.5,
-  startDate: start, endDate: end, memories,
+  startDate: start, endDate: end, memories, scannedPhotos: 0,
   visibility: "public", isMilestone: false, tripId: null,
 });
 
