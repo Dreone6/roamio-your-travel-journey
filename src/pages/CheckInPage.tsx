@@ -79,7 +79,7 @@ export default function CheckInPage() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) { setPhoto(file); setPhotoPreview(URL.createObjectURL(file)); }
+    if (file) { setPhoto(file); setPhotoPreview(URL.createObjectURL(file)); setUploadedPhotoRef(null); }
   };
 
   const handleSubmit = async () => {
@@ -147,7 +147,7 @@ export default function CheckInPage() {
   };
 
   const reset = () => {
-    setStep("idle"); setGeo(null); setNote(""); setPhoto(null); setPhotoPreview(null); setNearbyOffers([]); setChallenge(null);
+    setStep("idle"); setGeo(null); setNote(""); setPhoto(null); setPhotoPreview(null); setNearbyOffers([]); setChallenge(null); setUploadedPhotoRef(null); setPendingRequestId(null);
   };
 
   return (
@@ -216,7 +216,7 @@ export default function CheckInPage() {
             {photoPreview ? (
               <div className="relative rounded-xl overflow-hidden">
                 <img src={photoPreview} alt="Preview" className="w-full h-36 object-cover" />
-                <button onClick={() => { setPhoto(null); setPhotoPreview(null); }} className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white rounded-full p-1.5">
+                <button onClick={() => { setPhoto(null); setPhotoPreview(null); setUploadedPhotoRef(null); }} className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white rounded-full p-1.5">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
