@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, Users, Lock, Shield, Copy, Send, FileText } from "lucide-react";
+import { Eye, Users, Lock, Copy, Send, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -16,7 +16,6 @@ const VISIBILITIES = [
   { value: "public", label: "Public link", desc: "Anyone with the link can view", icon: Eye },
   { value: "followers", label: "Followers only", desc: "Only people who follow you", icon: Users },
   { value: "private", label: "Private invite", desc: "Only people you send the link to", icon: Lock },
-  { value: "encrypted", label: "Encrypted message", desc: "Send via end-to-end encrypted DM", icon: Shield },
 ] as const;
 
 export default function ShareItinerarySheet({ open, onOpenChange, tripId, tripTitle }: Props) {
