@@ -86,7 +86,7 @@ BEGIN
   BEGIN
     PERFORM set_config('role', 'anon', true);
     PERFORM public.can_view_user_media(o, o || '/mem-public.jpg');
-    r := r || 'anon_media_helper=ALLOWED';
+    r := r || 'anon_media_helper=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('anon_media_helper=DENIED ' || SQLSTATE); END;
   PERFORM set_config('role', su, true);
 
@@ -100,19 +100,19 @@ BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
     INSERT INTO public.notifications (user_id, type, title) VALUES (o, 'message', 'spoof');
-    r := r || 'client_insert=ALLOWED';
+    r := r || 'client_insert=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('client_insert=DENIED ' || SQLSTATE); END;
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
     UPDATE public.notifications SET title = 'edited' WHERE id = nid;
-    r := r || 'own_content_edit=ALLOWED';
+    r := r || 'own_content_edit=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('own_content_edit=DENIED ' || SQLSTATE); END;
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
     UPDATE public.notifications SET user_id = s WHERE id = nid;
-    r := r || 'own_user_id_edit=ALLOWED';
+    r := r || 'own_user_id_edit=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('own_user_id_edit=DENIED ' || SQLSTATE); END;
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
@@ -133,14 +133,14 @@ BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
     PERFORM public._notify_internal(o, s, 'message', 'x', '{}', 'k');
-    r := r || 'client_call_notify_internal=ALLOWED';
+    r := r || 'client_call_notify_internal=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('client_call_notify_internal=DENIED ' || SQLSTATE); END;
   PERFORM set_config('role', su, true);
   -- trip invite + story reactions
   INSERT INTO public.trips (user_id, title, destination) VALUES (o, 'T', 'D') RETURNING id INTO trip;
   PERFORM set_config('role', 'authenticated', true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
-  INSERT INTO public.trip_members (trip_id, user_id, role) VALUES (trip, f, 'editor');
+  INSERT INTO public.trip_members (trip_id, user_id, role) VALUES (trip, f, 'collaborator');
   PERFORM set_config('role', su, true);
   SELECT count(*) INTO n FROM public.notifications WHERE user_id = f AND type = 'trip_invite';
   r := r || ('trip_invite_notif=' || n);
@@ -156,7 +156,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', f, 'role', 'authenticated')::text, true);
   BEGIN
     INSERT INTO public.story_reactions (story_id, user_id, emoji) VALUES (sid, f, 'x');
-    INSERT INTO public.story_reactions (story_id, user_id, emoji) VALUES (sid, f, 'y');
+    INSERT INTO public.story_reactions (story_id, user_id, emoji) VALUES (sid, f, 'x') ON CONFLICT DO NOTHING;
   EXCEPTION WHEN others THEN r := r || ('follower_reaction_insert=ERR ' || SQLSTATE); END;
   PERFORM set_config('role', su, true);
   SELECT count(*) INTO n FROM public.notifications WHERE user_id = o AND type = 'story_reaction';
@@ -197,7 +197,7 @@ BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
     INSERT INTO public.memories (user_id, media_type, caption, visit_id) VALUES (o, 'note', 'hi', pvisit);
-    r := r || 'cross_owner_visit_memory=ALLOWED';
+    r := r || 'cross_owner_visit_memory=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('cross_owner_visit_memory=DENIED ' || SQLSTATE); END;
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
@@ -209,7 +209,7 @@ BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
     INSERT INTO public.memories (user_id, media_type) VALUES (o, 'photo');
-    r := r || 'photo_without_media=ALLOWED';
+    r := r || 'photo_without_media=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('photo_without_media=DENIED ' || SQLSTATE); END;
   PERFORM set_config('role', su, true);
   -- deleting a visit keeps the memory and its owner
@@ -256,7 +256,7 @@ BEGIN
   r := r || ('porto_linked_memories=' || n);
   BEGIN
     j := public.record_check_in(gen_random_uuid(), 'Porto', 'Portugal', 'x', 41.1, -8.6, NULL, 'user-media:' || s || '/stolen.jpg', false);
-    r := r || 'foreign_photo_ref=ALLOWED';
+    r := r || 'foreign_photo_ref=ALLOWED'::text;
   EXCEPTION WHEN others THEN r := r || ('foreign_photo_ref=DENIED ' || SQLSTATE); END;
   PERFORM set_config('role', su, true);
   PERFORM set_config('role', 'authenticated', true);
