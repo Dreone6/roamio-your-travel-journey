@@ -91,3 +91,16 @@ describe("conversationStarters", () => {
     expect(starters.every((x) => !/recommend|loves|favorite/i.test(x.text))).toBe(true);
   });
 });
+
+describe("scanned photos vs saved memories", () => {
+  it("never adds scanned import photos into the memories total", () => {
+    const w = aggregateWorld([
+      { ...visit("a", "Rome", "Italy", "2024-01-01", "2024-01-03", 2), scannedPhotos: 40 },
+      { ...visit("b", "Rome", "Italy", "2025-05-01", "2025-05-02", 0), scannedPhotos: 10 },
+    ]);
+    expect(w.summary.memories).toBe(2);
+    expect(w.summary.scannedPhotos).toBe(50);
+    expect(w.places[0].memories).toBe(2);
+    expect(w.places[0].scannedPhotos).toBe(50);
+  });
+});
