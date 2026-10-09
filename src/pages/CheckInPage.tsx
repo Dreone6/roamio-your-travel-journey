@@ -44,6 +44,9 @@ export default function CheckInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [nearbyOffers, setNearbyOffers] = useState<Offer[]>([]);
   const [challenge, setChallenge] = useState<{ challenge: string; reward_badge: string } | null>(null);
+  // Retry safety: keep the uploaded file and request id until the save is confirmed.
+  const [uploadedPhotoRef, setUploadedPhotoRef] = useState<string | null>(null);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
 
   const requestLocation = async () => {
     setStep("locating");
@@ -81,43 +84,63 @@ export default function CheckInPage() {
 
   const handleSubmit = async () => {
     if (!user || !geo) return;
+    if (!geo.city || !geo.country) {
+      toast({ title: "Couldn't place you", description: "We couldn't tell which city you're in. Please try again.", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     try {
-      let photoUrl: string | null = null;
-      if (photo) {
+      // Upload once per attempt; a retry reuses the same file + request id so
+      // nothing is duplicated if the save succeeded but the reply was lost.
+      let photoRef = uploadedPhotoRef;
+      if (photo && !photoRef) {
         const ext = photo.name.split(".").pop() || "jpg";
-        // Check-in photos are private by default, so they live in the private bucket.
-        photoUrl = await uploadUserMedia(photo, user.id, ext);
+        photoRef = await uploadUserMedia(photo, user.id, ext);
+        setUploadedPhotoRef(photoRef);
       }
+      const requestId = pendingRequestId ?? crypto.randomUUID();
+      setPendingRequestId(requestId);
 
-      const { error: checkInErr } = await supabase.from("check_ins").insert({
-        user_id: user.id, location_name: geo.location_name, latitude: lat, longitude: lng, notes: note || null, photo: photoUrl,
-        visibility: shareCheckIn ? "followers" : "private",
+      // One atomic server operation: visit (continue a <=48h same-city
+      // check-in visit, else a new private one) + check-in + memory.
+      const { error: rpcErr } = await supabase.rpc("record_check_in", {
+        p_client_request_id: requestId,
+        p_city: geo.city,
+        p_country: geo.country,
+        p_location_name: geo.location_name,
+        p_latitude: lat,
+        p_longitude: lng,
+        p_note: note.trim() || null,
+        p_photo: photoRef ?? null,
+        p_share: shareCheckIn,
       });
-      if (checkInErr) throw checkInErr;
-      const { data: existing } = await supabase.from("places_visited").select("id").eq("user_id", user.id).eq("city", geo.city).eq("country", geo.country).limit(1);
-      if (!existing || existing.length === 0) {
-        await supabase.from("places_visited").insert({
-          user_id: user.id, country: geo.country || "Unknown", city: geo.city || "Unknown",
-          latitude: lat, longitude: lng, date_visited: new Date().toISOString().split("T")[0], photos_count: photo ? 1 : 0,
-        });
-      } else if (photo) {
-        const place = existing[0];
-        const { data: placeData } = await supabase.from("places_visited").select("photos_count").eq("id", place.id).single();
-        if (placeData) await supabase.from("places_visited").update({ photos_count: (placeData.photos_count || 0) + 1 }).eq("id", place.id);
-      }
+      if (rpcErr) throw rpcErr;
+      setPendingRequestId(null);
+      setUploadedPhotoRef(null);
+
+      // Non-essential extras: failures here never undo or misreport the check-in.
+      const extras: string[] = [];
       if (challenge) {
-        await supabase.from("challenges").insert({
+        const { error } = await supabase.from("challenges").insert({
           user_id: user.id, location: `${geo.city}, ${geo.country}`, challenge_text: challenge.challenge, reward_badge: challenge.reward_badge, status: "active" as const,
         });
+        if (error) extras.push("challenge");
       }
-      const { data: offers } = await supabase.rpc("nearby_offers", { lat, lng, radius_miles: 5 });
+      const { data: offers, error: offersErr } = await supabase.rpc("nearby_offers", { lat, lng, radius_miles: 5 });
+      if (offersErr) extras.push("nearby offers");
       setNearbyOffers((offers as Offer[]) || []);
-      await supabase.functions.invoke("check-badges", { body: { user_id: user.id } });
-      toast({ title: "Checked in!", description: `${geo.location_name}, ${geo.city}` });
+      const { error: badgeErr } = await supabase.functions.invoke("check-badges", { body: { user_id: user.id } });
+      if (badgeErr) extras.push("badges");
+
+      toast({
+        title: "Checked in!",
+        description: extras.length
+          ? `${geo.city}, ${geo.country} — saved. Couldn't load: ${extras.join(", ")}.`
+          : `${geo.location_name}, ${geo.city}`,
+      });
       setStep("done");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to check in", variant: "destructive" });
+      toast({ title: "Check-in not saved", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
