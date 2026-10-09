@@ -1,3 +1,6 @@
 - [x] Remove SafePass route and Profile entry point.
 - [x] Delete SafePass/SOS screens and unused feature assets; remove emergency simulation dependencies.
 - [x] Check remaining imports, tests, and running app (89 tests passed; compilation OK; signed-in Profile and retired route verified).
+- [x] Remove false "End-to-End Encrypted" / E2E claims from chat and itinerary-sharing screens; keep real message and sharing logic.
+- [x] Fix chat creation so opening a traveler's chat works (creator could not read back the conversation they just made).
+- [x] Verify signed-in chat flow, share-visibility rule test, typecheck and build.
