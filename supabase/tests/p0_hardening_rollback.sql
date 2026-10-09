@@ -1,4 +1,4 @@
--- Rollback-only role-claim verification for migration 0001_p0_hardening_atlas_alignment.
+-- Rollback-only role-claim verification (migrations 0001-0005). Asserts every expected result; ends with P0TEST_PASS or P0TEST_FAIL.
 -- Creates synthetic users/rows, runs checks as `authenticated` with JWT claims,
 -- then RAISES at the end so the whole transaction (fixtures included) rolls back.
 -- Results are returned in the exception message. No rows persist; no push is sent
@@ -338,6 +338,93 @@ BEGIN
   EXCEPTION WHEN others THEN r := r || ('import_upsert=ERR ' || SQLSTATE || ' ' || SQLERRM); END;
   PERFORM set_config('role', su, true);
 
-  RAISE EXCEPTION 'P0TEST_RESULTS%', E'\n' || array_to_string(r, E'\n');
+  -- ---------- assertions: every expected result must appear (prefix match) ----------
+  exp := ARRAY[
+    'stories_of_public_owner viewer=owner -> followers+private+public',
+    'stories_of_public_owner viewer=stranger -> public',
+    'stories_of_public_owner viewer=follower -> followers+public',
+    'stories_of_public_owner viewer=pending -> public',
+    'stories_of_public_owner viewer=blocked_by_owner -> none',
+    'stories_of_public_owner viewer=blocked_owner -> none',
+    'memories_of_public_owner viewer=stranger -> public',
+    'memories_of_public_owner viewer=blocked_by_owner -> none',
+    'memories_of_public_owner viewer=blocked_owner -> none',
+    'stories_of_private_owner viewer=owner -> followers+private+public',
+    'stories_of_private_owner viewer=stranger -> none',
+    'stories_of_private_owner viewer=accepted -> followers+public',
+    'stories_of_private_owner viewer=pending -> none',
+    'memories_of_private_owner viewer=stranger -> none',
+    'memories_of_private_owner viewer=pending -> none',
+    'media_helper_private_owner viewer=owner -> followers+private+public',
+    'media_helper_private_owner viewer=stranger -> none',
+    'media_helper_private_owner viewer=accepted -> followers+public',
+    'media_helper_private_owner viewer=pending -> none',
+    'media_helper_public_owner viewer=stranger -> public',
+    'media_helper_public_owner viewer=follower -> followers+public',
+    'media_helper_public_owner viewer=blocked_by_owner -> none',
+    'media_helper_public_owner viewer=blocked_owner -> none',
+    'impersonate_owner_media=false',
+    'impersonate_owner_content=false',
+    'anon_media_helper=DENIED',
+    'spoof_memory_insert=DENIED 42501',
+    'spoof_story_insert=DENIED 42501',
+    'spoof_checkin_insert=DENIED 42501',
+    'spoof_memory_update=DENIED 42501',
+    'legacy_http_memory=OK',
+    'spoof_row_helper=false',
+    'planted_uploader_helper=false',
+    'missing_object_helper=false',
+    'genuine_public_media_helper=true',
+    'client_insert=DENIED',
+    'own_content_edit=DENIED',
+    'own_user_id_edit=DENIED',
+    'foreign_read_update_rows=0',
+    'own_read_update_rows=1',
+    'owner_sees_strangers_notifs=0',
+    'client_call_notify_internal=DENIED',
+    'storage o_update_legit rows=1',
+    'storage o_update_planted rows=0',
+    'storage s_update_planted rows=0',
+    'storage s_update_legit rows=0',
+    'storage s_delete_legit rows=0',
+    'storage s_delete_planted rows=0',
+    'storage o_delete_planted rows=0',
+    'storage o_rename_into_s_folder DENIED 42501',
+    'storage o_reassign_owner_to_s DENIED 42501',
+    'storage o_move_bucket DENIED 42501',
+    'storage o_move_user_media_to_avatars DENIED 42501',
+    'storage o_move_avatar_into_checkin DENIED 42501',
+    'storage o_move_avatar_into_user_media DENIED 42501',
+    'storage o_rename_within_checkin rows=1',
+    'storage o_rename_within_user_media rows=1',
+    'storage o_rename_within_avatars rows=1',
+    'storage s_insert_into_o_folder DENIED 42501',
+    'storage s_insert_own_folder rows=1',
+    'storage o_delete_legit rows=1',
+    'cross_owner_visit_memory=DENIED 23503',
+    'note_only_memory=OK default_visibility=private',
+    'visit_delete_sets_only_visit_null=1',
+    'checkin_old_open_ended reused=false new_visit=t',
+    'checkin_same_day_again reused=true memory=t',
+    'shared_checkin_memory_visibility=followers',
+    'checkin_yesterday_visit reused=true same=t',
+    'continued_end_date_is_today=true',
+    'default_checkin_memory_visibility=private',
+    'checkin_unknown_dates reused=false memory_null=t',
+    'checkin_vs_import_row reused=false',
+    'new_checkin_visit=private/checkin',
+    'retry_same_request replayed=true',
+    'foreign_photo_ref=DENIED',
+    'stranger_sees_owner_private_visits=0',
+    'stranger_sees_owner_checkin_memories=0',
+    'import_upsert=1 rows scanned=12'
+  ];
+  FOREACH t IN ARRAY exp LOOP
+    IF NOT EXISTS (SELECT 1 FROM unnest(r) x WHERE x LIKE t || '%') THEN fails := fails || t; END IF;
+  END LOOP;
+  RAISE EXCEPTION 'P0TEST_%', CASE WHEN cardinality(fails) = 0
+    THEN 'PASS ' || cardinality(exp) || '/' || cardinality(exp) || ' assertions'
+    ELSE 'FAIL ' || cardinality(fails) || ' of ' || cardinality(exp) || E'\nMISSING:\n' || array_to_string(fails, E'\n') END
+    || E'\nRESULTS:\n' || array_to_string(r, E'\n');
 END
 $test$;
