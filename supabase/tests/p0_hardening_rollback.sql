@@ -211,7 +211,8 @@ BEGIN
   -- ---------- checkin-photos storage ----------
   INSERT INTO storage.objects (bucket_id, name, owner, owner_id)
   VALUES ('checkin-photos', o || '/legit.jpg', o, o::text),
-         ('checkin-photos', o || '/planted.jpg', s, s::text);  -- legacy: s wrote into o's folder
+         ('checkin-photos', o || '/planted.jpg', s, s::text),  -- legacy: s wrote into o's folder
+         ('avatars', o || '/av.jpg', o, o::text);
   FOR t IN SELECT unnest(ARRAY[
     format('o_update_legit|%s|UPDATE storage.objects SET metadata = ''{"x":1}'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg'),
     format('o_update_planted|%s|UPDATE storage.objects SET metadata = ''{"x":1}'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/planted.jpg'),
@@ -222,10 +223,19 @@ BEGIN
     format('o_delete_planted|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/planted.jpg'),
     format('o_rename_into_s_folder|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, s || '/legit.jpg', o || '/legit.jpg'),
     format('o_reassign_owner_to_s|%s|UPDATE storage.objects SET owner=%L, owner_id=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, s, s, o || '/legit.jpg'),
+    -- cross-bucket: source = protected bucket
     format('o_move_bucket|%s|UPDATE storage.objects SET bucket_id=''avatars'' WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg'),
+    format('o_move_user_media_to_avatars|%s|UPDATE storage.objects SET bucket_id=''avatars'' WHERE bucket_id=''user-media'' AND name=%L', o, o || '/mem-public.jpg'),
+    -- cross-bucket: destination = protected bucket
+    format('o_move_avatar_into_checkin|%s|UPDATE storage.objects SET bucket_id=''checkin-photos'' WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av.jpg'),
+    format('o_move_avatar_into_user_media|%s|UPDATE storage.objects SET bucket_id=''user-media'' WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av.jpg'),
+    -- legitimate same-bucket moves still work
+    format('o_rename_within_checkin|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit2.jpg', o || '/legit.jpg'),
+    format('o_rename_within_user_media|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''user-media'' AND name=%L', o, o || '/renamed.jpg', o || '/story-private.jpg'),
+    format('o_rename_within_avatars|%s|UPDATE storage.objects SET name=%L WHERE bucket_id=''avatars'' AND name=%L', o, o || '/av2.jpg', o || '/av.jpg'),
     format('s_insert_into_o_folder|%s|INSERT INTO storage.objects (bucket_id,name,owner,owner_id) VALUES (''checkin-photos'',%L,%L,%L)', s, o || '/x.jpg', s, s),
     format('s_insert_own_folder|%s|INSERT INTO storage.objects (bucket_id,name,owner,owner_id) VALUES (''checkin-photos'',%L,%L,%L)', s, s || '/x.jpg', s, s),
-    format('o_delete_legit|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit.jpg')
+    format('o_delete_legit|%s|DELETE FROM storage.objects WHERE bucket_id=''checkin-photos'' AND name=%L', o, o || '/legit2.jpg')
   ]) LOOP
     BEGIN
       PERFORM set_config('role', 'authenticated', true);
