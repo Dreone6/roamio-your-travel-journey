@@ -71,7 +71,6 @@ export const PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       "Everything in Plus",
       "Group trip planning",
       "Shared itinerary voting",
-      "Advanced safety tools",
       "Advanced travel analytics",
       "Creator profile tools",
       "Public map customization",
@@ -112,7 +111,6 @@ export type UpgradeTrigger =
   | "premium_filters"
   | "unlimited_stories"
   | "group_planning"
-  | "advanced_safety"
   | "creator_profile"
   | "priority_ai"
   | "encrypted_chats"
@@ -170,14 +168,6 @@ export const UPGRADE_TRIGGERS: Record<UpgradeTrigger, UpgradeTriggerConfig> = {
     requiredTier: "pro",
     emoji: "👥",
     ctaLabel: "Unlock Group Planning",
-  },
-  advanced_safety: {
-    trigger: "advanced_safety",
-    title: "Advanced safety tools",
-    description: "Live location sharing, real-time safety alerts, and enhanced emergency features are available with Roavr Pro.",
-    requiredTier: "pro",
-    emoji: "🛡️",
-    ctaLabel: "Upgrade for Advanced Safety",
   },
   creator_profile: {
     trigger: "creator_profile",

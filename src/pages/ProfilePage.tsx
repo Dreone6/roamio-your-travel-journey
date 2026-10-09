@@ -14,7 +14,6 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import roavrPin from "@/assets/roavr-pin.png";
-import SafePassCard from "@/components/safety/SafePassCard";
 
 const WorldGlobe = lazy(() => import("@/components/globe/WorldGlobe"));
 
@@ -324,13 +323,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
-
-      {/* 4c. SAFEPASS */}
-      <div className="px-5 mt-6">
-        <SafePassCard />
-      </div>
-
-
 
       {/* 5. HIGHLIGHTS */}
       <div className="mt-7">

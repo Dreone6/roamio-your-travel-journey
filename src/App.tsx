@@ -34,7 +34,6 @@ const NewMessagePage = lazy(() => import("@/pages/NewMessagePage"));
 const CameraPage = lazy(() => import("@/pages/CameraPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
-const SafePassPage = lazy(() => import("@/pages/SafePassPage"));
 const SurpriseMePage = lazy(() => import("@/pages/SurpriseMePage"));
 const SharedItineraryPage = lazy(() => import("@/pages/SharedItineraryPage"));
 const BuildWorldPage = lazy(() => import("@/pages/BuildWorldPage"));
@@ -69,7 +68,6 @@ const App = () => (
               <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
               <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
               <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
-              <Route path="/safety" element={<ProtectedRoute><SafePassPage /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
               <Route path="/messages/new" element={<ProtectedRoute><NewMessagePage /></ProtectedRoute>} />
               <Route path="/messages/:id" element={<ProtectedRoute><ConversationPage /></ProtectedRoute>} />

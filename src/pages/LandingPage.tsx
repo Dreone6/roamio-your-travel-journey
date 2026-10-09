@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight, Check, Crown, Zap, Sparkles, Globe, MapPin,
-  Camera, Shield, MessageCircle, Users, Map, Compass, Star,
+  Camera, MessageCircle, Users, Map, Compass, Star,
   ChevronRight, Play, Heart, Lock, Eye, Navigation, Trophy,
 } from "lucide-react";
 import roavrLogo from "@/assets/roavr-logo.png";
@@ -54,7 +54,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Roavr is your AI social travel companion for planning trips, discovering local experiences, capturing memories, sharing your travel map, and staying protected anywhere you go.
+            Roavr is your AI social travel companion for planning trips, discovering local experiences, capturing memories, sharing your travel map.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
@@ -70,14 +70,13 @@ export default function LandingPage() {
 
       {/* ── App Preview Cards ──────────────────────────── */}
       <section className="max-w-6xl mx-auto px-5 pb-16 md:pb-24">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { label: "AI Planner", icon: Sparkles, color: "from-emerald-500/15 to-teal-500/10", iconColor: "text-emerald-500" },
             { label: "Discover", icon: Compass, color: "from-blue-500/15 to-indigo-500/10", iconColor: "text-blue-500" },
             { label: "Globe", icon: Globe, color: "from-violet-500/15 to-purple-500/10", iconColor: "text-violet-500" },
             { label: "Stories", icon: Camera, color: "from-pink-500/15 to-rose-500/10", iconColor: "text-pink-500" },
             { label: "Messaging", icon: MessageCircle, color: "from-cyan-500/15 to-sky-500/10", iconColor: "text-cyan-500" },
-            { label: "SafePass", icon: Shield, color: "from-amber-500/15 to-orange-500/10", iconColor: "text-amber-500" },
           ].map((item, i) => (
             <div
               key={item.label}
@@ -293,47 +292,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* SafePass */}
-        <div className="grid md:grid-cols-2 gap-10 items-center">
-          <div className="order-2 md:order-1 rounded-3xl bg-gradient-to-br from-emerald-500/[0.04] to-teal-500/[0.02] border border-emerald-500/10 p-8 min-h-[320px]">
-            <div className="space-y-4">
-              {[
-                { title: "Prepare", desc: "Passport reminders, visa notes, packing lists, emergency contacts, and trip sharing setup.", icon: "📋", color: "bg-blue-500/10 text-blue-500" },
-                { title: "Stay Aware", desc: "Destination safety notes, scam alerts, weather, transportation warnings, and nightlife guidance.", icon: "👁️", color: "bg-amber-500/10 text-amber-500" },
-                { title: "Reach Help", desc: "Emergency SOS, local numbers, embassy info, trusted contacts, and live location sharing.", icon: "🆘", color: "bg-rose-500/10 text-rose-500" },
-              ].map(p => (
-                <div key={p.title} className="rounded-xl border border-border/30 bg-card p-4 flex items-start gap-3">
-                  <span className="text-xl">{p.icon}</span>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{p.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{p.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="order-1 md:order-2 space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/8 text-emerald-600 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider">
-              <Shield className="h-3.5 w-3.5" /> SafePass
-            </div>
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground tracking-tight leading-tight">
-              Travel with<br /><span className="italic text-accent">confidence</span>
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Roavr SafePass helps you prepare for every trip, stay aware of your surroundings, and reach help instantly. Calm, trustworthy, and always accessible.
-            </p>
-            <ul className="space-y-2.5">
-              {["Pre-trip safety checklist", "Destination safety breakdowns", "Local emergency numbers", "Embassy and consulate info", "Trusted contact alerts"].map(f => (
-                <li key={f} className="flex items-center gap-2.5 text-sm text-foreground">
-                  <div className="h-5 w-5 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                    <Check className="h-3 w-3 text-accent" />
-                  </div>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
       </section>
 
       {/* ── Pricing ────────────────────────────────────── */}
@@ -362,7 +320,7 @@ export default function LandingPage() {
               },
               {
                 id: "pro", name: "Roavr Pro", price: "$14.99", period: "/mo", icon: Crown, iconColor: "text-amber-500",
-                features: ["Everything in Plus", "Group trip planning", "Private Travel Chats (E2E)", "Advanced safety tools", "Creator profile tools", "Priority AI planning"],
+                features: ["Everything in Plus", "Group trip planning", "Private Travel Chats (E2E)", "Creator profile tools", "Priority AI planning"],
               },
             ].map((tier) => (
               <div
@@ -427,7 +385,6 @@ export default function LandingPage() {
           {[
             { icon: Sparkles, title: "AI that understands you", desc: "Not generic templates. Real itineraries matched to your style, budget, pace, and dietary preferences." },
             { icon: Globe, title: "Your travel story, mapped", desc: "Every trip becomes a pin on your globe. Watch your world fill up over time. Share it or keep it private." },
-            { icon: Shield, title: "Safe wherever you go", desc: "SafePass gives you destination safety notes, emergency numbers, embassy info, and trusted contact alerts." },
             { icon: Camera, title: "Memories that last", desc: "Stories auto-convert to permanent memory pins. Your travel archive grows without extra effort." },
             { icon: Lock, title: "Privacy you control", desc: "Set visibility per trip, memory, check-in, and story. From fully public to completely private." },
             { icon: Heart, title: "No ads, no spam", desc: "Roavr is built on subscriptions, not advertising. Your travel data stays yours." },

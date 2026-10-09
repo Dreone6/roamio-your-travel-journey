@@ -54,7 +54,7 @@ export default function OfflineTripToggle({ tripId, tripData }: Props) {
           {tier !== "pro" && <Crown className="h-3 w-3 text-amber-400" />}
         </div>
         <p className="text-[10px] text-dark-muted">
-          Itinerary, bookings, map pins, hotel address, emergency contacts, phrases & currency
+          Itinerary, bookings, map pins, hotel address, phrases & currency
         </p>
       </div>
     </button>
