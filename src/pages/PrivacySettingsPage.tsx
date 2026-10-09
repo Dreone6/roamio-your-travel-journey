@@ -73,25 +73,38 @@ export default function PrivacySettingsPage() {
     if (!user) return;
     setSaving(true);
     try {
-      const { data: existing } = await supabase
+      const { data: existing, error: lookupError } = await supabase
         .from("user_privacy_settings")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
+      if (lookupError) {
+        toast.error(lookupError.message || "Failed to save settings");
+        return;
+      }
 
-      if (existing) {
-        await supabase
-          .from("user_privacy_settings")
-          .update({ ...settings, updated_at: new Date().toISOString() })
-          .eq("user_id", user.id);
-      } else {
-        await supabase
-          .from("user_privacy_settings")
-          .insert({ user_id: user.id, ...settings });
+      const { data: saved, error } = existing
+        ? await supabase
+            .from("user_privacy_settings")
+            .update({ ...settings, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id)
+            .select("id")
+        : await supabase
+            .from("user_privacy_settings")
+            .insert({ user_id: user.id, ...settings })
+            .select("id");
+
+      if (error) {
+        toast.error(error.message || "Failed to save settings");
+        return;
+      }
+      if (!saved || saved.length === 0) {
+        toast.error("Settings weren't saved. Please try again.");
+        return;
       }
       toast.success("Privacy settings saved!");
     } catch (err: any) {
-      toast.error(err.message || "Failed to save settings");
+      toast.error(err?.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
