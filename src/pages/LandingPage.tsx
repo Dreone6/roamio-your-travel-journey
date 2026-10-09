@@ -320,7 +320,7 @@ export default function LandingPage() {
               },
               {
                 id: "pro", name: "Roavr Pro", price: "$14.99", period: "/mo", icon: Crown, iconColor: "text-amber-500",
-                features: ["Everything in Plus", "Group trip planning", "Private Travel Chats (E2E)", "Creator profile tools", "Priority AI planning"],
+                features: ["Everything in Plus", "Group trip planning", "Private Travel Chats", "Creator profile tools", "Priority AI planning"],
               },
             ].map((tier) => (
               <div

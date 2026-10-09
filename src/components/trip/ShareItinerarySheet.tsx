@@ -12,7 +12,7 @@ interface Props {
   tripTitle: string;
 }
 
-const VISIBILITIES = [
+export const SHARE_VISIBILITIES = [
   { value: "public", label: "Public link", desc: "Anyone with the link can view", icon: Eye },
   { value: "followers", label: "Followers only", desc: "Only people who follow you", icon: Users },
   { value: "private", label: "Private invite", desc: "Only people you send the link to", icon: Lock },
@@ -58,7 +58,7 @@ export default function ShareItinerarySheet({ open, onOpenChange, tripId, tripTi
           </p>
 
           <div className="space-y-1.5">
-            {VISIBILITIES.map(({ value, label, desc, icon: Icon }) => (
+            {SHARE_VISIBILITIES.map(({ value, label, desc, icon: Icon }) => (
               <button
                 key={value}
                 onClick={() => setVisibility(value)}
