@@ -15,6 +15,13 @@
       "when": 1791588584476,
       "tag": "0001_p0_hardening_atlas_alignment",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791588780452,
+      "tag": "0002_notification_types_for_triggers",
+      "breakpoints": true
     }
   ]
 }
