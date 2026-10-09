@@ -7,4 +7,4 @@
 - Non-owner reads of stories, memories and private media go through `can_view_owned_content` (viewer bound to `auth.uid()`; blocks, profile privacy and per-row visibility all enforced) so every surface applies one privacy rule.
 - Check-ins are saved only through the atomic, idempotent `record_check_in` RPC (visit + check-in + memory in one transaction), so partial writes and duplicate retries can't corrupt visits.
 - `places_visited.scanned_photo_count` (metadata-only import) and linked `memories` rows (real saved media/notes) are separate counts; never add one into the other. `photos_count` is deprecated.
-- `places.canonical_place_id` links stay empty until a provider returns a stable city-level id; never guess or fabricate provider ids.
+- `places_visited.canonical_place_id` links stay empty until a provider returns a stable city-level id; never guess or fabricate provider ids.
