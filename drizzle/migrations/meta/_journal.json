@@ -29,6 +29,13 @@
       "when": 1791588875653,
       "tag": "0003_story_reactions_require_visible_story",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791589083967,
+      "tag": "0004_media_token_ownership",
+      "breakpoints": true
     }
   ]
 }

@@ -2026,6 +2026,10 @@ export type Database = {
         Args: { _trip: string; _user: string }
         Returns: boolean
       }
+      media_token_owned_by: {
+        Args: { _owner: string; _token: string }
+        Returns: boolean
+      }
       nearby_marketplace_offers: {
         Args: {
           include_demo?: boolean
