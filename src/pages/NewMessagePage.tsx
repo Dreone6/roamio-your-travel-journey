@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, UserPlus, MessageCircle, Lock, Shield } from "lucide-react";
+import { ArrowLeft, Search, UserPlus, MessageCircle, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserResult {
@@ -106,14 +106,14 @@ export default function NewMessagePage() {
             <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
               startAsPrivate ? "bg-emerald-500/20" : "bg-white/5"
             }`}>
-              {startAsPrivate ? <Lock className="h-4 w-4 text-emerald-400" /> : <Shield className="h-4 w-4 text-dark-muted" />}
+              {startAsPrivate ? <MessageCircle className="h-4 w-4 text-emerald-400" /> : <Shield className="h-4 w-4 text-dark-muted" />}
             </div>
             <div className="text-left flex-1">
               <p className={`text-[12px] font-semibold ${startAsPrivate ? "text-emerald-400" : "text-dark-muted"}`}>
-                {startAsPrivate ? "Private Travel Chat" : "Standard Chat"}
+                {startAsPrivate ? "Private Chat" : "Standard Chat"}
               </p>
               <p className="text-[10px] text-dark-muted">
-                {startAsPrivate ? "End-to-end encrypted · Only you and the recipient" : "Encrypted in transit and at rest"}
+                {startAsPrivate ? "Private Chat · Only you and the recipient" : "Encrypted in transit and at rest"}
               </p>
             </div>
             <div className={`h-5 w-9 rounded-full relative transition-colors ${startAsPrivate ? "bg-emerald-500" : "bg-white/10"}`}>
@@ -167,11 +167,7 @@ export default function NewMessagePage() {
                   <p className="text-[13px] font-semibold text-foreground truncate">{u.name || "Traveler"}</p>
                   {u.home_city && <p className="text-[11px] text-muted-foreground">{u.home_city}</p>}
                 </div>
-                {startAsPrivate ? (
-                  <Lock className="h-4 w-4 text-emerald-500 shrink-0" />
-                ) : (
-                  <MessageCircle className="h-4 w-4 text-accent shrink-0" />
-                )}
+                <MessageCircle className={`h-4 w-4 ${startAsPrivate ? "text-emerald-500" : "text-accent"} shrink-0`} />
               </button>
             ))}
           </div>
