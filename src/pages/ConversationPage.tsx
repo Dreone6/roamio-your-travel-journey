@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, MapPin, Plane, MoreVertical, Camera, Globe, Shield, Flag,
-  MessageCircle, Timer, EyeOff, AlertTriangle, Image,
+  MessageCircle, Timer, EyeOff, Image,
   ChevronRight, X, Check, CheckCheck, Tag, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
