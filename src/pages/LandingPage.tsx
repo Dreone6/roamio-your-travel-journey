@@ -206,10 +206,10 @@ export default function LandingPage() {
               Travel is better<br /><span className="italic text-accent">together</span>
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Follow travelers, share trips, send map pins in messages, react to stories, and explore other travelers' globes. Messaging includes encrypted Private Travel Chats for Pro users.
+              Follow travelers, share trips, send map pins in messages, react to stories, and explore other travelers' globes. Messaging includes Private Travel Chats for Pro users.
             </p>
             <ul className="space-y-2.5">
-              {["Follow travelers and explore maps", "Share trips, pins, and memories in chat", "React to stories and check-ins", "Private Travel Chats (E2E, Pro)", "Public traveler profiles"].map(f => (
+              {["Follow travelers and explore maps", "Share trips, pins, and memories in chat", "React to stories and check-ins", "Private Travel Chats (Pro)", "Public traveler profiles"].map(f => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-foreground">
                   <div className="h-5 w-5 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                     <Check className="h-3 w-3 text-accent" />
@@ -224,7 +224,7 @@ export default function LandingPage() {
               <Users className="h-8 w-8 text-pink-500" />
             </div>
             <p className="font-heading text-xl font-bold text-foreground text-center">Social Travel Network</p>
-            <p className="text-sm text-muted-foreground text-center mt-2 max-w-[240px]">Followers, stories, trip sharing, and encrypted messaging</p>
+            <p className="text-sm text-muted-foreground text-center mt-2 max-w-[240px]">Followers, stories, trip sharing, and private messaging</p>
           </div>
         </div>
 

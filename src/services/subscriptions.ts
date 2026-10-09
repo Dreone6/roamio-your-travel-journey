@@ -74,7 +74,7 @@ export const PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       "Advanced travel analytics",
       "Creator profile tools",
       "Public map customization",
-      "Private Travel Chats (E2E)",
+      "Private Travel Chats",
       "Priority AI planning",
       "Early access to new features",
     ],
@@ -188,9 +188,9 @@ export const UPGRADE_TRIGGERS: Record<UpgradeTrigger, UpgradeTriggerConfig> = {
   encrypted_chats: {
     trigger: "encrypted_chats",
     title: "Private Travel Chats",
-    description: "End-to-end encrypted messaging for your most private travel conversations. Available with Roavr Pro.",
+    description: "Private travel chats for your most sensitive travel conversations. Available with Roavr Pro.",
     requiredTier: "pro",
-    emoji: "🔒",
+    emoji: "💬",
     ctaLabel: "Unlock Private Chats",
   },
   trip_limit: {
