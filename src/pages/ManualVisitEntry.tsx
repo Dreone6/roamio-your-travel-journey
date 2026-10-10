@@ -185,7 +185,7 @@ export default function ManualVisitEntry() {
   return (
     <div className="min-h-screen pb-safe" style={{ background: "#080D1A" }}>
       <header className="flex items-center gap-3 px-5 pt-safe pt-4 pb-3">
-        <button onClick={cancel} disabled={saving} aria-label="Back" className="disabled:opacity-40 "h-10 w-10 rounded-full flex items-center justify-center" style={field}>
+        <button onClick={cancel} disabled={saving} aria-label="Back" className="disabled:opacity-40 h-10 w-10 rounded-full flex items-center justify-center" style={field}>
           <ArrowLeft className="h-5 w-5 text-white" strokeWidth={1.5} />
         </button>
         <h1 className="font-heading text-[22px] font-bold text-white">Add Past Trip</h1>
