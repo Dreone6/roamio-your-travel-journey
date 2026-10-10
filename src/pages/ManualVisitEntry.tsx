@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { uploadUserMedia } from "@/lib/media";
 import {
   searchCities, resolveCity, validateDates, validatePhoto, todayLocal, saveManualVisit,
-  removeUploadedToken, SaveError, MAX_PHOTOS, PHOTO_TYPES, type CityResult, type Visibility,
+  removeUploadedToken, SaveError, MAX_PHOTOS, PHOTO_TYPES, type CityResult, type Visibility, type SaveArgs,
 } from "@/lib/world/manualVisit";
 
 interface PhotoItem { id: string; file: File; preview: string; token?: string }
@@ -41,6 +41,13 @@ export default function ManualVisitEntry() {
   // Retained across retries so an ambiguous failure can be replayed without a duplicate visit.
   const requestId = useRef<string>(crypto.randomUUID());
   const ambiguousAttempt = useRef(false);
+  const savingRef = useRef(false);
+  // Exact payload sent to the RPC; replayed unchanged while the outcome is unknown.
+  const frozen = useRef<SaveArgs | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const locked = saving || uncertain;
+  const photosRef = useRef<PhotoItem[]>([]);
+  photosRef.current = photos;
   const placeIdCache = useRef<Map<string, string>>(new Map());
 
   const today = todayLocal();
@@ -66,13 +73,17 @@ export default function ManualVisitEntry() {
     return () => clearTimeout(t);
   }, [query, selected]);
 
-  useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.preview)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Revoke whatever previews are still live at unmount (removed ones are revoked on removal).
+  useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.preview)), []);
 
-  const onQueryChange = (v: string) => { setQuery(v); if (selected) setSelected(null); };
-  const pick = (r: CityResult) => { seq.current++; setSelected(r); setQuery(`${r.name}, ${r.country}`); setResults([]); };
+  const dropToken = (token: string) =>
+    removeUploadedToken(token).catch((e) => console.warn("Could not remove unsaved photo", e));
+
+  const onQueryChange = (v: string) => { if (locked) return; setQuery(v); if (selected) setSelected(null); };
+  const pick = (r: CityResult) => { if (locked) return; seq.current++; setSelected(r); setQuery(`${r.name}, ${r.country}`); setResults([]); };
 
   const addFiles = (list: FileList | null) => {
-    if (!list) return;
+    if (!list || locked) return;
     const next: PhotoItem[] = [];
     for (const f of Array.from(list)) {
       if (photos.length + next.length >= MAX_PHOTOS) { toast.error(`Up to ${MAX_PHOTOS} photos`); break; }
@@ -84,33 +95,64 @@ export default function ManualVisitEntry() {
   };
 
   const removePhoto = (id: string) => {
-    setPhotos((p) => {
-      const it = p.find((x) => x.id === id);
-      if (it) {
-        URL.revokeObjectURL(it.preview);
-        // Uploaded but never referenced by a committed save → safe to delete.
-        if (it.token && !ambiguousAttempt.current) removeUploadedToken(it.token).catch(() => {});
-      }
-      return p.filter((x) => x.id !== id);
-    });
+    if (locked) return;
+    const it = photosRef.current.find((x) => x.id === id);
+    if (!it) return;
+    URL.revokeObjectURL(it.preview);
+    // Uploaded but never referenced by a possibly-committed save → safe to delete.
+    if (it.token && !ambiguousAttempt.current) dropToken(it.token);
+    setPhotos((p) => p.filter((x) => x.id !== id));
   };
 
   const cancel = () => {
+    if (savingRef.current) return;
+    // After an unknown outcome the uploads may be referenced by a committed visit: keep them.
     if (!ambiguousAttempt.current) {
-      photos.forEach((p) => p.token && removeUploadedToken(p.token).catch(() => {}));
+      photosRef.current.forEach((p) => p.token && dropToken(p.token));
     }
     navigate(-1);
+  };
+
+  const dispatch = async (args: SaveArgs) => {
+    try {
+      await saveManualVisit(args);
+    } catch (e) {
+      if (e instanceof SaveError && e.ambiguous) {
+        ambiguousAttempt.current = true;
+        setUncertain(true);
+        throw new Error("We couldn't confirm your trip was saved. Retry to finish saving this same trip.");
+      }
+      // Definitive rejection: nothing was committed, editing can resume with a fresh request.
+      frozen.current = null;
+      ambiguousAttempt.current = false;
+      setUncertain(false);
+      requestId.current = crypto.randomUUID();
+      throw e;
+    }
+    toast.success("Trip added to your atlas!");
+    // /globe is a separate route, so GlobePage remounts and useTravelIdentity refetches on mount.
+    navigate("/globe", { replace: true, state: { refreshedAt: Date.now() } });
+  };
+
+  const retrySame = async () => {
+    if (savingRef.current || !frozen.current) return;
+    savingRef.current = true; setSaving(true); setFormError(null);
+    try { await dispatch(frozen.current); }
+    catch (e) { setFormError(e instanceof Error ? e.message : "Could not save trip"); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
   const dateError = start || end ? validateDates(start, end, today) : null;
 
   const save = async () => {
+    if (savingRef.current || uncertain) return;
     setFormError(null);
     if (!user) { setFormError("Please sign in again"); return; }
     if (!selected) { setFormError("Choose a city from the list"); return; }
     const dErr = validateDates(start, end, today);
     if (dErr) { setFormError(dErr); return; }
 
+    savingRef.current = true;
     setSaving(true);
     try {
       let placeId = placeIdCache.current.get(selected.provider_place_id);
@@ -128,19 +170,14 @@ export default function ManualVisitEntry() {
         }
         tokens.push(p.token!);
       }
-      try {
-        await saveManualVisit({
-          requestId: requestId.current, placeId, start, end, note, photoTokens: tokens, visibility,
-        });
-      } catch (e) {
-        if (e instanceof SaveError && e.ambiguous) ambiguousAttempt.current = true;
-        throw e;
-      }
-      toast.success("Trip added to your atlas!");
-      navigate("/globe", { replace: true });
+      frozen.current = {
+        requestId: requestId.current, placeId, start, end, note, photoTokens: tokens, visibility,
+      };
+      await dispatch(frozen.current);
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Could not save trip. Try again.");
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -148,7 +185,7 @@ export default function ManualVisitEntry() {
   return (
     <div className="min-h-screen pb-safe" style={{ background: "#080D1A" }}>
       <header className="flex items-center gap-3 px-5 pt-safe pt-4 pb-3">
-        <button onClick={cancel} aria-label="Back" className="h-10 w-10 rounded-full flex items-center justify-center" style={field}>
+        <button onClick={cancel} disabled={saving} aria-label="Back" className="disabled:opacity-40 "h-10 w-10 rounded-full flex items-center justify-center" style={field}>
           <ArrowLeft className="h-5 w-5 text-white" strokeWidth={1.5} />
         </button>
         <h1 className="font-heading text-[22px] font-bold text-white">Add Past Trip</h1>
@@ -161,7 +198,7 @@ export default function ManualVisitEntry() {
           <div className="relative mt-2">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#4B5563" }} strokeWidth={1.5} />
             <input
-              id="city" value={query} onChange={(e) => onQueryChange(e.target.value)} autoComplete="off"
+              id="city" value={query} disabled={locked} onChange={(e) => onQueryChange(e.target.value)} autoComplete="off"
               placeholder="Search a city" aria-autocomplete="list" aria-controls="city-results"
               className="w-full h-12 rounded-2xl pl-10 pr-10 text-[15px] text-white placeholder:text-[#4B5563] outline-none focus:border-[#3B82F6]"
               style={field}
@@ -173,7 +210,7 @@ export default function ManualVisitEntry() {
             <ul id="city-results" role="listbox" className="mt-2 rounded-2xl overflow-hidden" style={field}>
               {results.map((r) => (
                 <li key={r.provider_place_id}>
-                  <button role="option" aria-selected={false} onClick={() => pick(r)}
+                  <button role="option" aria-selected={false} disabled={locked} onClick={() => pick(r)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#1A2236]">
                     <MapPin className="h-4 w-4 shrink-0" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
                     <span className="min-w-0">
@@ -197,12 +234,12 @@ export default function ManualVisitEntry() {
         <section className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="start" className="text-[13px] font-semibold text-white">Start date</label>
-            <input id="start" type="date" max={today} value={start} onChange={(e) => setStart(e.target.value)}
+            <input id="start" type="date" disabled={locked} max={today} value={start} onChange={(e) => setStart(e.target.value)}
               className="mt-2 w-full h-12 rounded-2xl px-3 text-[15px] text-white outline-none [color-scheme:dark]" style={field} />
           </div>
           <div>
             <label htmlFor="end" className="text-[13px] font-semibold text-white">End date <span style={{ color: "#4B5563" }}>(optional)</span></label>
-            <input id="end" type="date" min={start || undefined} max={today} value={end} onChange={(e) => setEnd(e.target.value)}
+            <input id="end" type="date" disabled={locked} min={start || undefined} max={today} value={end} onChange={(e) => setEnd(e.target.value)}
               className="mt-2 w-full h-12 rounded-2xl px-3 text-[15px] text-white outline-none [color-scheme:dark]" style={field} />
           </div>
           <p className="col-span-2 text-[12px] -mt-1" style={{ color: dateError ? "#EF4444" : "#4B5563" }} role={dateError ? "alert" : undefined}>
@@ -213,7 +250,7 @@ export default function ManualVisitEntry() {
         {/* Note */}
         <section>
           <label htmlFor="note" className="text-[13px] font-semibold text-white">Note <span style={{ color: "#4B5563" }}>(optional)</span></label>
-          <textarea id="note" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} rows={3}
+          <textarea id="note" value={note} disabled={locked} maxLength={2000} onChange={(e) => setNote(e.target.value)} rows={3}
             placeholder="What do you remember?" className="mt-2 w-full rounded-2xl p-3 text-[15px] text-white placeholder:text-[#4B5563] outline-none resize-none" style={field} />
         </section>
 
@@ -227,13 +264,13 @@ export default function ManualVisitEntry() {
             {photos.map((p) => (
               <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden" style={field}>
                 <img src={p.preview} alt={p.file.name} className="h-full w-full object-cover" />
-                <button onClick={() => removePhoto(p.id)} disabled={saving} aria-label={`Remove ${p.file.name}`}
+                <button onClick={() => removePhoto(p.id)} disabled={locked} aria-label={`Remove ${p.file.name}`}
                   className="absolute top-1 right-1 h-6 w-6 rounded-full flex items-center justify-center" style={{ background: "rgba(8,13,26,0.8)" }}>
                   <X className="h-3.5 w-3.5 text-white" />
                 </button>
               </div>
             ))}
-            {photos.length < MAX_PHOTOS && (
+            {photos.length < MAX_PHOTOS && !locked && (
               <label className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer text-[11px]" style={{ ...field, color: "#94A3B8", borderStyle: "dashed" }}>
                 <ImagePlus className="h-5 w-5" strokeWidth={1.5} />
                 Add
@@ -252,7 +289,7 @@ export default function ManualVisitEntry() {
             {VIS.map(({ id, label, desc, Icon }) => {
               const on = visibility === id;
               return (
-                <button key={id} role="radio" aria-checked={on} onClick={() => setVisibility(id)}
+                <button key={id} role="radio" aria-checked={on} disabled={locked} onClick={() => setVisibility(id)}
                   className="w-full flex items-center gap-3 px-4 h-14 rounded-2xl text-left"
                   style={{ background: on ? "rgba(59,130,246,0.12)" : "#111827", border: `1px solid ${on ? "#3B82F6" : "#1E2A3F"}` }}>
                   <Icon className="h-4 w-4" style={{ color: on ? "#3B82F6" : "#94A3B8" }} strokeWidth={1.5} />
@@ -266,17 +303,22 @@ export default function ManualVisitEntry() {
           </div>
         </section>
 
+        {uncertain && !saving && (
+          <p className="text-[12px]" style={{ color: "#F59E0B" }}>
+            Editing is paused so a retry can't overwrite what may already be saved. Leaving keeps your uploaded photos.
+          </p>
+        )}
         {formError && <p role="alert" className="text-[13px]" style={{ color: "#EF4444" }}>{formError}</p>}
 
         <div className="flex gap-2">
           <button onClick={cancel} disabled={saving} className="flex-1 h-12 rounded-full text-white font-semibold text-[15px] disabled:opacity-40" style={field}>
             Cancel
           </button>
-          <button onClick={save} disabled={saving || !selected || !start || !!dateError}
+          <button onClick={uncertain ? retrySame : save} disabled={saving || (!uncertain && (!selected || !start || !!dateError))}
             className="flex-[2] h-12 rounded-full text-white font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-40"
             style={{ background: "#3B82F6" }}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? "Saving…" : "Save trip"}
+            {saving ? "Saving…" : uncertain ? "Retry same trip" : "Save trip"}
           </button>
         </div>
       </main>

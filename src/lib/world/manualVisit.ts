@@ -69,7 +69,8 @@ export function validatePhoto(f: File): string | null {
 
 export async function removeUploadedToken(token: string) {
   const path = token.slice(USER_MEDIA_BUCKET.length + 1);
-  await supabase.storage.from(USER_MEDIA_BUCKET).remove([path]);
+  const { error } = await supabase.storage.from(USER_MEDIA_BUCKET).remove([path]);
+  if (error) throw error;
 }
 
 export interface SaveArgs {
@@ -97,9 +98,14 @@ export async function saveManualVisit(a: SaveArgs): Promise<{ visitId: string; m
     p_visibility: a.visibility,
   } as never);
   if (error) {
-    // A Postgres error code means the server rejected and rolled back; no code = unknown outcome.
-    throw new SaveError(error.message || "Could not save trip", !error.code);
+    // Only a real SQLSTATE (5 chars, e.g. 22023/42501/P0001) proves the server ran and rolled back.
+    // Transport, gateway and PostgREST-level failures leave the outcome unknown.
+    const definitive = typeof error.code === "string" && /^[0-9A-Z]{5}$/.test(error.code);
+    throw new SaveError(error.message || "Could not save trip", !definitive);
   }
-  const r = data as { visit_id: string; memories: number };
-  return { visitId: r.visit_id, memories: r.memories };
+  const r = data as { visit_id?: unknown; memories?: unknown } | null;
+  if (!r || typeof r.visit_id !== "string" || !/^[0-9a-f-]{36}$/i.test(r.visit_id)) {
+    throw new SaveError("We couldn't confirm the save", true);
+  }
+  return { visitId: r.visit_id, memories: typeof r.memories === "number" ? r.memories : 0 };
 }
