@@ -37,6 +37,7 @@ const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
 const SurpriseMePage = lazy(() => import("@/pages/SurpriseMePage"));
 const SharedItineraryPage = lazy(() => import("@/pages/SharedItineraryPage"));
 const BuildWorldPage = lazy(() => import("@/pages/BuildWorldPage"));
+const ManualVisitEntry = lazy(() => import("@/pages/ManualVisitEntry"));
 const PassportPage = lazy(() => import("@/pages/PassportPage"));
 const TravelerProfilePage = lazy(() => import("@/pages/TravelerProfilePage"));
 const NearbyPage = lazy(() => import("@/pages/NearbyPage"));
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/feed" element={<Navigate to="/home" replace />} />
               <Route path="/surprise" element={<ProtectedRoute><SurpriseMePage /></ProtectedRoute>} />
               <Route path="/build-world" element={<ProtectedRoute><BuildWorldPage /></ProtectedRoute>} />
+              <Route path="/globe/add-trip" element={<ProtectedRoute><ManualVisitEntry /></ProtectedRoute>} />
               <Route path="/travel-history" element={<Navigate to="/build-world" replace />} />
               <Route path="/passport" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />
               <Route path="/passport/:userId" element={<ProtectedRoute><PassportPage /></ProtectedRoute>} />

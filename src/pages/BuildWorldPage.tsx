@@ -112,7 +112,7 @@ export default function BuildWorldPage() {
         </div>
       )}
 
-      {step === "intro" && <IntroStep onStart={() => setStep("privacy")} onManual={() => navigate("/checkin")} />}
+      {step === "intro" && <IntroStep onStart={() => setStep("privacy")} onManual={() => navigate("/globe/add-trip")} />}
       {step === "privacy" && (
         <PrivacyStep
           demoMode={demoMode}

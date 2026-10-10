@@ -7,12 +7,17 @@
  * when real memory records exist for a place they can be slotted in here
  * without changing the layout.
  */
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaUrls } from "@/lib/media";
 import { Camera, Share2, ListTree, MapPin } from "lucide-react";
 import { flagEmoji } from "@/lib/world/countries";
 import { formatVisitDate, type CityPlace } from "@/lib/world/visits";
 import { toast } from "sonner";
 import PeopleWhoKnowPlace from "@/components/social/PeopleWhoKnowPlace";
+
+interface VisitMemory { id: string; type: string; url: string | null; caption: string | null }
 
 interface Props {
   place: CityPlace | null;
@@ -27,6 +32,31 @@ interface Props {
 export default function PlaceDetailSheet({
   place, open, onOpenChange, owner = false, onViewVisits, onAddMemory,
 }: Props) {
+  const [mems, setMems] = useState<Record<string, VisitMemory[]>>({});
+  const visitIds = place?.visits.map((v) => v.id).join(",") ?? "";
+
+  // Saved memories linked to these visits; RLS decides what this viewer may read.
+  useEffect(() => {
+    if (!open || !visitIds) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("memories")
+        .select("id, visit_id, media_type, media_url, caption, created_at")
+        .in("visit_id", visitIds.split(","))
+        .order("created_at", { ascending: true });
+      if (error || !data || cancelled) return;
+      const urls = await resolveMediaUrls(data.map((m) => m.media_url));
+      if (cancelled) return;
+      const by: Record<string, VisitMemory[]> = {};
+      data.forEach((m, i) => {
+        (by[m.visit_id as string] ??= []).push({ id: m.id, type: m.media_type, url: urls[i], caption: m.caption });
+      });
+      setMems(by);
+    })();
+    return () => { cancelled = true; };
+  }, [open, visitIds]);
+
   if (!place) return null;
   const flag = flagEmoji(place.country);
 
@@ -63,9 +93,10 @@ export default function PlaceDetailSheet({
             {place.visitCount === 1 ? "Visited once" : `Visited ${place.visitCount} times`}
           </p>
 
-          <div className="mt-2 space-y-1.5 max-h-[180px] overflow-y-auto scrollbar-none">
+          <div className="mt-2 space-y-1.5 max-h-[320px] overflow-y-auto scrollbar-none">
             {place.visits.map((v) => (
-              <div key={v.id} className="flex items-center justify-between">
+              <div key={v.id}>
+              <div className="flex items-center justify-between">
                 <span className="text-[14px]" style={{ color: "#94A3B8" }}>
                   {formatVisitDate(v.startDate, v.endDate)}
                 </span>
@@ -74,6 +105,20 @@ export default function PlaceDetailSheet({
                     {v.memories} {v.memories === 1 ? "memory" : "memories"}
                   </span>
                 )}
+              </div>
+              {(mems[v.id] ?? []).filter((m) => m.caption).map((m) => (
+                <p key={`c-${m.id}`} className="mt-1 text-[13px] text-white whitespace-pre-wrap">{m.caption}</p>
+              ))}
+              {(mems[v.id] ?? []).some((m) => m.type === "photo" && m.url) && (
+                <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+                  {(mems[v.id] ?? []).filter((m) => m.type === "photo" && m.url).map((m) => (
+                    <a key={m.id} href={m.url!} target="_blank" rel="noreferrer" className="shrink-0">
+                      <img src={m.url!} alt={m.caption ?? `Photo from ${place.city}`} loading="lazy"
+                        className="h-20 w-20 rounded-lg object-cover" style={{ border: "1px solid #1E2A3F" }} />
+                    </a>
+                  ))}
+                </div>
+              )}
               </div>
             ))}
           </div>

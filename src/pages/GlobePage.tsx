@@ -16,6 +16,7 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import {
   Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Image as ImageIcon,
   Trophy, Camera, Users, Compass, BookMarked,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
@@ -175,6 +176,13 @@ export default function GlobePage() {
                 ? `${world.summary.countries} ${world.summary.countries === 1 ? "country" : "countries"} · ${world.summary.cities} ${world.summary.cities === 1 ? "city" : "cities"} · ${world.summary.visits} ${world.summary.visits === 1 ? "trip" : "trips"}`
                 : "Your life, mapped by memories"}
           </p>
+          <button
+            onClick={() => navigate("/globe/add-trip")}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 h-9 text-[13px] font-semibold text-white"
+            style={{ background: "#3B82F6" }}
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.5} /> Add Past Trip
+          </button>
         </div>
         <div className="flex items-center gap-2 mt-1">
           <button
