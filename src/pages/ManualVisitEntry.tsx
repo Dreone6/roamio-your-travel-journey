@@ -115,7 +115,7 @@ export default function ManualVisitEntry() {
     try {
       let placeId = placeIdCache.current.get(selected.provider_place_id);
       if (!placeId) {
-        placeId = await resolveCity(selected.provider_place_id);
+        placeId = await resolveCity(selected.provider_place_id, `${selected.name}, ${selected.country}`);
         placeIdCache.current.set(selected.provider_place_id, placeId);
       }
       const tokens: string[] = [];

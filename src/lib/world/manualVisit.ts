@@ -37,9 +37,9 @@ export async function searchCities(q: string): Promise<CityResult[]> {
   return (data?.results ?? []) as CityResult[];
 }
 
-export async function resolveCity(providerPlaceId: string): Promise<string> {
+export async function resolveCity(providerPlaceId: string, q: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("place-search", {
-    body: { action: "resolve", provider_place_id: providerPlaceId },
+    body: { action: "resolve", provider_place_id: providerPlaceId, q },
   });
   if (error) throw new Error(await fnError(error));
   if (!data?.place?.id) throw new Error("Could not confirm that city");

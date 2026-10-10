@@ -1,12 +1,11 @@
 /**
  * place-search — authenticated city search + server-side canonical place resolution.
  *
- * Provider: OpenStreetMap Nominatim (the same free, keyless provider used by
- * reverse-geocode). Only city-level results (city/town/village/municipality)
- * are returned. Identity tuple is ("osm", "<N|W|R><osm_id>").
+ * Provider: Photon (komoot), free/keyless over OpenStreetMap data. Only
+ * city-level results (city/town/village) are returned. Identity tuple is ("osm", "<N|W|R><osm_id>").
  *
  *  { action: "search",  q }               -> { results: [...] }
- *  { action: "resolve", provider_place_id } -> { place: { id, name, country, ... } }
+ *  { action: "resolve", provider_place_id, q } -> { place: { id, name, country, ... } }
  *
  * `resolve` re-fetches the place from the provider so client-submitted names
  * or coordinates are never trusted, then upserts public.places with the
@@ -22,32 +21,50 @@ const cors = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const CITY_TYPES = new Set(["city", "town", "village", "municipality", "hamlet", "suburb", "borough"]);
+const CITY_TYPES = new Set(["city", "town", "village", "municipality", "locality"]);
 const UA = { "User-Agent": "Roavr/1.0 (https://roavr.lovable.app; place-search)", "Referer": "https://roavr.lovable.app" };
 
-interface NomItem {
-  osm_type: string; osm_id: number; lat: string; lon: string;
-  addresstype?: string; type?: string; class?: string; name?: string;
-  address?: Record<string, string>;
+interface PhotonFeature {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    osm_type?: string; osm_id?: number; type?: string; name?: string;
+    country?: string; countrycode?: string; state?: string;
+  };
 }
 
-function toResult(it: NomItem) {
-  const kind = it.addresstype ?? it.type ?? "";
-  if (!CITY_TYPES.has(kind)) return null;
-  const t = (it.osm_type ?? "")[0]?.toUpperCase();
-  if (!["N", "W", "R"].includes(t) || !Number.isFinite(it.osm_id)) return null;
-  const a = it.address ?? {};
-  const name = it.name || a.city || a.town || a.village || a.municipality;
-  const country = a.country;
-  const lat = Number(it.lat), lng = Number(it.lon);
-  if (!name || !country || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  const cc = (a.country_code ?? "").toUpperCase();
+// Photon (komoot, OSM-based, keyless). Nominatim rejects requests from the backend host (403).
+async function photonSearch(q: string) {
+  const r = await fetch(
+    `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=10&lang=en&layer=city`,
+    { headers: UA },
+  );
+  if (!r.ok) {
+    console.error("photon", r.status, (await r.text()).slice(0, 200));
+    return null;
+  }
+  const fc = (await r.json()) as { features?: PhotonFeature[] };
+  const seen = new Set<string>();
+  return (fc.features ?? []).map(toResult).filter((x): x is NonNullable<ReturnType<typeof toResult>> => {
+    if (!x || seen.has(x.provider_place_id)) return false;
+    seen.add(x.provider_place_id);
+    return true;
+  });
+}
+
+function toResult(f: PhotonFeature) {
+  const p = f.properties ?? {};
+  if (!CITY_TYPES.has(p.type ?? "")) return null;
+  const t = (p.osm_type ?? "").toUpperCase()[0];
+  if (!["N", "W", "R"].includes(t) || !Number.isFinite(p.osm_id)) return null;
+  const [lng, lat] = f.geometry?.coordinates ?? [];
+  if (!p.name || !p.country || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const cc = (p.countrycode ?? "").toUpperCase();
   return {
     provider: "osm",
-    provider_place_id: `${t}${it.osm_id}`,
-    name, country,
+    provider_place_id: `${t}${p.osm_id}`,
+    name: p.name, country: p.country,
     country_code: /^[A-Z]{2}$/.test(cc) ? cc : null,
-    region: a.state ?? a.region ?? null,
+    region: p.state ?? null,
     latitude: lat, longitude: lng,
   };
 }
@@ -67,32 +84,22 @@ Deno.serve(async (req) => {
     if (body.action === "search") {
       const q = typeof body.q === "string" ? body.q.trim() : "";
       if (q.length < 2 || q.length > 100) return json({ error: "Query must be 2–100 characters" }, 400);
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=en&addressdetails=1&limit=8&featureType=settlement&q=${encodeURIComponent(q)}`,
-        { headers: UA },
-      );
-      if (!r.ok) { console.error("nominatim search", r.status, (await r.text()).slice(0, 200)); return json({ error: "Place search is unavailable right now", status: r.status }, 502); }
-      const items = (await r.json()) as NomItem[];
-      const seen = new Set<string>();
-      const results = items.map(toResult).filter((x): x is NonNullable<typeof x> => {
-        if (!x || seen.has(x.provider_place_id)) return false;
-        seen.add(x.provider_place_id);
-        return true;
-      }).slice(0, 6);
+      const list = await photonSearch(q);
+      if (!list) return json({ error: "Place search is unavailable right now" }, 502);
+      const results = list.slice(0, 6);
       return json({ results });
     }
 
     if (body.action === "resolve") {
       const id = typeof body.provider_place_id === "string" ? body.provider_place_id : "";
       if (!/^[NWR]\d{1,15}$/.test(id)) return json({ error: "Invalid place id" }, 400);
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/lookup?format=jsonv2&accept-language=en&addressdetails=1&osm_ids=${id}`,
-        { headers: UA },
-      );
-      if (!r.ok) return json({ error: "Place lookup is unavailable right now", status: r.status }, 502);
-      const [item] = (await r.json()) as NomItem[];
-      const res = item ? toResult(item) : null;
-      if (!res || res.provider_place_id !== id) return json({ error: "That place is not a city" }, 422);
+      // Re-query the provider and require the id to come back as a city; client names/coords are ignored.
+      const q = typeof body.q === "string" ? body.q.trim().slice(0, 100) : "";
+      if (q.length < 2) return json({ error: "Search text required" }, 400);
+      const list = await photonSearch(q);
+      if (!list) return json({ error: "Place lookup is unavailable right now" }, 502);
+      const res = list.find((x) => x.provider_place_id === id);
+      if (!res) return json({ error: "Could not confirm that city" }, 422);
 
       const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       const { data, error } = await admin.from("places").upsert({
