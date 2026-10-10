@@ -26,7 +26,7 @@ serve(async (req) => {
     let city = "", country = "", landmark = "", name = "";
     try {
       const r = await fetch(
-        `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&limit=1`,
+        `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&limit=1&lang=en`,
         { headers: { "User-Agent": "Roavr/1.0" } }
       );
       if (r.ok) {
