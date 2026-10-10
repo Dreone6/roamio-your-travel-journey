@@ -23,7 +23,7 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const CITY_TYPES = new Set(["city", "town", "village", "municipality", "hamlet", "suburb", "borough"]);
-const UA = { "User-Agent": "Roavr/1.0 (place-search)", "Accept-Language": "en" };
+const UA = { "User-Agent": "Roavr/1.0 (https://roavr.lovable.app; place-search)", "Referer": "https://roavr.lovable.app" };
 
 interface NomItem {
   osm_type: string; osm_id: number; lat: string; lon: string;
@@ -68,10 +68,10 @@ Deno.serve(async (req) => {
       const q = typeof body.q === "string" ? body.q.trim() : "";
       if (q.length < 2 || q.length > 100) return json({ error: "Query must be 2–100 characters" }, 400);
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&featureType=settlement&q=${encodeURIComponent(q)}`,
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=en&addressdetails=1&limit=8&featureType=settlement&q=${encodeURIComponent(q)}`,
         { headers: UA },
       );
-      if (!r.ok) return json({ error: "Place search is unavailable right now", status: r.status }, 502);
+      if (!r.ok) { console.error("nominatim search", r.status, (await r.text()).slice(0, 200)); return json({ error: "Place search is unavailable right now", status: r.status }, 502); }
       const items = (await r.json()) as NomItem[];
       const seen = new Set<string>();
       const results = items.map(toResult).filter((x): x is NonNullable<typeof x> => {
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       const id = typeof body.provider_place_id === "string" ? body.provider_place_id : "";
       if (!/^[NWR]\d{1,15}$/.test(id)) return json({ error: "Invalid place id" }, 400);
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/lookup?format=jsonv2&addressdetails=1&osm_ids=${id}`,
+        `https://nominatim.openstreetmap.org/lookup?format=jsonv2&accept-language=en&addressdetails=1&osm_ids=${id}`,
         { headers: UA },
       );
       if (!r.ok) return json({ error: "Place lookup is unavailable right now", status: r.status }, 502);
