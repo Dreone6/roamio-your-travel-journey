@@ -16,7 +16,8 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import {
   Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Image as ImageIcon,
   Trophy, Camera, Users, Compass, BookMarked,
-, Plus } from "lucide-react";
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
