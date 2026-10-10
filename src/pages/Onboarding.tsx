@@ -50,11 +50,11 @@ export default function Onboarding() {
       navigate("/auth", { replace: true });
       return;
     }
-    supabase
+    Promise.resolve(supabase
       .from("profiles")
       .select("onboarding_completed")
       .eq("id", user.id)
-      .single()
+      .single())
       .then(({ data }) => {
         if (data?.onboarding_completed) {
           navigate("/home", { replace: true });

@@ -32,11 +32,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       return;
     }
     setCheckingOnboarding(true);
-    supabase
+    Promise.resolve(supabase
       .from("profiles")
       .select("onboarding_completed")
       .eq("id", user.id)
-      .single()
+      .single())
       .then(({ data }) => {
         const done = !!data?.onboarding_completed;
         sessionStorage.setItem(cacheKey(user.id), done ? "true" : "false");
