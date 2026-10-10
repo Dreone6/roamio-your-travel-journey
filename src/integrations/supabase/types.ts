@@ -1104,6 +1104,7 @@ export type Database = {
         Row: {
           canonical_place_id: string | null
           city: string
+          client_request_id: string | null
           country: string
           created_at: string
           date_visited: string | null
@@ -1124,6 +1125,7 @@ export type Database = {
         Insert: {
           canonical_place_id?: string | null
           city: string
+          client_request_id?: string | null
           country: string
           created_at?: string
           date_visited?: string | null
@@ -1144,6 +1146,7 @@ export type Database = {
         Update: {
           canonical_place_id?: string | null
           city?: string
+          client_request_id?: string | null
           country?: string
           created_at?: string
           date_visited?: string | null
@@ -2122,6 +2125,18 @@ export type Database = {
           p_note?: string
           p_photo?: string
           p_share?: boolean
+        }
+        Returns: Json
+      }
+      record_manual_visit: {
+        Args: {
+          p_client_request_id: string
+          p_end: string
+          p_note: string
+          p_photos: string[]
+          p_place_id: string
+          p_start: string
+          p_visibility: string
         }
         Returns: Json
       }

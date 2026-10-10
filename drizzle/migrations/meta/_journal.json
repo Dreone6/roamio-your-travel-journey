@@ -43,6 +43,13 @@
       "when": 1791589195299,
       "tag": "0005_block_cross_bucket_moves",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791590656528,
+      "tag": "0006_manual_past_visit",
+      "breakpoints": true
     }
   ]
 }
