@@ -21,18 +21,27 @@ serve(async (req) => {
       });
     }
 
-    // Reverse geocode using OpenStreetMap Nominatim (free, no key needed)
-    const geoRes = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`,
-      { headers: { "User-Agent": "Roavr/1.0" } }
-    );
-    const geoData = await geoRes.json();
-
-    const address = geoData.address || {};
-    const city = address.city || address.town || address.village || address.county || "";
-    const country = address.country || "";
-    const landmark = geoData.display_name || "";
-    const locationName = geoData.name || city || landmark.split(",")[0] || "Unknown Location";
+    // Reverse geocode. Nominatim blocks cloud hosts ("Access denied"), so use
+    // Photon (komoot, free OSM data) first and never parse a non-OK body as JSON.
+    let city = "", country = "", landmark = "", name = "";
+    try {
+      const r = await fetch(
+        `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&limit=1&lang=en`,
+        { headers: { "User-Agent": "Roavr/1.0" } }
+      );
+      if (r.ok) {
+        const p = (await r.json())?.features?.[0]?.properties ?? {};
+        city = p.city || p.town || p.village || p.county || p.state || "";
+        country = p.country || "";
+        name = p.name || "";
+        landmark = [p.name, p.street, city, p.state, country].filter(Boolean).join(", ");
+      } else {
+        console.warn("photon reverse failed", r.status, (await r.text()).slice(0, 200));
+      }
+    } catch (e) {
+      console.warn("photon reverse error", e);
+    }
+    const locationName = name || city || landmark.split(",")[0] || "Unknown Location";
 
     const result: any = { city, country, landmark, location_name: locationName };
 
