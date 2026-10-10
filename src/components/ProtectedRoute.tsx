@@ -42,7 +42,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         sessionStorage.setItem(cacheKey(user.id), done ? "true" : "false");
         setOnboardingCompleted(done);
         setCheckingOnboarding(false);
-      });
+      })
+      .catch(() => setCheckingOnboarding(false));
   }, [user]);
 
   if (loading || (user && checkingOnboarding && onboardingCompleted === null)) {

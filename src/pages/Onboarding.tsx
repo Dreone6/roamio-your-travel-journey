@@ -61,7 +61,8 @@ export default function Onboarding() {
         } else {
           setChecking(false);
         }
-      });
+      })
+      .catch(() => setChecking(false));
   }, [user, loading, navigate]);
 
   const handleFinish = async () => {
