@@ -29,6 +29,8 @@ export interface Visit {
   visibility: "private" | "followers" | "public";
   isMilestone: boolean;
   tripId: string | null;
+  source: string;
+  canonicalPlaceId: string | null;
 }
 
 /** One city, with every authorised visit to it. */
@@ -47,6 +49,8 @@ export interface CityPlace {
   lastVisit: string | null;
   firstVisit: string | null;
   isMilestone: boolean;
+  /** Canonical place ids linked to this group's visits (empty for legacy-only cities). */
+  canonicalPlaceIds: string[];
 }
 
 export interface CountryEntry {
@@ -107,7 +111,7 @@ const cityKey = (city: string, country: string) => `${norm(city)}|${norm(country
 export async function fetchVisits(userId: string): Promise<Visit[]> {
   const { data, error } = await supabase
     .from("places_visited")
-    .select("id, city, country, latitude, longitude, date_visited, end_date, scanned_photo_count, visibility, is_milestone, trip_id, source, memories(count)")
+    .select("id, city, country, latitude, longitude, date_visited, end_date, scanned_photo_count, visibility, is_milestone, trip_id, source, canonical_place_id, memories(count)")
     .eq("user_id", userId)
     .neq("source", "demo")
     .order("date_visited", { ascending: false });
@@ -129,15 +133,33 @@ export async function fetchVisits(userId: string): Promise<Visit[]> {
       visibility: (r.visibility as Visit["visibility"]) ?? "private",
       isMilestone: !!r.is_milestone,
       tripId: r.trip_id,
+      source: r.source,
+      canonicalPlaceId: r.canonical_place_id ?? null,
     }));
 }
 
 export function aggregateWorld(visits: Visit[]): World {
   if (visits.length === 0) return EMPTY_WORLD;
 
+  // Same-name cities with different canonical ids stay separate. Legacy visits
+  // (no canonical id) join the name group, or the single canonical group if
+  // exactly one exists for that name — never guessed across ambiguous ones.
+  const canonByName = new Map<string, Set<string>>();
+  for (const v of visits) {
+    if (!v.canonicalPlaceId) continue;
+    const nk = cityKey(v.city, v.country);
+    (canonByName.get(nk) ?? canonByName.set(nk, new Set()).get(nk)!).add(v.canonicalPlaceId);
+  }
+  const groupKey = (v: Visit) => {
+    const nk = cityKey(v.city, v.country);
+    const ids = canonByName.get(nk);
+    if (!ids || ids.size <= 1 || !v.canonicalPlaceId) return nk;
+    return `${nk}|${v.canonicalPlaceId}`;
+  };
+
   const byCity = new Map<string, CityPlace>();
   for (const v of visits) {
-    const key = cityKey(v.city, v.country);
+    const key = groupKey(v);
     let place = byCity.get(key);
     if (!place) {
       place = {
@@ -154,10 +176,14 @@ export function aggregateWorld(visits: Visit[]): World {
         lastVisit: null,
         firstVisit: null,
         isMilestone: false,
+        canonicalPlaceIds: [],
       };
       byCity.set(key, place);
     }
     place.visits.push(v);
+    if (v.canonicalPlaceId && !place.canonicalPlaceIds.includes(v.canonicalPlaceId)) {
+      place.canonicalPlaceIds.push(v.canonicalPlaceId);
+    }
     place.visitCount += 1;
     place.memories += v.memories;
     place.scannedPhotos += v.scannedPhotos;
