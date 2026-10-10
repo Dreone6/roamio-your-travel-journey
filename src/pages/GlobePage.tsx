@@ -142,6 +142,11 @@ export default function GlobePage() {
     [world.places]
   );
 
+  // Keep the open city in sync after the world reloads (e.g. a memory was added).
+  useEffect(() => {
+    setPlace((cur) => (cur ? world.places.find((p) => p.key === cur.key) ?? cur : cur));
+  }, [world.places]);
+
   const openPlace = useCallback((key: string) => {
     const found = world.places.find((p) => p.key === key);
     if (found) { setPlace(found); setSheetOpen(true); }
@@ -486,9 +491,8 @@ export default function GlobePage() {
         place={place}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        owner
-        onViewVisits={() => { setSheetOpen(false); navigate("/passport"); }}
-        onAddMemory={() => { setSheetOpen(false); navigate("/camera"); }}
+        ownerId={user?.id}
+        onWorldChanged={identity.refresh}
       />
 
       <TrophyShelfModal open={trophyOpen} onOpenChange={setTrophyOpen} />

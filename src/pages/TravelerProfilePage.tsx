@@ -310,7 +310,7 @@ export default function TravelerProfilePage() {
 
       <div className="h-16" />
 
-      <PlaceDetailSheet place={place} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <PlaceDetailSheet place={place} open={sheetOpen} onOpenChange={setSheetOpen} ownerId={targetId} onWorldChanged={theirs.refresh} />
       {targetId && (
         <ReportDialog
           open={reportOpen}

@@ -87,6 +87,27 @@ export class SaveError extends Error {
   constructor(message: string, public ambiguous: boolean) { super(message); }
 }
 
+/**
+ * Shared outcome check for atomic save RPCs. Only a real SQLSTATE (5 chars,
+ * e.g. 22023/42501/P0001) proves the server ran and rolled back; transport,
+ * gateway and PostgREST-level failures, or a success without a valid
+ * visit_id, leave the outcome unknown (ambiguous → retry the same payload).
+ */
+export function checkRpcOutcome(
+  data: unknown,
+  error: { code?: string; message?: string } | null,
+): { visit_id: string; memories?: unknown } {
+  if (error) {
+    const definitive = typeof error.code === "string" && /^[0-9A-Z]{5}$/.test(error.code);
+    throw new SaveError(error.message || "Could not save", !definitive);
+  }
+  const r = data as { visit_id?: unknown; memories?: unknown } | null;
+  if (!r || typeof r.visit_id !== "string" || !/^[0-9a-f-]{36}$/i.test(r.visit_id)) {
+    throw new SaveError("We couldn't confirm the save", true);
+  }
+  return r as { visit_id: string; memories?: unknown };
+}
+
 export async function saveManualVisit(a: SaveArgs): Promise<{ visitId: string; memories: number }> {
   const { data, error } = await supabase.rpc("record_manual_visit", {
     p_client_request_id: a.requestId,
@@ -97,15 +118,6 @@ export async function saveManualVisit(a: SaveArgs): Promise<{ visitId: string; m
     p_photos: a.photoTokens,
     p_visibility: a.visibility,
   } as never);
-  if (error) {
-    // Only a real SQLSTATE (5 chars, e.g. 22023/42501/P0001) proves the server ran and rolled back.
-    // Transport, gateway and PostgREST-level failures leave the outcome unknown.
-    const definitive = typeof error.code === "string" && /^[0-9A-Z]{5}$/.test(error.code);
-    throw new SaveError(error.message || "Could not save trip", !definitive);
-  }
-  const r = data as { visit_id?: unknown; memories?: unknown } | null;
-  if (!r || typeof r.visit_id !== "string" || !/^[0-9a-f-]{36}$/i.test(r.visit_id)) {
-    throw new SaveError("We couldn't confirm the save", true);
-  }
+  const r = checkRpcOutcome(data, error);
   return { visitId: r.visit_id, memories: typeof r.memories === "number" ? r.memories : 0 };
 }

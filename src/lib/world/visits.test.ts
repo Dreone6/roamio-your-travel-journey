@@ -6,7 +6,7 @@ const visit = (
 ): Visit => ({
   id, city, country, latitude: 41.9, longitude: 12.5,
   startDate: start, endDate: end, memories, scannedPhotos: 0,
-  visibility: "public", isMilestone: false, tripId: null,
+  visibility: "public", isMilestone: false, tripId: null, source: "manual", canonicalPlaceId: null,
 });
 
 describe("aggregateWorld", () => {
