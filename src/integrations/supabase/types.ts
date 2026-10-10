@@ -673,6 +673,7 @@ export type Database = {
       memories: {
         Row: {
           caption: string | null
+          client_request_id: string | null
           created_at: string
           id: string
           latitude: number | null
@@ -690,6 +691,7 @@ export type Database = {
         }
         Insert: {
           caption?: string | null
+          client_request_id?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
@@ -707,6 +709,7 @@ export type Database = {
         }
         Update: {
           caption?: string | null
+          client_request_id?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
@@ -1963,6 +1966,16 @@ export type Database = {
           _type: string
         }
         Returns: undefined
+      }
+      add_visit_memory: {
+        Args: {
+          p_client_request_id: string
+          p_note: string
+          p_photos: string[]
+          p_visibility: string
+          p_visit_id: string
+        }
+        Returns: Json
       }
       can_edit_trip: {
         Args: { _trip: string; _user: string }
