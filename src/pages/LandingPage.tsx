@@ -93,7 +93,7 @@ export default function LandingPage() {
           <div className="relative order-1 md:order-2 h-[340px] sm:h-[420px] md:h-[520px] animate-fade-in">
             <div className="absolute inset-[12%] rounded-full bg-primary/20 blur-[90px]" />
             <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><Globe className="h-10 w-10 text-accent animate-pulse" /></div>}>
-              <InteractiveGlobe pins={HERO_PINS} arcs={HERO_ARCS} autoRotate />
+              <InteractiveGlobe pins={HERO_PINS} arcs={HERO_ARCS} autoRotate decorative />
             </Suspense>
             <div className="pointer-events-none absolute left-2 bottom-6 md:left-0 rounded-2xl border border-border bg-card px-4 py-3 shadow-elevated text-left">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Roavr Passport</p>
