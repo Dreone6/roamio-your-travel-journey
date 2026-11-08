@@ -36,6 +36,8 @@ interface InteractiveGlobeProps {
   arcs?: GlobeArc[];
   onPinClick?: (pin: GlobePin) => void;
   autoRotate?: boolean;
+  /** Transparent backdrop and no scroll-zoom, for decorative placements. */
+  decorative?: boolean;
 }
 
 const ACCENT = "#3B82F6";
@@ -332,7 +334,7 @@ function IdleRotator({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>;
 }
 
-function Scene({ pins, arcs, onPinClick }: InteractiveGlobeProps) {
+function Scene({ pins, arcs, onPinClick, decorative }: InteractiveGlobeProps) {
   const sprite = useSoftDiscTexture();
 
   return (
@@ -363,7 +365,7 @@ function Scene({ pins, arcs, onPinClick }: InteractiveGlobeProps) {
       </IdleRotator>
 
       <OrbitControls
-        enableZoom
+        enableZoom={!decorative}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
@@ -380,21 +382,23 @@ export default function InteractiveGlobe({
   pins,
   arcs,
   onPinClick,
+  decorative,
 }: InteractiveGlobeProps) {
   return (
     <div
       className="w-full h-full"
       style={{
-        background:
-          "radial-gradient(ellipse at 50% 45%, #0F1828 0%, #080D1A 75%)",
+        background: decorative
+          ? "transparent"
+          : "radial-gradient(ellipse at 50% 45%, #0F1828 0%, #080D1A 75%)",
       }}
     >
       <Canvas
-        camera={{ position: [0, 0.4, 5], fov: 42 }}
+        camera={{ position: [0, 0.4, decorative ? 6.6 : 5], fov: 42 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={[1, 2]}
       >
-        <Scene pins={pins} arcs={arcs} onPinClick={onPinClick} />
+        <Scene pins={pins} arcs={arcs} onPinClick={onPinClick} decorative={decorative} />
       </Canvas>
     </div>
   );

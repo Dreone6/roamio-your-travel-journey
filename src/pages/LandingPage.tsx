@@ -8,6 +8,30 @@ import {
 import roavrLogo from "@/assets/roavr-logo.png";
 import miloMascot from "@/assets/roavr-pin.png";
 import { pricingCta } from "@/lib/billing/checkout";
+import { Suspense } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+
+const InteractiveGlobe = lazyWithRetry(() => import("@/components/globe/InteractiveGlobe"), "interactive-globe");
+
+// Illustrative sample pins for the landing animation (not user data).
+const HERO_PINS = [
+  { lat: 40.6281, lng: 14.4848, label: "Positano", category: "memory", recent: true },
+  { lat: 35.6895, lng: 139.6917, label: "Tokyo", category: "memory" },
+  { lat: 51.5074, lng: -0.1278, label: "London", category: "memory" },
+  { lat: 31.6295, lng: -7.9811, label: "Marrakech", category: "memory" },
+  { lat: 64.1466, lng: -21.9426, label: "Reykjavik", category: "memory" },
+  { lat: 40.7128, lng: -74.006, label: "New York", category: "memory" },
+  { lat: 48.8566, lng: 2.3522, label: "Paris", category: "memory" },
+  { lat: -33.8688, lng: 151.2093, label: "Sydney", category: "memory" },
+];
+const HERO_ARCS = [
+  { from: { lat: 51.5074, lng: -0.1278 }, to: { lat: 40.6281, lng: 14.4848 } },
+  { from: { lat: 40.6281, lng: 14.4848 }, to: { lat: 31.6295, lng: -7.9811 } },
+  { from: { lat: 51.5074, lng: -0.1278 }, to: { lat: 35.6895, lng: 139.6917 } },
+  { from: { lat: 40.7128, lng: -74.006 }, to: { lat: 48.8566, lng: 2.3522 } },
+  { from: { lat: 35.6895, lng: 139.6917 }, to: { lat: -33.8688, lng: 151.2093 } },
+  { from: { lat: 40.7128, lng: -74.006 }, to: { lat: 64.1466, lng: -21.9426 } },
+];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -43,27 +67,42 @@ export default function LandingPage() {
         <div className="absolute top-16 -right-32 w-[500px] h-[500px] rounded-full bg-emerald-500/[0.04] blur-[120px]" />
         <div className="absolute -bottom-16 -left-32 w-[400px] h-[400px] rounded-full bg-teal-500/[0.04] blur-[100px]" />
 
-        <div className="relative max-w-5xl mx-auto px-5 py-20 md:py-32 text-center space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-accent/8 text-accent px-5 py-2 text-xs font-semibold tracking-wide uppercase animate-fade-in">
-            <Sparkles className="h-3.5 w-3.5" /> AI Social Travel Companion
+        <div className="relative max-w-6xl mx-auto px-5 pt-12 pb-16 md:py-24 grid md:grid-cols-2 gap-8 items-center">
+          <div className="space-y-7 text-center md:text-left order-2 md:order-1">
+            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 text-accent px-4 py-2 text-xs font-semibold tracking-wide uppercase animate-fade-in">
+              <img src={miloMascot} alt="" className="h-4 w-4" /> Your living travel archive
+            </div>
+            <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-[1.08] tracking-tight animate-fade-in" style={{ animationDelay: "0.1s" }}>
+              Every trip you've taken.<br />
+              <span className="text-accent">On one 3D globe.</span>
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-xl mx-auto md:mx-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+              Add a few past trips or photos and watch your world light up in under a minute — countries, cities and memories, stamped into your Roavr Passport. Then let Milo sniff out your next pin.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center md:items-start gap-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              <Button size="lg" onClick={() => navigate("/auth")} className="gradient-accent border-0 text-base px-8 py-6 rounded-2xl gap-2 font-semibold shadow-elevated">
+                Build my free globe <ArrowRight className="h-5 w-5" />
+              </Button>
+              <Button variant="outline" size="lg" className="text-base px-8 py-6 rounded-2xl font-medium border-border/60" onClick={() => scrollTo("how-it-works")}>
+                See how it works
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Free forever · No credit card</p>
           </div>
 
-          <h1 className="font-heading text-4xl sm:text-5xl md:text-7xl font-bold text-foreground leading-[1.08] tracking-tight animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            Plan smarter. Explore deeper.<br />
-            <span className="italic text-accent">Remember every trip.</span>
-          </h1>
-
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Roavr is your AI social travel companion for planning trips, discovering local experiences, capturing memories, sharing your travel map.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <Button size="lg" onClick={() => navigate("/auth")} className="gradient-accent border-0 text-base px-10 py-6 rounded-2xl gap-2 font-semibold shadow-elevated hover:shadow-lg transition-shadow">
-              Start Exploring <ArrowRight className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" size="lg" className="text-base px-10 py-6 rounded-2xl font-medium border-border/60" onClick={() => scrollTo("how-it-works")}>
-              See How Roavr Works
-            </Button>
+          <div className="relative order-1 md:order-2 h-[340px] sm:h-[420px] md:h-[520px] animate-fade-in">
+            <div className="absolute inset-[12%] rounded-full bg-primary/20 blur-[90px]" />
+            <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><Globe className="h-10 w-10 text-accent animate-pulse" /></div>}>
+              <InteractiveGlobe pins={HERO_PINS} arcs={HERO_ARCS} autoRotate decorative />
+            </Suspense>
+            <div className="pointer-events-none absolute left-2 bottom-6 md:left-0 rounded-2xl border border-border bg-card px-4 py-3 shadow-elevated text-left">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Roavr Passport</p>
+              <p className="font-heading text-lg font-bold text-foreground">8 countries · 12 cities</p>
+            </div>
+            <div className="pointer-events-none absolute right-2 top-6 md:right-0 flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-elevated">
+              <img src={miloMascot} alt="" className="h-6 w-6" />
+              <span className="text-xs font-semibold text-foreground">New stamp: Positano 🇮🇹</span>
+            </div>
           </div>
         </div>
       </section>
