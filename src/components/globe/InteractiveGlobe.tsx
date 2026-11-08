@@ -394,7 +394,7 @@ export default function InteractiveGlobe({
       }}
     >
       <Canvas
-        camera={{ position: [0, 0.4, 5], fov: 42 }}
+        camera={{ position: [0, 0.4, decorative ? 6.6 : 5], fov: 42 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={[1, 2]}
       >
