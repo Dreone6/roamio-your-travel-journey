@@ -13,14 +13,18 @@ export function lazyWithRetry<T extends ComponentType<unknown>>(
   key: string,
 ) {
   return lazy(async () => {
+    const flag = `lazy-reload:${key}`;
+    const ok = (m: { default: T }) => {
+      try { sessionStorage.removeItem(flag); } catch { /* ignore */ }
+      return m;
+    };
     try {
-      return await factory();
+      return ok(await factory());
     } catch (err) {
       await new Promise((r) => setTimeout(r, 400));
       try {
-        return await factory();
+        return ok(await factory());
       } catch (err2) {
-        const flag = `lazy-reload:${key}`;
         if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(flag)) {
           sessionStorage.setItem(flag, "1");
           window.location.reload();
