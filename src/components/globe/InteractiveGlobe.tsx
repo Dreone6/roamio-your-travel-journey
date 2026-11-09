@@ -1,4 +1,5 @@
-import { useRef, useMemo, useState, Suspense, useEffect, useCallback } from "react";
+import { useRef, useMemo, useState, Suspense, useEffect, useCallback, createContext, useContext } from "react";
+import { GLOBE_THEMES, type GlobePalette } from "@/lib/globe/themes";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -38,7 +39,16 @@ interface InteractiveGlobeProps {
   autoRotate?: boolean;
   /** Transparent backdrop and no scroll-zoom, for decorative placements. */
   decorative?: boolean;
+  /** Colour theme for ocean, land, glow and pins. */
+  palette?: GlobePalette;
+  /** Override the visited-country glows (lat/lng centroids). */
+  highlights?: { name: string; lat: number; lng: number; size?: number }[];
+  /** Pins drop in one after another (onboarding ignition). */
+  ignite?: boolean;
 }
+
+const PaletteCtx = createContext<GlobePalette>(GLOBE_THEMES[0].palette);
+const usePalette = () => useContext(PaletteCtx);
 
 const ACCENT = "#3B82F6";
 const PIN_CORE = "#FFFFFF";
@@ -112,6 +122,7 @@ function useSoftDiscTexture(): THREE.Texture {
 
 // Ocean — bright enough to read as deep blue, not pure black
 function OceanSphere() {
+  const { ocean: OCEAN } = usePalette();
   return (
     <mesh>
       <sphereGeometry args={[RADIUS, 96, 96]} />
@@ -122,6 +133,7 @@ function OceanSphere() {
 
 // Land — masked by earth-water alpha; meshBasicMaterial so the navy color always renders at full saturation
 function Land() {
+  const { land: LAND } = usePalette();
   const waterMask = useLoader(
     TextureLoader,
     "https://unpkg.com/three-globe@2.31.0/example/img/earth-water.png"
@@ -146,6 +158,7 @@ function Land() {
 
 // Visited country halo — blue soft blob centered on country centroid
 function VisitedHalo({ lat, lng, size = 0.2, sprite }: { lat: number; lng: number; size?: number; sprite: THREE.Texture }) {
+  const { glow: ACCENT } = usePalette();
   const pos = useMemo(() => latLngToVector3(lat, lng, LAND_RADIUS + 0.012), [lat, lng]);
   const normal = useMemo(() => pos.clone().normalize(), [pos]);
   const quaternion = useMemo(() => {
@@ -174,11 +187,16 @@ function CityPin({
   pin,
   onClick,
   sprite,
+  delay = 0,
 }: {
   pin: GlobePin;
   onClick?: () => void;
   sprite: THREE.Texture;
+  delay?: number;
 }) {
+  const { glow: ACCENT, pin: PIN_CORE } = usePalette();
+  const groupRef = useRef<THREE.Group>(null);
+  const born = useRef<number | null>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   const pos = useMemo(() => latLngToVector3(pin.lat, pin.lng, LAND_RADIUS + 0.018), [pin.lat, pin.lng]);
   const quaternion = useMemo(() => {
@@ -188,6 +206,14 @@ function CityPin({
   }, [pos]);
 
   useFrame((state) => {
+    if (groupRef.current) {
+      // Springy drop-in: overshoot then settle.
+      if (born.current == null) born.current = state.clock.elapsedTime + delay / 1000;
+      const t = Math.max(0, state.clock.elapsedTime - born.current);
+      const s = t <= 0 ? 0.001 : 1 + Math.exp(-6 * t) * Math.sin(12 * t - Math.PI / 2) * -1 * 0 + (1 - Math.exp(-7 * t)) * (1 + 0.35 * Math.exp(-4 * t) * Math.sin(10 * t)) - 1;
+      const k = Math.max(0.001, s);
+      groupRef.current.scale.set(k, k, k);
+    }
     if (haloRef.current && pin.recent) {
       const t = (Math.sin(state.clock.elapsedTime * 2) + 1) / 2;
       const s = 1 + t * 0.5;
@@ -197,7 +223,7 @@ function CityPin({
   });
 
   return (
-    <group position={pos} quaternion={quaternion}>
+    <group ref={groupRef} position={pos} quaternion={quaternion}>
       {/* Outer glow disc */}
       <mesh ref={haloRef}>
         <circleGeometry args={[0.085, 24]} />
@@ -218,6 +244,7 @@ function CityPin({
 
 // Atmospheric rim — back-side sphere with fresnel-ish soft edge via shader
 function Atmosphere() {
+  const { glow: ACCENT } = usePalette();
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     side: BackSide,
@@ -240,7 +267,7 @@ function Atmosphere() {
         gl_FragColor = vec4(uColor, 1.0) * intensity * 0.55;
       }
     `,
-  }), []);
+  }), [ACCENT]);
   return (
     <mesh scale={1.12}>
       <sphereGeometry args={[RADIUS, 64, 64]} />
@@ -251,6 +278,7 @@ function Atmosphere() {
 
 // Travel arc (animated draw on first load)
 function ArcLine({ from, to, delay = 0 }: GlobeArc & { delay?: number }) {
+  const { arc: ACCENT } = usePalette();
   const [progress, setProgress] = useState(0);
   const geomRef = useRef<THREE.BufferGeometry>(null);
 
@@ -334,7 +362,8 @@ function IdleRotator({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>;
 }
 
-function Scene({ pins, arcs, onPinClick, decorative }: InteractiveGlobeProps) {
+function Scene({ pins, arcs, onPinClick, decorative, highlights, ignite }: InteractiveGlobeProps) {
+  const halos = highlights ?? VISITED_COUNTRIES;
   const sprite = useSoftDiscTexture();
 
   return (
@@ -351,16 +380,16 @@ function Scene({ pins, arcs, onPinClick, decorative }: InteractiveGlobeProps) {
         </Suspense>
 
         {/* Visited country highlights */}
-        {VISITED_COUNTRIES.map((c) => (
+        {halos.map((c) => (
           <VisitedHalo key={c.name} lat={c.lat} lng={c.lng} size={c.size} sprite={sprite} />
         ))}
 
         {arcs?.map((a, i) => (
-          <ArcLine key={`arc-${i}`} {...a} delay={i * 180} />
+          <ArcLine key={`arc-${i}`} {...a} delay={ignite ? 600 + i * 350 : i * 180} />
         ))}
 
         {pins.map((p, i) => (
-          <CityPin key={`${p.lat}-${p.lng}-${i}`} pin={p} onClick={() => onPinClick?.(p)} sprite={sprite} />
+          <CityPin key={`${p.lat}-${p.lng}-${i}`} pin={p} onClick={() => onPinClick?.(p)} sprite={sprite} delay={ignite ? i * 220 : 0} />
         ))}
       </IdleRotator>
 
@@ -383,14 +412,18 @@ export default function InteractiveGlobe({
   arcs,
   onPinClick,
   decorative,
+  palette,
+  highlights,
+  ignite,
 }: InteractiveGlobeProps) {
+  const pal = palette ?? GLOBE_THEMES[0].palette;
   return (
     <div
       className="w-full h-full"
       style={{
         background: decorative
           ? "transparent"
-          : "radial-gradient(ellipse at 50% 45%, #0F1828 0%, #080D1A 75%)",
+          : `radial-gradient(ellipse at 50% 45%, ${pal.backdrop} 0%, ${pal.ocean} 75%)`,
       }}
     >
       <Canvas
@@ -398,7 +431,9 @@ export default function InteractiveGlobe({
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={[1, 2]}
       >
-        <Scene pins={pins} arcs={arcs} onPinClick={onPinClick} decorative={decorative} />
+        <PaletteCtx.Provider value={pal}>
+          <Scene pins={pins} arcs={arcs} onPinClick={onPinClick} decorative={decorative} highlights={highlights} ignite={ignite} />
+        </PaletteCtx.Provider>
       </Canvas>
     </div>
   );
