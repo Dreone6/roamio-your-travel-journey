@@ -6,3 +6,5 @@
 - [x] Verify signed-in chat flow, share-visibility rule test, typecheck and build.
 - [x] Strip retired SOS/safety and encryption claims from the landing and pricing screens; re-center the feature grids.
 - [x] Disable premium checkout in the pricing UI: paid tiers read "Coming Soon" with no click handler; free tier still enters the app.
+- [ ] Connect quick country tagging to Build My World and polish the shared globe reveal.
+- [ ] Verify quick-start tagging, photo selection, color customization, and existing world aggregation.
