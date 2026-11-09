@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { browserFileSource, demoSource, nativePhotoLibrarySource, pickNativeMedia } from "@/lib/buildworld/mediaSource";
 import { PERMISSION_COPY } from "@/lib/native/permissionCopy";
@@ -112,7 +113,7 @@ export default function BuildWorldPage() {
         </div>
       )}
 
-      {step === "intro" && <IntroStep onStart={() => setStep("privacy")} onManual={() => navigate("/globe/add-trip")} />}
+      {step === "intro" && <IntroStep onStart={() => setStep("privacy")} onQuick={() => navigate("/onboarding?mode=quick-start")} onManual={() => navigate("/globe/add-trip")} />}
       {step === "privacy" && (
         <PrivacyStep
           demoMode={demoMode}
@@ -131,7 +132,7 @@ export default function BuildWorldPage() {
 
 /* ----------------------------------- 1 ------------------------------------ */
 
-function IntroStep({ onStart, onManual }: { onStart: () => void; onManual: () => void }) {
+function IntroStep({ onStart, onQuick, onManual }: { onStart: () => void; onQuick: () => void; onManual: () => void }) {
   return (
     <div className="px-6 pt-4 pb-10 animate-fade-in">
       <div className="relative mx-auto my-6 h-[190px] w-[190px]">
@@ -184,7 +185,10 @@ function IntroStep({ onStart, onManual }: { onStart: () => void; onManual: () =>
       </div>
 
       <div className="mt-10 space-y-3">
-        <PrimaryButton onClick={onStart}>Build My World</PrimaryButton>
+        <Button onClick={onQuick} size="lg" className="w-full rounded-full">
+          <GlobeIcon strokeWidth={1.5} /> Quick-tag my countries
+        </Button>
+        <PrimaryButton onClick={onStart}>Scan Trip Photos</PrimaryButton>
         <button
           onClick={onManual}
           className="w-full text-white"
