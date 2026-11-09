@@ -9,7 +9,7 @@ import { ArrowRight, Compass, Search, Images, Loader2, Check, Sparkles, Lock } f
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import GlobeBoundary from "@/components/GlobeBoundary";
+import { GlobeBoundary } from "@/components/GlobeBoundary";
 import GlobeThemePicker from "@/components/globe/GlobeThemePicker";
 import { COUNTRIES, type TagCountry } from "@/lib/onboarding/countries";
 import { saveCountryTags } from "@/lib/onboarding/saveCountryTags";
@@ -335,7 +335,7 @@ function IgniteStep({ countries, trips, saving, onFinish }: {
   return (
     <div className="flex-1 flex flex-col">
       <div className="relative" style={{ height: "48vh", maxHeight: 440 }}>
-        <GlobeBoundary>
+        <GlobeBoundary fallback={<div className="h-full flex items-center justify-center"><Compass className="h-12 w-12" style={{ color: ACCENT }} strokeWidth={1.5} /></div>}>
           <Suspense fallback={<div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" style={{ color: ACCENT }} /></div>}>
             <InteractiveGlobe pins={pins} arcs={arcs} highlights={highlights} palette={theme.palette} ignite autoRotate decorative />
           </Suspense>
