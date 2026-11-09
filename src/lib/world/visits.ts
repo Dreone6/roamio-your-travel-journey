@@ -119,7 +119,9 @@ export async function fetchVisits(userId: string): Promise<Visit[]> {
   if (error) throw error;
 
   return (data ?? [])
-    .filter((r) => r.city && r.country)
+    // Country-only rows (city "") come from the onboarding country tagger:
+    // they count toward countries and visits but never toward cities.
+    .filter((r) => r.country)
     .map((r) => ({
       id: r.id,
       city: r.city,
@@ -159,6 +161,7 @@ export function aggregateWorld(visits: Visit[]): World {
 
   const byCity = new Map<string, CityPlace>();
   for (const v of visits) {
+    if (!v.city.trim()) continue;
     const key = groupKey(v);
     let place = byCity.get(key);
     if (!place) {
@@ -230,6 +233,21 @@ export function aggregateWorld(visits: Visit[]): World {
     entry.scannedPhotos += p.scannedPhotos;
     if (p.firstVisit && (!entry.firstVisit || p.firstVisit < entry.firstVisit)) entry.firstVisit = p.firstVisit;
     if (p.lastVisit && (!entry.lastVisit || p.lastVisit > entry.lastVisit)) entry.lastVisit = p.lastVisit;
+  }
+
+  for (const v of visits) {
+    if (v.city.trim()) continue;
+    const key = norm(v.country);
+    let entry = byCountry.get(key);
+    if (!entry) {
+      entry = {
+        country: v.country.trim(), countryCode: isoForCountry(v.country), flag: flagEmoji(v.country),
+        cities: [], cityCount: 0, visitCount: 0, memories: 0, scannedPhotos: 0, firstVisit: null, lastVisit: null,
+      };
+      byCountry.set(key, entry);
+    }
+    entry.visitCount += 1;
+    entry.memories += v.memories;
   }
 
   const countries = [...byCountry.values()].sort(
