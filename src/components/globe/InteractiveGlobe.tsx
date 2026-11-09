@@ -107,7 +107,8 @@ function useSoftDiscTexture(): THREE.Texture {
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return new THREE.CanvasTexture(canvas);
     const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
     grad.addColorStop(0, "rgba(255,255,255,1)");
     grad.addColorStop(0.4, "rgba(255,255,255,0.55)");
@@ -138,17 +139,30 @@ function Land() {
     TextureLoader,
     "https://unpkg.com/three-globe@2.31.0/example/img/earth-water.png"
   );
-  useMemo(() => {
-    waterMask.colorSpace = THREE.NoColorSpace;
-    waterMask.needsUpdate = true;
+  const landMask = useMemo(() => {
+    // The provider mask is white over water, while alphaMap needs white over land.
+    const image = waterMask.image as HTMLImageElement;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d");
+    if (!context) return waterMask;
+    context.drawImage(image, 0, 0);
+    context.globalCompositeOperation = "difference";
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.NoColorSpace;
+    return texture;
   }, [waterMask]);
+  useEffect(() => () => { if (landMask !== waterMask) landMask.dispose(); }, [landMask, waterMask]);
 
   return (
     <mesh>
       <sphereGeometry args={[LAND_RADIUS, 192, 192]} />
       <meshBasicMaterial
         color={LAND}
-        alphaMap={waterMask}
+        alphaMap={landMask}
         transparent
         alphaTest={0.5}
       />

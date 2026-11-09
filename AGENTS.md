@@ -15,3 +15,4 @@
 
 - Onboarding country tags are saved as private country-only `places_visited` rows (city "", import_key `country-tag:<ISO>`); aggregation counts them toward countries/visits but never cities, so no cities are invented.
 - Globe colour themes live in `src/lib/globe/themes.ts` (per-device localStorage); both globe renderers take a palette prop instead of hardcoded colours.
+- Reuse onboarding in explicit quick-start mode for existing accounts without changing onboarding completion; this keeps country tagging and photo import in one flow.

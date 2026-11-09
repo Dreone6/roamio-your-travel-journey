@@ -1,0 +1,28 @@
+.world-onboarding {
+  --background: 222 53% 7%;
+  --foreground: 0 0% 100%;
+  --card: 221 39% 11%;
+  --card-foreground: 0 0% 100%;
+  --secondary: 223 35% 16%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 223 35% 16%;
+  --muted-foreground: 215 20% 65%;
+  --border: 218 35% 18%;
+  --input: 218 35% 18%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 217 91% 60%;
+  --passport: 27 85% 66%;
+}
+.world-onboarding .passport-stamp {
+  color: hsl(var(--passport));
+  border-color: hsl(var(--passport));
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-onboarding *, .world-onboarding *::before, .world-onboarding *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
