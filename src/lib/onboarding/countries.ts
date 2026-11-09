@@ -1,0 +1,66 @@
+/** Country list for the onboarding quick-tagger (approximate centroids). */
+export interface TagCountry {
+  code: string;
+  name: string;
+  flag: string;
+  lat: number;
+  lng: number;
+  popular?: boolean;
+}
+
+export const COUNTRIES: TagCountry[] = [
+  { code: "US", name: "United States", flag: "🇺🇸", lat: 39.8, lng: -98.6, popular: true },
+  { code: "MX", name: "Mexico", flag: "🇲🇽", lat: 23.6, lng: -102.5, popular: true },
+  { code: "IT", name: "Italy", flag: "🇮🇹", lat: 42.8, lng: 12.6, popular: true },
+  { code: "FR", name: "France", flag: "🇫🇷", lat: 46.6, lng: 2.4, popular: true },
+  { code: "ES", name: "Spain", flag: "🇪🇸", lat: 40.2, lng: -3.7, popular: true },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧", lat: 54.0, lng: -2.5, popular: true },
+  { code: "JP", name: "Japan", flag: "🇯🇵", lat: 36.2, lng: 138.3, popular: true },
+  { code: "TH", name: "Thailand", flag: "🇹🇭", lat: 15.9, lng: 100.9, popular: true },
+  { code: "GR", name: "Greece", flag: "🇬🇷", lat: 39.1, lng: 22.0, popular: true },
+  { code: "DE", name: "Germany", flag: "🇩🇪", lat: 51.2, lng: 10.4, popular: true },
+  { code: "PT", name: "Portugal", flag: "🇵🇹", lat: 39.6, lng: -8.0, popular: true },
+  { code: "CA", name: "Canada", flag: "🇨🇦", lat: 56.1, lng: -106.3, popular: true },
+  { code: "AE", name: "United Arab Emirates", flag: "🇦🇪", lat: 23.4, lng: 53.8, popular: true },
+  { code: "TR", name: "Turkey", flag: "🇹🇷", lat: 39.0, lng: 35.2, popular: true },
+  { code: "ID", name: "Indonesia", flag: "🇮🇩", lat: -2.5, lng: 118.0, popular: true },
+  { code: "AU", name: "Australia", flag: "🇦🇺", lat: -25.3, lng: 133.8, popular: true },
+  { code: "AR", name: "Argentina", flag: "🇦🇷", lat: -38.4, lng: -63.6 },
+  { code: "AT", name: "Austria", flag: "🇦🇹", lat: 47.5, lng: 14.6 },
+  { code: "BE", name: "Belgium", flag: "🇧🇪", lat: 50.5, lng: 4.5 },
+  { code: "BR", name: "Brazil", flag: "🇧🇷", lat: -14.2, lng: -51.9 },
+  { code: "CL", name: "Chile", flag: "🇨🇱", lat: -35.7, lng: -71.5 },
+  { code: "CN", name: "China", flag: "🇨🇳", lat: 35.9, lng: 104.2 },
+  { code: "CO", name: "Colombia", flag: "🇨🇴", lat: 4.6, lng: -74.3 },
+  { code: "CR", name: "Costa Rica", flag: "🇨🇷", lat: 9.7, lng: -83.8 },
+  { code: "HR", name: "Croatia", flag: "🇭🇷", lat: 45.1, lng: 15.2 },
+  { code: "CU", name: "Cuba", flag: "🇨🇺", lat: 21.5, lng: -77.8 },
+  { code: "CZ", name: "Czechia", flag: "🇨🇿", lat: 49.8, lng: 15.5 },
+  { code: "DK", name: "Denmark", flag: "🇩🇰", lat: 56.3, lng: 9.5 },
+  { code: "DO", name: "Dominican Republic", flag: "🇩🇴", lat: 18.7, lng: -70.2 },
+  { code: "EG", name: "Egypt", flag: "🇪🇬", lat: 26.8, lng: 30.8 },
+  { code: "FI", name: "Finland", flag: "🇫🇮", lat: 61.9, lng: 25.7 },
+  { code: "HU", name: "Hungary", flag: "🇭🇺", lat: 47.2, lng: 19.5 },
+  { code: "IS", name: "Iceland", flag: "🇮🇸", lat: 64.9, lng: -19.0 },
+  { code: "IN", name: "India", flag: "🇮🇳", lat: 20.6, lng: 79.0 },
+  { code: "IE", name: "Ireland", flag: "🇮🇪", lat: 53.4, lng: -8.2 },
+  { code: "IL", name: "Israel", flag: "🇮🇱", lat: 31.0, lng: 34.9 },
+  { code: "JM", name: "Jamaica", flag: "🇯🇲", lat: 18.1, lng: -77.3 },
+  { code: "KE", name: "Kenya", flag: "🇰🇪", lat: -0.0, lng: 37.9 },
+  { code: "KR", name: "South Korea", flag: "🇰🇷", lat: 35.9, lng: 127.8 },
+  { code: "MA", name: "Morocco", flag: "🇲🇦", lat: 31.8, lng: -7.1 },
+  { code: "MV", name: "Maldives", flag: "🇲🇻", lat: 3.2, lng: 73.2 },
+  { code: "MY", name: "Malaysia", flag: "🇲🇾", lat: 4.2, lng: 102.0 },
+  { code: "NL", name: "Netherlands", flag: "🇳🇱", lat: 52.1, lng: 5.3 },
+  { code: "NZ", name: "New Zealand", flag: "🇳🇿", lat: -40.9, lng: 174.9 },
+  { code: "NO", name: "Norway", flag: "🇳🇴", lat: 60.5, lng: 8.5 },
+  { code: "PE", name: "Peru", flag: "🇵🇪", lat: -9.2, lng: -75.0 },
+  { code: "PH", name: "Philippines", flag: "🇵🇭", lat: 12.9, lng: 121.8 },
+  { code: "PL", name: "Poland", flag: "🇵🇱", lat: 51.9, lng: 19.1 },
+  { code: "SG", name: "Singapore", flag: "🇸🇬", lat: 1.35, lng: 103.8 },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦", lat: -30.6, lng: 22.9 },
+  { code: "SE", name: "Sweden", flag: "🇸🇪", lat: 60.1, lng: 18.6 },
+  { code: "CH", name: "Switzerland", flag: "🇨🇭", lat: 46.8, lng: 8.2 },
+  { code: "TZ", name: "Tanzania", flag: "🇹🇿", lat: -6.4, lng: 34.9 },
+  { code: "VN", name: "Vietnam", flag: "🇻🇳", lat: 14.1, lng: 108.3 },
+];
