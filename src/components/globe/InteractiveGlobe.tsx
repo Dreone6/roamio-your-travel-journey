@@ -210,7 +210,7 @@ function CityPin({
       // Springy drop-in: overshoot then settle.
       if (born.current == null) born.current = state.clock.elapsedTime + delay / 1000;
       const t = Math.max(0, state.clock.elapsedTime - born.current);
-      const s = t <= 0 ? 0.001 : 1 + Math.exp(-6 * t) * Math.sin(12 * t - Math.PI / 2) * -1 * 0 + (1 - Math.exp(-7 * t)) * (1 + 0.35 * Math.exp(-4 * t) * Math.sin(10 * t)) - 1;
+      const s = t <= 0 ? 0 : 1 - Math.exp(-7 * t) * Math.cos(10 * t);
       const k = Math.max(0.001, s);
       groupRef.current.scale.set(k, k, k);
     }
