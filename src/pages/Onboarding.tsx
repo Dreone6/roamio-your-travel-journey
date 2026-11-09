@@ -229,7 +229,7 @@ function PhotoStep({ onDone, onBack }: { onDone: (trips: DiscoveredTrip[]) => vo
       if (nativePhotoLibrarySource.isAvailable()) {
         const picked = await pickNativeMedia();
         if (picked.status === "cancelled") return;
-        if (picked.status !== "success") throw new Error("Photo access unavailable");
+        if (picked.status !== "ok") throw new Error("Photo access unavailable");
         items = picked.items;
       } else items = await browserFileSource.pickMedia();
       if (!items.length || !activeRef.current) return;
