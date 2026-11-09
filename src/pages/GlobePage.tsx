@@ -16,8 +16,10 @@ import { useTravelIdentity } from "@/hooks/useTravelIdentity";
 import {
   Settings, Share2, Crosshair, Map as MapIcon, ChevronRight, Image as ImageIcon,
   Trophy, Camera, Users, Compass, BookMarked,
-  Plus,
+  Plus, Palette,
 } from "lucide-react";
+import GlobeThemePicker from "@/components/globe/GlobeThemePicker";
+import { loadPalette, savePalette, type GlobePalette } from "@/lib/globe/themes";
 import { toast } from "sonner";
 import roavrPin from "@/assets/roavr-pin.png";
 import FlatMapView from "@/components/globe/FlatMapView";
@@ -45,6 +47,18 @@ export default function GlobePage() {
   const { user } = useAuth();
   const identity = useTravelIdentity();
   const world = identity.world;
+  const [theme, setTheme] = useState(() => {
+    try { if (localStorage.getItem("roavr.globeTheme") === null) return { id: "satellite", palette: null as GlobePalette | null }; } catch { /* ignore */ }
+    const t = loadPalette();
+    return { id: t.id, palette: t.palette as GlobePalette | null };
+  });
+  const [themeOpen, setThemeOpen] = useState(false);
+  const pickTheme = (id: string, palette: GlobePalette | null) => {
+    setTheme({ id, palette });
+    if (palette) savePalette(id, palette);
+    else { try { localStorage.removeItem("roavr.globeTheme"); } catch { /* ignore */ } }
+  };
+  const visitedCountryNames = useMemo(() => world.countries.map((c) => c.country), [world.countries]);
 
   const [activeTab, setActiveTab] = useState<Tab>("mine");
   const [viewMode, setViewMode] = useState<ViewMode>("globe");
@@ -268,6 +282,34 @@ export default function GlobePage() {
             </span>
           </div>
 
+          {viewMode === "globe" && (
+            <button
+              type="button"
+              onClick={() => setThemeOpen((o) => !o)}
+              aria-label="Customize globe colours"
+              aria-expanded={themeOpen}
+              className="absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+            >
+              <Palette className="h-4 w-4 text-white" strokeWidth={1.5} />
+            </button>
+          )}
+          {viewMode === "globe" && themeOpen && (
+            <div className="absolute left-3 right-3 bottom-3 z-30 rounded-2xl p-3" style={{ background: "#111827", border: "1px solid #1E2A3F", boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[13px] font-semibold text-white">Style your globe</p>
+                <button type="button" onClick={() => pickTheme("satellite", null)} className="text-[12px]" style={{ color: theme.id === "satellite" ? "#3B82F6" : "#94A3B8" }}>
+                  Satellite photo
+                </button>
+              </div>
+              <GlobeThemePicker
+                selectedId={theme.id}
+                palette={theme.palette ?? loadPalette().palette}
+                onChange={(id, pal) => pickTheme(id, pal)}
+              />
+            </div>
+          )}
+
           <div className="absolute inset-0">
             {viewMode === "globe" ? (
               <Suspense
@@ -279,6 +321,8 @@ export default function GlobePage() {
               >
                 <WorldGlobe
                   key={recenterKey}
+                  palette={theme.palette}
+                  visitedCountries={visitedCountryNames}
                   points={globePoints}
                   arcs={globeArcs}
                   onPointClick={(p) => openPlace(p.key)}
@@ -294,7 +338,7 @@ export default function GlobePage() {
           </div>
 
           {/* Empty-globe invitation overlay */}
-          {!identity.loading && !hasPlaces && (
+          {!identity.loading && world.isEmpty && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-8 text-center"
               style={{ background: "linear-gradient(to top, rgba(8,13,26,0.92) 30%, rgba(8,13,26,0.35))" }}>
               <p className="font-heading text-[22px] font-bold text-white leading-tight">

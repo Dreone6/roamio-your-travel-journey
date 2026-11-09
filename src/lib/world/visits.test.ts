@@ -25,6 +25,17 @@ describe("aggregateWorld", () => {
     expect(rome.visits).toHaveLength(2);
   });
 
+  it("counts tagged countries without inventing cities", () => {
+    const w = aggregateWorld([
+      visit("1", "Rome", "Italy", "2022-05-02"),
+      { ...visit("2", "", "Japan", ""), startDate: null, endDate: null },
+      { ...visit("3", "", "Italy", ""), startDate: null, endDate: null },
+    ]);
+    expect(w.summary.countries).toBe(2);
+    expect(w.summary.cities).toBe(1);
+    expect(w.places.every((p) => p.city !== "")).toBe(true);
+  });
+
   it("only names a most-visited place when one genuinely leads", () => {
     const tie = aggregateWorld([
       visit("1", "Rome", "Italy", "2022-05-02"),

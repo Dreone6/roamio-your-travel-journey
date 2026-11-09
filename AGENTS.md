@@ -12,3 +12,6 @@
 - Client roles may never move storage objects into or out of `checkin-photos`/`user-media` (trigger `guard_bucket_move`), because permissive policies are OR-ed across buckets and cannot compare old vs new bucket; same-bucket renames stay allowed.
 - Manual past trips are saved only through `record_manual_visit` (visit + memories in one transaction, idempotent on `places_visited.client_request_id`); canonical `places` rows are created only by the `place-search` edge function after re-resolving the provider id server-side, because clients have no write access to places.
 - Memories are added to an existing visit only through `add_visit_memory` (owner-checked against auth.uid(), idempotent on `memories.client_request_id`, never creates visits or changes visit visibility/scanned counts); city timelines query by target owner + the exact grouped visit ids so legacy rows without a canonical id are kept and same-name cities with different canonical ids stay separate.
+
+- Onboarding country tags are saved as private country-only `places_visited` rows (city "", import_key `country-tag:<ISO>`); aggregation counts them toward countries/visits but never cities, so no cities are invented.
+- Globe colour themes live in `src/lib/globe/themes.ts` (per-device localStorage); both globe renderers take a palette prop instead of hardcoded colours.
