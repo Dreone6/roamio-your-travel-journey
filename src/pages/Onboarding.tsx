@@ -1,293 +1,385 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+/**
+ * 60-second first run: tag countries → optional photo scan → globe ignition.
+ * Everything saved is private by default; nothing is invented.
+ */
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { ArrowRight, Compass, Search, Images, Loader2, Check, Sparkles, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Sparkles, Compass } from "lucide-react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import GlobeBoundary from "@/components/GlobeBoundary";
+import GlobeThemePicker from "@/components/globe/GlobeThemePicker";
+import { COUNTRIES, type TagCountry } from "@/lib/onboarding/countries";
+import { saveCountryTags } from "@/lib/onboarding/saveCountryTags";
+import { browserFileSource } from "@/lib/buildworld/mediaSource";
+import { extractMetadata } from "@/lib/buildworld/metadata";
+import { buildDiscoveredTrips } from "@/lib/buildworld/cluster";
+import { saveDiscoveredTrips } from "@/lib/buildworld/persist";
+import type { DiscoveredTrip } from "@/lib/buildworld/types";
+import { loadPalette, savePalette, type GlobePalette } from "@/lib/globe/themes";
 
 const InteractiveGlobe = lazyWithRetry(
   () => import("@/components/globe/InteractiveGlobe"),
   "interactive-globe",
 );
 
-const ITINERARY_LINES = [
-  { city: "Day 1 · Tokyo", sub: "Shibuya Crossing, Sushi Dai" },
-  { city: "Day 2 · Kyoto", sub: "Fushimi Inari, tea ceremony" },
-  { city: "Day 3 · Osaka", sub: "Dotonbori street food" },
-  { city: "Day 4 · Hakone", sub: "Onsen + Mt. Fuji views" },
-];
+const BG = "#080D1A";
+const SURFACE = "#111827";
+const ELEV = "#1A2236";
+const BORDER = "#1E2A3F";
+const MUTED = "#94A3B8";
+const ACCENT = "#3B82F6";
+const GOLD = "#F4A261";
 
-// Sample globe pins for screen 3 (premium feel)
-const ONBOARDING_PINS = [
-  { lat: 40.6281, lng: 14.4848, label: "Positano", category: "memory", recent: true },
-  { lat: 35.6895, lng: 139.6917, label: "Tokyo", category: "memory" },
-  { lat: 51.5074, lng: -0.1278, label: "London", category: "memory" },
-  { lat: 31.6295, lng: -7.9811, label: "Marrakech", category: "memory" },
-  { lat: 64.1466, lng: -21.9426, label: "Reykjavik", category: "memory" },
-  { lat: 40.7128, lng: -74.0060, label: "New York", category: "memory" },
-  { lat: 48.8566, lng: 2.3522, label: "Paris", category: "memory" },
-  { lat: -33.8688, lng: 151.2093, label: "Sydney", category: "memory" },
-];
+type Step = "tag" | "photos" | "ignite";
 
-const ONBOARDING_ARCS = [
-  { from: { lat: 51.5074, lng: -0.1278 }, to: { lat: 40.6281, lng: 14.4848 } },
-  { from: { lat: 40.6281, lng: 14.4848 }, to: { lat: 31.6295, lng: -7.9811 } },
-  { from: { lat: 51.5074, lng: -0.1278 }, to: { lat: 35.6895, lng: 139.6917 } },
-  { from: { lat: 40.7128, lng: -74.0060 }, to: { lat: 48.8566, lng: 2.3522 } },
-];
+function travelerTitle(countries: number) {
+  if (countries >= 30) return "Globe Legend";
+  if (countries >= 15) return "Seasoned Explorer";
+  if (countries >= 7) return "World Wanderer";
+  if (countries >= 3) return "Rising Roamer";
+  return "First Steps";
+}
 
 export default function Onboarding() {
-  const [step, setStep] = useState(1);
-  const [saving, setSaving] = useState(false);
-  const [checking, setChecking] = useState(true);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [step, setStep] = useState<Step>("tag");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [trips, setTrips] = useState<DiscoveredTrip[]>([]);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
-  // Guard: if not signed in → /auth; if already onboarded → /home
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      navigate("/auth", { replace: true });
-      return;
-    }
-    Promise.resolve(supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .single())
+    if (!user) { navigate("/auth", { replace: true }); return; }
+    Promise.resolve(supabase.from("profiles").select("onboarding_completed").eq("id", user.id).single())
       .then(({ data }) => {
-        if (data?.onboarding_completed) {
-          navigate("/home", { replace: true });
-        } else {
-          setChecking(false);
-        }
+        if (data?.onboarding_completed) navigate("/home", { replace: true });
+        else setChecking(false);
       })
       .catch(() => setChecking(false));
   }, [user, loading, navigate]);
 
-  const handleFinish = async () => {
-    if (!user) { navigate("/auth", { replace: true }); return; }
+  const tagged = useMemo(() => COUNTRIES.filter((c) => selected.includes(c.code)), [selected]);
+
+  const finish = async (save: boolean) => {
+    if (!user || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
-    await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
-    navigate("/build-world", { replace: true });
+    try {
+      if (save) {
+        await saveCountryTags(user.id, tagged);
+        if (trips.length) await saveDiscoveredTrips(user.id, trips);
+      }
+      const { error } = await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
+      if (error) throw error;
+      navigate("/globe", { replace: true });
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't save your globe. Please try again.");
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
-
-
-  const next = () => setStep(s => (s < 3 ? s + 1 : s));
 
   if (loading || checking) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" style={{ background: "#080D1A" }}>
-        <Compass className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
+      <div className="flex min-h-dvh items-center justify-center" style={{ background: BG }}>
+        <Compass className="h-8 w-8 animate-spin" style={{ color: ACCENT }} />
       </div>
     );
   }
 
+  const stepIndex = step === "tag" ? 0 : step === "photos" ? 1 : 2;
 
   return (
-    <div className="min-h-dvh flex flex-col" style={{ background: "#080D1A" }}>
-      <div className="flex-1 flex flex-col px-5 pt-10 pb-6">
-        {step === 1 && <PlanScreen />}
-        {step === 2 && <CaptureScreen />}
-        {step === 3 && <MapScreen />}
+    <div className="min-h-dvh flex flex-col safe-top" style={{ background: BG }}>
+      <div className="flex items-center gap-2 px-5 pt-6">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-1 flex-1 rounded-full transition-colors duration-500"
+            style={{ background: i <= stepIndex ? ACCENT : BORDER }} />
+        ))}
       </div>
 
-      {/* Bottom: dots + CTA */}
-      <div className="px-5 pb-10 space-y-5">
-        <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3].map(s => (
-            <div
-              key={s}
-              className="h-1.5 rounded-full transition-all duration-300"
-              style={{
-                width: s === step ? 28 : 8,
-                background: s === step ? "#3B82F6" : "#1E2A3F",
-              }}
-            />
-          ))}
-        </div>
-
-        {step < 3 ? (
-          <button
-            onClick={next}
-            className="w-full rounded-full flex items-center justify-center gap-2 text-white font-semibold text-[14px]"
-            style={{ background: "#3B82F6", height: 52 }}
-          >
-            Next <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <button
-              onClick={handleFinish}
-              disabled={saving}
-              className="w-full rounded-full flex items-center justify-center gap-2 text-white font-semibold text-[14px] disabled:opacity-60"
-              style={{ background: "#3B82F6", height: 52 }}
-            >
-              {saving ? "Loading…" : "Start Exploring"}
-            </button>
-            <button
-              onClick={() => navigate("/auth")}
-              className="w-full text-center text-[14px]"
-              style={{ color: "#94A3B8" }}
-            >
-              Already have an account? <span className="font-semibold" style={{ color: "#FFFFFF" }}>Sign in</span>
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Screen 1: PLAN ──────────────────────────────────
-function PlanScreen() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-between text-center">
-      <div className="flex-1 flex items-center justify-center w-full relative py-6">
-        {/* Soft blue ambient glow */}
-        <div
-          className="absolute"
-          style={{
-            width: 260, height: 260, borderRadius: "50%",
-            background: "#3B82F6", opacity: 0.2, filter: "blur(80px)",
-          }}
+      {step === "tag" && (
+        <TagStep
+          selected={selected}
+          setSelected={setSelected}
+          onNext={() => setStep("photos")}
+          onSkip={() => finish(false)}
         />
-        {/* Phone mockup */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            width: 220, height: 420, borderRadius: 32,
-            background: "#111827", border: "8px solid #1A2236",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-          }}
-        >
-          {/* Phone notch */}
-          <div
-            className="absolute top-2 left-1/2 -translate-x-1/2 rounded-full"
-            style={{ width: 60, height: 5, background: "#080D1A" }}
-          />
-          {/* Ask Roavr module */}
-          <div className="pt-8 px-3">
-            <div
-              className="rounded-2xl p-3 text-left"
-              style={{ background: "#1A2236", border: "1px solid #1E2A3F" }}
-            >
-              <div className="flex items-center gap-1.5 mb-2">
-                <Sparkles className="h-3 w-3" style={{ color: "#3B82F6" }} strokeWidth={1.5} />
-                <span className="text-[9px] font-semibold uppercase" style={{ color: "#3B82F6", letterSpacing: "0.06em" }}>
-                  Ask Roavr
-                </span>
-              </div>
-              <p className="text-[10px] text-white font-medium">7 days in Japan</p>
-            </div>
-            <div className="mt-2.5 space-y-2">
-              {ITINERARY_LINES.map((line, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl p-2.5 text-left animate-in fade-in slide-in-from-bottom-1"
-                  style={{
-                    background: "#1A2236",
-                    animationDelay: `${i * 350}ms`,
-                    animationDuration: "500ms",
-                    animationFillMode: "both",
-                  }}
-                >
-                  <p className="text-[9px] font-semibold text-white">{line.city}</p>
-                  <p className="text-[8px] mt-0.5" style={{ color: "#94A3B8" }}>{line.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-2 space-y-3 max-w-[340px]">
-        <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-tight">
-          Plan smarter trips
-        </h1>
-        <p className="text-[14px] leading-relaxed" style={{ color: "#94A3B8" }}>
-          Ask Roavr for itineraries, restaurant picks, translations, and real-time travel help.
-        </p>
-      </div>
+      )}
+      {step === "photos" && (
+        <PhotoStep
+          onDone={(found) => { setTrips(found); setStep("ignite"); }}
+          onBack={() => setStep("tag")}
+        />
+      )}
+      {step === "ignite" && (
+        <IgniteStep countries={tagged} trips={trips} saving={saving} onFinish={() => finish(true)} />
+      )}
     </div>
   );
 }
 
-// ── Screen 2: CAPTURE ────────────────────────────────
-function CaptureScreen() {
-  const photos = [
-    { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=70", rotate: -8, x: -50, y: 0 },
-    { url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=70", rotate: 4, x: 0, y: -20 },
-    { url: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=400&q=70", rotate: 10, x: 50, y: 10 },
-  ];
+/* ─────────────────────────── 1. Country quick-tagger ─────────────────────────── */
+
+function TagStep({ selected, setSelected, onNext, onSkip }: {
+  selected: string[];
+  setSelected: (fn: (s: string[]) => string[]) => void;
+  onNext: () => void;
+  onSkip: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const toggle = (code: string) =>
+    setSelected((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
+  const list = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return COUNTRIES.filter((c) => c.popular || selected.includes(c.code));
+    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(term));
+  }, [q, selected]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-between text-center">
-      <div className="flex-1 flex items-center justify-center w-full relative">
-        <div className="relative" style={{ width: 280, height: 320 }}>
-          {photos.map((p, i) => (
-            <div
-              key={i}
-              className="absolute top-1/2 left-1/2 overflow-hidden bg-cover bg-center"
-              style={{
-                width: 180, height: 220, borderRadius: 16,
-                border: "2px solid #FFFFFF",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-                backgroundImage: `url(${p.url})`,
-                transform: `translate(calc(-50% + ${p.x}px), calc(-50% + ${p.y}px)) rotate(${p.rotate}deg)`,
-                zIndex: i,
-              }}
-            />
-          ))}
-        </div>
+    <div className="flex-1 flex flex-col px-5 pt-8 pb-8">
+      <h1 className="font-heading text-[30px] font-bold text-white leading-tight tracking-tight">
+        Where have you been?
+      </h1>
+      <p className="mt-2 text-[14px]" style={{ color: MUTED }}>
+        Tap every country you've visited. It takes about 15 seconds.
+      </p>
+
+      <div className="mt-5 flex items-center gap-2 rounded-full px-4" style={{ background: ELEV, border: `1px solid ${BORDER}`, height: 46 }}>
+        <Search className="h-4 w-4" style={{ color: MUTED }} strokeWidth={1.5} />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search any country"
+          aria-label="Search countries"
+          className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[#4B5563]"
+        />
       </div>
 
-      <div className="mt-2 space-y-3 max-w-[340px]">
-        <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-tight">
-          Capture every memory
-        </h1>
-        <p className="text-[14px] leading-relaxed" style={{ color: "#94A3B8" }}>
-          Save photos, check-ins, and bookings in one organized place, tied to every trip.
+      <div className="mt-5 flex flex-wrap gap-2 content-start flex-1 overflow-y-auto">
+        {list.map((c) => {
+          const on = selected.includes(c.code);
+          return (
+            <button
+              key={c.code}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(c.code)}
+              className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-medium transition-all active:scale-95"
+              style={{
+                background: on ? ACCENT : SURFACE,
+                border: `1px solid ${on ? ACCENT : BORDER}`,
+                color: on ? "#FFFFFF" : "#E2E8F0",
+                transform: on ? "scale(1.04)" : "none",
+              }}
+            >
+              <span className="text-[16px] leading-none">{c.flag}</span>
+              {c.name}
+              {on && <Check className="h-3.5 w-3.5" strokeWidth={2} />}
+            </button>
+          );
+        })}
+        {list.length === 0 && <p className="text-[13px]" style={{ color: MUTED }}>No country matches "{q}".</p>}
+      </div>
+
+      <div className="pt-5 space-y-3">
+        <p className="text-center text-[13px] font-semibold" style={{ color: selected.length ? GOLD : MUTED }}>
+          {selected.length === 0 ? "Nothing tagged yet" : `${selected.length} ${selected.length === 1 ? "country" : "countries"} · ${travelerTitle(selected.length)}`}
         </p>
+        <button
+          onClick={onNext}
+          className="w-full rounded-full flex items-center justify-center gap-2 text-white font-semibold text-[14px]"
+          style={{ background: ACCENT, height: 52 }}
+        >
+          {selected.length ? "Light up my globe" : "Continue"} <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+        <button onClick={onSkip} className="w-full text-center text-[13px]" style={{ color: MUTED }}>
+          Skip for now
+        </button>
       </div>
     </div>
   );
 }
 
-// ── Screen 3: MAP YOUR WORLD ────────────────────────
-function MapScreen() {
-  const pins = useMemo(() => ONBOARDING_PINS, []);
-  const arcs = useMemo(() => ONBOARDING_ARCS, []);
+/* ─────────────────────────── 2. Optional photo scan ─────────────────────────── */
+
+function PhotoStep({ onDone, onBack }: { onDone: (trips: DiscoveredTrip[]) => void; onBack: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState({ scanned: 0, total: 0, found: 0 });
+  const [result, setResult] = useState<DiscoveredTrip[] | null>(null);
+
+  const scan = async () => {
+    const items = await browserFileSource.pickMedia();
+    if (!items.length) return;
+    setBusy(true);
+    try {
+      const ex = await extractMetadata(items, (scanned, total, found) => setProgress({ scanned, total, found }));
+      const found = ex.geotagged.length ? await buildDiscoveredTrips(ex.geotagged) : [];
+      const ready = found.map((t) => ({ ...t, selected: true, visibility: "private" as const }));
+      setResult(ready);
+      if (!ready.length) toast("No location info found in those photos — that's okay.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't read those photos.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cities = result ? new Set(result.map((t) => `${t.city}|${t.country}`)).size : 0;
+
+  return (
+    <div className="flex-1 flex flex-col px-5 pt-8 pb-8">
+      <h1 className="font-heading text-[30px] font-bold text-white leading-tight tracking-tight">
+        Add cities from your photos
+      </h1>
+      <p className="mt-2 text-[14px]" style={{ color: MUTED }}>
+        Pick a few trip photos. We only read where and when each was taken — nothing is uploaded.
+      </p>
+
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full rounded-3xl p-6 text-center" style={{ background: SURFACE, border: `1px dashed ${BORDER}` }}>
+          {busy ? (
+            <>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin" style={{ color: ACCENT }} />
+              <p className="mt-3 text-[14px] text-white">Reading photo {progress.scanned} of {progress.total}…</p>
+              <p className="mt-1 text-[12px]" style={{ color: MUTED }}>{progress.found} with a location</p>
+            </>
+          ) : result ? (
+            <>
+              <div className="mx-auto h-12 w-12 rounded-full flex items-center justify-center" style={{ background: result.length ? ACCENT : ELEV }}>
+                <Check className="h-6 w-6 text-white" strokeWidth={2} />
+              </div>
+              <p className="mt-3 font-heading text-[20px] font-bold text-white">
+                {result.length ? `${cities} ${cities === 1 ? "city" : "cities"} found` : "No locations found"}
+              </p>
+              <p className="mt-1 text-[12px]" style={{ color: MUTED }}>
+                {result.slice(0, 4).map((t) => t.city).join(" · ")}
+              </p>
+              <button onClick={scan} className="mt-4 text-[13px] font-semibold" style={{ color: ACCENT }}>Scan more photos</button>
+            </>
+          ) : (
+            <>
+              <Images className="mx-auto h-10 w-10" style={{ color: ACCENT }} strokeWidth={1.5} />
+              <button
+                onClick={scan}
+                className="mt-4 rounded-full px-6 text-white font-semibold text-[14px]"
+                style={{ background: ACCENT, height: 46 }}
+              >
+                Choose photos
+              </button>
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-[12px]" style={{ color: MUTED }}>
+                <Lock className="h-3.5 w-3.5" strokeWidth={1.5} /> Saved as private
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          disabled={busy}
+          onClick={() => onDone(result ?? [])}
+          className="w-full rounded-full flex items-center justify-center gap-2 text-white font-semibold text-[14px] disabled:opacity-50"
+          style={{ background: result?.length ? ACCENT : ELEV, height: 52 }}
+        >
+          {result?.length ? "Ignite my globe" : "Skip photos"} <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+        <button disabled={busy} onClick={onBack} className="w-full text-center text-[13px] disabled:opacity-50" style={{ color: MUTED }}>
+          Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── 3. Globe ignition ─────────────────────────── */
+
+function IgniteStep({ countries, trips, saving, onFinish }: {
+  countries: TagCountry[];
+  trips: DiscoveredTrip[];
+  saving: boolean;
+  onFinish: () => void;
+}) {
+  const [theme, setTheme] = useState(() => loadPalette());
+  const [showStamp, setShowStamp] = useState(false);
+  const pickTheme = (id: string, palette: GlobePalette) => { setTheme({ id, palette }); savePalette(id, palette); };
+
+  const cityCount = new Set(trips.map((t) => `${t.city}|${t.country}`)).size;
+  const countryCount = new Set([...countries.map((c) => c.name.toLowerCase()), ...trips.map((t) => t.country.toLowerCase())]).size;
+
+  const pins = useMemo(() => [
+    ...trips.map((t, i) => ({ lat: t.latitude, lng: t.longitude, label: t.city, category: "memory", recent: i === 0 })),
+    ...countries.map((c) => ({ lat: c.lat, lng: c.lng, label: c.name, category: "visited" })),
+  ], [countries, trips]);
+  const highlights = useMemo(() => countries.map((c) => ({ name: c.name, lat: c.lat, lng: c.lng, size: 0.35 })), [countries]);
+  const arcs = useMemo(() => {
+    const pts = pins.slice(0, 10);
+    return pts.slice(1).map((p, i) => ({ from: { lat: pts[i].lat, lng: pts[i].lng }, to: { lat: p.lat, lng: p.lng } }));
+  }, [pins]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowStamp(true), 600 + pins.length * 220);
+    return () => clearTimeout(t);
+  }, [pins.length]);
+
+  const empty = pins.length === 0;
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Globe — upper 55% */}
-      <div className="relative" style={{ height: "55vh", maxHeight: 480 }}>
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse at 50% 50%, #1E3A5F 0%, transparent 60%)",
-            opacity: 0.25, filter: "blur(6px)",
-          }}
-        />
-        <Suspense
-          fallback={
-            <div className="h-full flex items-center justify-center">
-              <div className="h-12 w-12 rounded-full border-2 border-[#1E2A3F] border-t-[#3B82F6] animate-spin" />
-            </div>
-          }
-        >
-          <InteractiveGlobe pins={pins} arcs={arcs} autoRotate />
-        </Suspense>
+      <div className="relative" style={{ height: "48vh", maxHeight: 440 }}>
+        <GlobeBoundary>
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" style={{ color: ACCENT }} /></div>}>
+            <InteractiveGlobe pins={pins} arcs={arcs} highlights={highlights} palette={theme.palette} ignite autoRotate decorative />
+          </Suspense>
+        </GlobeBoundary>
+
+        {showStamp && !empty && (
+          <div
+            className="absolute right-4 top-4 rounded-2xl px-3 py-2 animate-in zoom-in-50 fade-in duration-500"
+            style={{ background: SURFACE, border: `1px solid ${GOLD}`, transform: "rotate(-6deg)" }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: GOLD }}>Passport stamp</p>
+            <p className="text-[13px] font-heading font-bold text-white">{travelerTitle(countryCount)}</p>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center text-center mt-2 space-y-3 max-w-[340px] mx-auto">
-        <h1 className="font-heading text-[32px] font-bold text-white tracking-tight leading-tight">
-          Map your world
-        </h1>
-        <p className="text-[14px] leading-relaxed" style={{ color: "#94A3B8" }}>
-          Watch your countries, cities, and memories come alive on your personal travel globe.
-        </p>
+      <div className="flex-1 flex flex-col px-5 pb-8">
+        <div className="text-center">
+          <h1 className="font-heading text-[28px] font-bold text-white leading-tight tracking-tight">
+            {empty ? "Your globe is ready" : "Your world, lit up"}
+          </h1>
+          <p className="mt-1.5 text-[14px]" style={{ color: MUTED }}>
+            {empty
+              ? "Add your first trip any time from the World screen."
+              : `${countryCount} ${countryCount === 1 ? "country" : "countries"}${cityCount ? ` · ${cityCount} ${cityCount === 1 ? "city" : "cities"}` : ""} · saved privately`}
+          </p>
+        </div>
+
+        <div className="mt-5 rounded-2xl p-4" style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+          <p className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-white">
+            <Sparkles className="h-4 w-4" style={{ color: GOLD }} strokeWidth={1.5} /> Make it yours
+          </p>
+          <GlobeThemePicker selectedId={theme.id} palette={theme.palette} onChange={pickTheme} />
+        </div>
+
+        <div className="flex-1" />
+        <button
+          onClick={onFinish}
+          disabled={saving}
+          className="mt-5 w-full rounded-full flex items-center justify-center gap-2 text-white font-semibold text-[14px] disabled:opacity-60"
+          style={{ background: ACCENT, height: 52 }}
+        >
+          {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving your globe…</> : <>Explore my world <ArrowRight className="h-4 w-4" strokeWidth={1.5} /></>}
+        </button>
       </div>
     </div>
   );
